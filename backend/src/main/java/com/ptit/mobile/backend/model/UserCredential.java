@@ -6,29 +6,23 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "level")
+@Table(name = "user_credentials")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Level {
+public class UserCredential {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
-    @Column(length = 100)
-    private String name;
+    @Column(name = "user_id", nullable = false, unique = true)
+    private Long userId;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "delete_flag")
-    private Boolean deleteFlag;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
