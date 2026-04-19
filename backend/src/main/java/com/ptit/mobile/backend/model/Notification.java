@@ -1,15 +1,17 @@
 package com.ptit.mobile.backend.model;
 
-
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.Setter;
 
 @Entity
 @Table(name = "notification")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Notification {
 
     @Id
@@ -31,25 +33,9 @@ public class Notification {
     @Column(name = "is_read")
     private Boolean isRead;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_sender")
-    private User userSender;
+    @Column(name = "user_sender")
+    private Long userSender;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_receive")
-    private User userReceive;
-
-    public Notification() {}
-
-    @Override
-    public String toString() {
-        return "Notification{" +
-                "isReaded=" + isRead +
-                ", createdAt=" + createdAt +
-                ", link='" + link + '\'' +
-                ", message='" + message + '\'' +
-                ", type='" + type + '\'' +
-                ", id=" + id +
-                '}';
-    }
+    @Column(name = "user_receive")
+    private Long userReceive;
 }

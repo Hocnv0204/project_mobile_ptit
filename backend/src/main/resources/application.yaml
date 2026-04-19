@@ -15,18 +15,24 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-# Redis: nếu chưa dùng tới thì không cần cấu hình (backend vẫn chạy).
-# Khi cần, bạn có thể bật lại cấu hình bên dưới:
-# spring:
-#   data:
-#     redis:
-#       host: localhost
-#       port: 6379
+  flyway:
+    enabled: true
+    baseline-on-migrate: true   # Cho phép Flyway chạy khi schema đã tồn tại (tạo bởi docker init.sql)
+    baseline-version: 0         # Đánh dấu baseline là version 0
+    locations: classpath:db/migration
+
+  # Redis: nếu chưa dùng tới thì không cần cấu hình (backend vẫn chạy).
+  # Khi cần, bạn có thể bật lại cấu hình bên dưới:
+  # data:
+  #   redis:
+  #     host: localhost
+  #     port: 6379
+  #     password: redis123
 
 management:
   health:

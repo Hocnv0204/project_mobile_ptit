@@ -1,8 +1,7 @@
 package com.ptit.mobile.backend.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -10,6 +9,9 @@ import java.time.LocalDateTime;
 @Table(name = "vocabulary")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Vocabulary {
 
     @Id
@@ -30,32 +32,19 @@ public class Vocabulary {
 
     @Column(columnDefinition = "TEXT")
     private String example;
-    @Column
-    private String audioUrl ;
-    @Column
-    private String imageUrl ;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "collection_id")
-    private CollectionVocab collection;
+
+    @Column(name = "audio_url")
+    private String audioUrl;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt ;
+    private LocalDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "user_id")
+    private Long userId;
 
-    public Vocabulary() {}
-
-    @Override
-    public String toString() {
-        return "Vocabulary{" +
-                "example='" + example + '\'' +
-                ", pronunciation='" + pronunciation + '\'' +
-                ", type='" + type + '\'' +
-                ", vi='" + vi + '\'' +
-                ", term='" + term + '\'' +
-                ", id=" + id +
-                '}';
-    }
+    @Column(name = "lesson_vocab_id")
+    private Long lessonVocabId;
 }

@@ -6,13 +6,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "level")
+@Table(name = "lesson_writing")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Level {
+public class LessonWriting {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +22,19 @@ public class Level {
     private String name;
 
     @Column(columnDefinition = "TEXT")
+    private String paragraph;
+
+    @Column(columnDefinition = "TEXT")
+    private String note;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(length = 50)
+    private String status;
+
+    @Column(length = 50)
+    private String type;
 
     @Column(name = "delete_flag")
     private Boolean deleteFlag;
@@ -32,4 +44,10 @@ public class Level {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "topic_id")
+    private Integer topicId;
+
+    @Column(name = "level_id")
+    private Integer levelId;
 }

@@ -6,30 +6,33 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "level")
+@Table(name = "history_writing")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Level {
+public class HistoryWriting {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 100)
-    private String name;
+    @Column(columnDefinition = "TEXT")
+    private String question;
 
     @Column(columnDefinition = "TEXT")
-    private String description;
+    private String answer;
 
-    @Column(name = "delete_flag")
-    private Boolean deleteFlag;
+    @Column
+    private String result;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "lesson_writing_id")
+    private Integer lessonWritingId;
 }
