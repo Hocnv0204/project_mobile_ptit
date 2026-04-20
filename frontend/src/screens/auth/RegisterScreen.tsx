@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { HelperText, TextInput, Snackbar } from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 
@@ -16,6 +17,12 @@ const registerSchema = z.object({
   confirmPassword: z.string(),
   fullName: z.string().min(1, 'Vui lòng nhập họ và tên'),
   username: z.string().min(1, 'Vui lòng nhập username'),
+  phoneNumber: z.string()
+    .min(10, 'Số điện thoại tối thiểu 10 số')
+    .max(15, 'Số điện thoại tối đa 15 số')
+    .regex(/^\d+$/, 'Số điện thoại chỉ bao gồm số'),
+  dateBirth: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Vui lòng nhập định dạng năm-tháng-ngày (VD: 2000-01-01)'),
   agreedToTerms: z.literal(true, {
     errorMap: () => ({ message: 'Vui lòng đồng ý với điều khoản' }),
   }),
@@ -30,6 +37,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const { control, handleSubmit, watch } = useForm<FormValues>({
     resolver: zodResolver(registerSchema),
@@ -39,6 +47,8 @@ export default function RegisterScreen({ navigation }: any) {
       confirmPassword: '',
       fullName: '',
       username: '',
+      phoneNumber: '',
+      dateBirth: '',
       agreedToTerms: false,
     },
     mode: 'onChange',
@@ -61,6 +71,8 @@ export default function RegisterScreen({ navigation }: any) {
         password: values.password,
         username: values.username.trim(),
         fullName: values.fullName.trim(),
+        phoneNumber: values.phoneNumber.trim(),
+        dateBirth: values.dateBirth.trim(),
       };
       const res = await authApi.register(body) as any;
       navigation.navigate('EmailVerify', { email: body.email });
@@ -254,6 +266,90 @@ export default function RegisterScreen({ navigation }: any) {
               </View>
             )}
           />
+
+          <Text style={styles.label}>Số điện thoại *</Text>
+          <Controller
+            control={control}
+            name="phoneNumber"
+            render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
+              <View style={styles.field}>
+                <TextInput
+                  mode="outlined"
+                  placeholder="Nhập số điện thoại"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="phone-pad"
+                  outlineColor="#E0E5ED"
+                  activeOutlineColor="#0066FF"
+                  style={styles.input}
+                  theme={{ colors: { background: '#FFFFFF' } }}
+                  textColor="#1A1D26"
+                />
+                <HelperText type="error" visible={!!error} style={styles.errorText}>
+                  {error?.message}
+                </HelperText>
+              </View>
+            )}
+          />
+
+          <Text style={styles.label}>Ngày sinh *</Text>
+          <Controller
+            control={control}
+            name="dateBirth"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
+              <View style={styles.field}>
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+                  <View pointerEvents="none">
+                    <TextInput
+                      mode="outlined"
+                      placeholder="Chọn ngày sinh"
+                      value={value}
+                      editable={false}
+                      outlineColor="#E0E5ED"
+                      activeOutlineColor="#0066FF"
+                      style={styles.input}
+                      theme={{ colors: { background: '#FFFFFF' } }}
+                      textColor="#1A1D26"
+                      right={<TextInput.Icon icon="calendar" color="#A0A7BA" />}
+                    />
+                  </View>
+                </TouchableOpacity>
+                <HelperText type="error" visible={!!error} style={styles.errorText}>
+                  {error?.message}
+                </HelperText>
+                
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={value ? new Date(value) : new Date(2000, 0, 1)}
+                    mode="date"
+                    display="spinner"
+                    maximumDate={new Date()}
+                    onChange={(event, selectedDate) => {
+                      if (Platform.OS === 'android') {
+                        setShowDatePicker(false);
+                      }
+                      if (selectedDate) {
+                        // Format to YYYY-MM-DD using local time
+                        const offset = selectedDate.getTimezoneOffset()
+                        selectedDate = new Date(selectedDate.getTime() - (offset*60*1000))
+                        onChange(selectedDate.toISOString().split('T')[0]);
+                      }
+                    }}
+                  />
+                )}
+                {Platform.OS === 'ios' && showDatePicker && (
+                  <TouchableOpacity 
+                    style={{ alignSelf: 'flex-end', marginBottom: 12, paddingHorizontal: 16 }}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={{ color: '#0066FF', fontWeight: 'bold' }}>Xong</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          />
+
 
           <Controller
             control={control}

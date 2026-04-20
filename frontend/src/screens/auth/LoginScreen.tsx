@@ -50,8 +50,19 @@ export default function LoginScreen({ navigation }: any) {
 
   const googleRedirectUri = useMemo(() => resolveGoogleOAuthRedirectUri(), []);
 
+  useEffect(() => {
+    if (__DEV__) {
+      console.log('[Google Auth] Using Client ID:', GOOGLE_WEB_CLIENT_ID);
+      console.log('[Google Auth] Using Redirect URI:', googleRedirectUri);
+    }
+  }, [googleRedirectUri]);
+
   const [request, response, promptAsync] = useIdTokenAuthRequest({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
+    clientId: GOOGLE_WEB_CLIENT_ID || '35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com',
+    androidClientId: GOOGLE_WEB_CLIENT_ID || '35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com',
+    iosClientId: GOOGLE_WEB_CLIENT_ID || '35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com',
+    webClientId: GOOGLE_WEB_CLIENT_ID || '35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com',
+    expoClientId: GOOGLE_WEB_CLIENT_ID || '35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com',
     ...(googleRedirectUri ? { redirectUri: googleRedirectUri } : {}),
   });
 

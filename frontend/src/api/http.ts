@@ -56,12 +56,12 @@ if (__DEV__) {
   console.log('[API] Base URL:', API_BASE_URL);
 }
 
-async function refreshAccessToken(instance: AxiosInstance): Promise<AuthResponse> {
+async function refreshAccessToken(): Promise<AuthResponse> {
   const { refreshToken } = store.getState().auth;
   if (!refreshToken) {
     throw new Error('TOKEN_NOT_FOUND');
   }
-  const res = await instance.post<ApiEnvelope<AuthResponse>>('/api/auth/refresh', {
+  const res = await axios.post<ApiEnvelope<AuthResponse>>(`${API_BASE_URL}/api/auth/refresh`, {
     refreshToken,
   });
   return res.data.data;
@@ -76,8 +76,10 @@ export const http = axios.create({
 http.interceptors.request.use(async (config) => {
   const { accessToken } = store.getState().auth;
   if (accessToken) {
-    config.headers = config.headers ?? {};
-    (config.headers as any).Authorization = `Bearer ${accessToken}`;
+    if (!config.headers) {
+      config.headers = {} as any;
+    }
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
 });
@@ -95,7 +97,7 @@ http.interceptors.response.use(
 
     try {
       if (!refreshingPromise) {
-        refreshingPromise = refreshAccessToken(http).finally(() => {
+        refreshingPromise = refreshAccessToken().finally(() => {
           refreshingPromise = null;
         });
       }

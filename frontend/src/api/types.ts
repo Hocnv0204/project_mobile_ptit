@@ -23,3 +23,27 @@ export type ApiError = {
   message: string;
 };
 
+export type LessonVocab = {
+  id: number;
+  name: string;
+  createBy: string;
+  userId?: number;
+  levelId?: number;
+  createdAt: string;
+  updatedAt: string;
+  deleteFlag: boolean;
+};
+
+export type Vocabulary = {
+  id: number;
+  term: string;
+  vi: string;
+  type: string;
+  pronunciation: string;
+  example: string;
+  audioUrl?: string;
+  imageUrl?: string;
+  lessonVocabId: number;
+  userId?: number;
+};
+

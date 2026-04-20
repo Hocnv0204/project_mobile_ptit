@@ -21,4 +21,9 @@ public class RegisterRequest {
 
     @Size(min = 3, max = 100, message = "Username must be between 3 and 100 characters")
     private String username;
+
+    @Size(max = 20, message = "Phone number must be at most 20 characters")
+    private String phoneNumber;
+
+    private java.time.LocalDate dateBirth;
 }

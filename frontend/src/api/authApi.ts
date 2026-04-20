@@ -60,8 +60,15 @@ export const authApi = {
     return res.data;
   },
   async me() {
-    const res = await http.get<ApiEnvelope<{ id: number; email: string; username: string; fullName: string }>>(
+    const res = await http.get<ApiEnvelope<{ id: number; email: string; username: string; fullName: string; levelId?: number }>>(
       '/api/auth/me',
+    );
+    return res.data;
+  },
+  async updateLevel(levelId: number) {
+    const res = await http.put<ApiEnvelope<{ id: number; email: string; username: string; fullName: string; levelId?: number }>>(
+      '/api/auth/me/level',
+      { levelId }
     );
     return res.data;
   },

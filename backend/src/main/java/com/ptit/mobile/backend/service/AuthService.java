@@ -28,4 +28,6 @@ public interface AuthService {
     void logout(String refreshToken);
 
     void logoutAll(Long userId);
+
+    void updateUserLevel(Long userId, Long levelId);
 }

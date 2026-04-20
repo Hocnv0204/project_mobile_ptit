@@ -151,6 +151,29 @@ public class AuthController {
         AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
                 .id(user.getId()).email(user.getEmail())
                 .username(user.getUsername()).fullName(user.getFullName())
+                .levelId(user.getLevelId())
+                .build();
+        return BaseResponse.success(userInfo);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PUT /api/auth/me/level
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Operation(summary = "Cập nhật level tiếng Anh của user", security = @SecurityRequirement(name = "bearerAuth"))
+    @PutMapping("/me/level")
+    public BaseResponse updateLevel(@Valid @RequestBody com.ptit.mobile.backend.dto.request.auth.UpdateUserLevelRequest request) {
+        Long userId = getCurrentUserId();
+        authService.updateUserLevel(userId, request.getLevelId());
+        
+        // Return updated user info
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
+                .id(user.getId()).email(user.getEmail())
+                .username(user.getUsername()).fullName(user.getFullName())
+                .levelId(user.getLevelId())
                 .build();
         return BaseResponse.success(userInfo);
     }

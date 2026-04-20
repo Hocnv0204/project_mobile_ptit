@@ -131,11 +131,20 @@ const styles = StyleSheet.create({
     marginTop: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.2)',
+      },
+    }),
   },
   mascotBg: {
     backgroundColor: '#FFF',
@@ -153,11 +162,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     marginTop: -24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 20,
+      },
+      web: {
+        boxShadow: '0px -4px 12px rgba(0, 0, 0, 0.1)',
+      },
+    }),
   },
   title: {
     fontSize: 20,

@@ -80,6 +80,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .dateBirth(request.getDateBirth())
                 .isActive(false)        // ← chưa kích hoạt cho đến khi xác thực OTP
                 .isEmailVerified(false)
                 .deleteFlag(false)
@@ -261,6 +263,15 @@ public class AuthServiceImpl implements AuthService {
         log.info("User {} logged out from all devices", userId);
     }
 
+    @Override
+    @Transactional
+    public void updateUserLevel(Long userId, Long levelId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        user.setLevelId(levelId);
+        userRepository.save(user);
+    }
+
     
 
     private void sendOtpToEmail(String email, String fullName) {
@@ -309,6 +320,8 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.UserInfo.builder()
                 .id(user.getId()).email(user.getEmail())
                 .username(user.getUsername()).fullName(user.getFullName())
-                .roles(roles).build();
+                .roles(roles)
+                .levelId(user.getLevelId())
+                .build();
     }
 }
