@@ -4,130 +4,90 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
+  Platform,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../constants/colors';
-import { Typography } from '../constants/typography';
-
-const FEATURES = [
-  { icon: 'fire', label: 'Streak', color: '#FF6B00', bg: '#2A1A0A' },
-  { icon: 'book-open-variant', label: 'Vocabulary', color: '#6C63FF', bg: '#1A1A2E' },
-  { icon: 'robot', label: 'AI Lesson', color: '#4ECDC4', bg: '#0A1F1F' },
-  { icon: 'headphones', label: 'Podcast', color: '#FF6B6B', bg: '#2A0F0F' },
-];
 
 interface Props {
   onGetStarted?: () => void;
   onLogin?: () => void;
 }
 
+const { width } = Dimensions.get('window');
+
 export default function WelcomeScreen({ onGetStarted, onLogin }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.screen}>
-      {/* Background */}
-      <LinearGradient
-        colors={['rgba(108,99,255,0.18)', 'rgba(78,205,196,0.10)', 'rgba(15,15,26,0)']}
-        start={{ x: 0.15, y: 0.05 }}
-        end={{ x: 0.85, y: 0.95 }}
-        style={styles.bgGradient}
-        pointerEvents="none"
-      />
-      <View style={styles.blob1} pointerEvents="none" />
-      <View style={styles.blob2} pointerEvents="none" />
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingTop: Math.max(insets.top + 20, 56),
-            paddingBottom: Math.max(insets.bottom + 20, 32),
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <LinearGradient
-            colors={[Colors.gradientStart, Colors.gradientEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoBadge}
-          >
-            <MaterialCommunityIcons name="translate" size={28} color={Colors.textPrimary} />
-          </LinearGradient>
-          <Text style={styles.appName}>LinguaBoost</Text>
-          <Text style={styles.tagline}>Học tiếng Anh thông minh, theo đúng nhịp của bạn</Text>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      
+      {/* Top Section - Blue Background */}
+      <View style={styles.topSection}>
+        <LinearGradient
+          colors={['#164E8C', '#1D70B8', '#2589E6']}
+          style={StyleSheet.absoluteFill}
+        />
+        
+        {/* Concentric Circles Background */}
+        <View style={[styles.circle, styles.circle1]} />
+        <View style={[styles.circle, styles.circle2]} />
+        <View style={[styles.circle, styles.circle3]} />
+        
+        <View style={[styles.header, { marginTop: Math.max(insets.top, 40) }]}>
+          <MaterialCommunityIcons name="school" size={32} color="#FFF" />
+          <Text style={styles.logoText}>PTIT ENGLISH</Text>
         </View>
 
-        {/* Hero */}
-        <LinearGradient
-          colors={['rgba(108,99,255,0.16)', 'rgba(78,205,196,0.08)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroCard}
-        >
-          <View style={styles.heroIconWrap}>
-            <MaterialCommunityIcons name="school-outline" size={28} color={Colors.textPrimary} />
+        <View style={styles.mascotContainer}>
+          <View style={styles.mascotBg}>
+            <MaterialCommunityIcons name="robot-outline" size={100} color="#FFD166" />
           </View>
+        </View>
+      </View>
 
-          <Text style={styles.heroTitle}>Bắt đầu hành trình{'\n'}tiếng Anh mỗi ngày</Text>
-          <Text style={styles.heroSubtitle}>
-            Từ vựng, luyện nghe, và bài học với AI — gọn gàng trong một ứng dụng.
-          </Text>
+      {/* Bottom Section - White Card */}
+      <View style={[styles.bottomCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <Text style={styles.title}>
+          Tham gia ngay cùng PTIT English - Nền tảng học và luyện thi thông minh
+        </Text>
 
-          <View style={styles.featuresGrid}>
-            {FEATURES.map((feat) => (
-              <View key={feat.label} style={[styles.featureChip, { backgroundColor: feat.bg }]}>
-                <MaterialCommunityIcons name={feat.icon as any} size={20} color={feat.color} />
-                <Text style={[styles.featureLabel, { color: feat.color }]}>{feat.label}</Text>
-              </View>
-            ))}
-          </View>
-        </LinearGradient>
-
-        {/* CTA Buttons */}
         <View style={styles.actions}>
           <Pressable
-            onPress={onGetStarted}
-            disabled={!onGetStarted}
-            style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Bắt đầu ngay"
+            onPress={onLogin}
+            style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
           >
-            <LinearGradient
-              colors={[Colors.primary, Colors.primaryLight]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.btnPrimary}
-            >
-              <Text style={styles.btnPrimaryText}>Bắt đầu ngay</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color={Colors.textPrimary} />
-            </LinearGradient>
+            <Text style={styles.btnPrimaryText}>Đăng nhập</Text>
           </Pressable>
 
           <Pressable
-            onPress={onLogin}
-            disabled={!onLogin}
-            style={({ pressed }) => [
-              styles.btnSecondary,
-              pressed && styles.pressedSecondary,
-              !onLogin && styles.disabled,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Đăng nhập"
+            onPress={onGetStarted}
+            style={({ pressed }) => [styles.btnSecondary, pressed && styles.pressed]}
           >
-            <Text style={styles.btnSecondaryText}>Đã có tài khoản?</Text>
-            <Text style={styles.btnSecondaryLink}>Đăng nhập</Text>
+            <Text style={styles.btnSecondaryText}>Đăng ký</Text>
+          </Pressable>
+
+          <Text style={styles.orText}>hoặc</Text>
+
+          <Pressable
+            style={({ pressed }) => [styles.btnSecondary, pressed && styles.pressed]}
+          >
+            <Text style={styles.btnSecondaryText}>Khám phá ngay</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.footer}>PTIT · 2025</Text>
-      </ScrollView>
+        <Text style={styles.termsText}>
+          Bằng cách tham gia, chúng tôi xác nhận bạn đã đọc và đồng ý với{' '}
+          <Text style={styles.linkText}>Điều khoản & Điều kiện</Text> cùng{' '}
+          <Text style={styles.linkText}>Chính sách bảo mật</Text> của PTIT English
+        </Text>
+
+        <Text style={styles.versionText}>Phiên bản: 1.0.0</Text>
+      </View>
     </View>
   );
 }
@@ -135,179 +95,128 @@ export default function WelcomeScreen({ onGetStarted, onLogin }: Props) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
   },
-  bgGradient: {
+  topSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  circle: {
     position: 'absolute',
-    left: 0,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  circle1: { width: width * 0.8, height: width * 0.8 },
+  circle2: { width: width * 1.3, height: width * 1.3 },
+  circle3: { width: width * 1.8, height: width * 1.8 },
+  
+  header: {
+    position: 'absolute',
     top: 0,
-    right: 0,
-    height: 520,
-  },
-  container: {
-    paddingHorizontal: 24,
-  },
-
-  // Decoration blobs
-  blob1: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(108,99,255,0.12)',
-    top: -60,
-    right: -80,
-  },
-  blob2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(78,205,196,0.08)',
-    bottom: 80,
-    left: -60,
-  },
-
-  // Header
-  header: { alignItems: 'center', marginBottom: 22 },
-  logoBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  appName: {
-    fontSize: Typography.fontSize['4xl'],
-    fontFamily: Typography.fontFamily.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: 0.5,
-  },
-  tagline: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-    maxWidth: 320,
-  },
-
-  // Hero
-  heroCard: {
-    borderRadius: 24,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(108,99,255,0.2)',
-    backgroundColor: 'rgba(26,26,46,0.35)',
-  },
-  heroIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(108,99,255,0.20)',
-    borderWidth: 1,
-    borderColor: 'rgba(108,99,255,0.28)',
-  },
-  heroTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    marginTop: 14,
-    lineHeight: 30,
-  },
-  heroSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-    maxWidth: 320,
-  },
-
-  // Features
-  featuresGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  featureChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  featureLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semiBold,
-  },
-
-  // Buttons
-  actions: { gap: 12, marginTop: 18 },
-  pressable: { borderRadius: 16 },
-  pressed: { opacity: 0.9, transform: [{ scale: 0.995 }] },
-  btnPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    borderRadius: 16,
-    paddingVertical: 16,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  mascotContainer: {
+    marginTop: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
     elevation: 10,
   },
-  btnPrimaryText: {
-    color: Colors.textPrimary,
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamily.bold,
-  },
-  btnSecondary: {
-    flexDirection: 'row',
+  mascotBg: {
+    backgroundColor: '#FFF',
+    width: 160,
+    height: 120,
+    borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(26,26,46,0.20)',
   },
-  pressedSecondary: { opacity: 0.9 },
-  disabled: { opacity: 0.55 },
-  btnSecondaryText: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.textSecondary,
+  
+  bottomCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    marginTop: -24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 20,
   },
-  btnSecondaryLink: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.bold,
-    color: Colors.primary,
-  },
-
-  footer: {
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1D26',
     textAlign: 'center',
-    color: Colors.textDisabled,
-    fontSize: 11,
-    marginTop: 18,
+    lineHeight: 28,
+    marginBottom: 24,
+  },
+  actions: {
+    gap: 12,
+  },
+  btnPrimary: {
+    backgroundColor: '#0066FF',
+    paddingVertical: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+  },
+  btnPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  btnSecondary: {
+    backgroundColor: '#F0F5FF',
+    paddingVertical: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+  },
+  btnSecondaryText: {
+    color: '#0066FF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  orText: {
+    textAlign: 'center',
+    color: '#70778C',
+    fontSize: 14,
+    marginVertical: 4,
+  },
+  termsText: {
+    marginTop: 24,
+    fontSize: 12,
+    color: '#8A92A6',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  linkText: {
+    color: '#0066FF',
+    fontWeight: '600',
+  },
+  versionText: {
+    marginTop: 32,
+    fontSize: 12,
+    color: '#A0A7BA',
+    textAlign: 'center',
   },
 });

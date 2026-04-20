@@ -10,9 +10,10 @@ export const Routes = {
   // User Bottom Tabs
   HOME: 'Home',
   VOCABULARY: 'Vocabulary',
-  AI_LESSON: 'AILesson',
-  PODCAST: 'Podcast',
+  WRITING: 'Writing',
+  DICTATION: 'Dictation',
   PROFILE: 'Profile',
+  PODCAST: 'Podcast',
 
   // Vocab Stack
   TOPIC_LIST: 'TopicList',

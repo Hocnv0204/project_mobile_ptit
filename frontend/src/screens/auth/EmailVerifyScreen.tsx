@@ -1,18 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, HelperText, TextInput } from 'react-native-paper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/colors';
-import { Typography } from '../../constants/typography';
-import { AuthLayout } from './AuthLayout';
+import { HelperText, TextInput } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { useAppDispatch } from '../../store';
 import { setAuth, persistAuth } from '../../store/slices/authSlice';
-import { setTokens } from '../../api/authStorage';
+
 
 const schema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -22,7 +18,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function EmailVerifyScreen({ route, navigation }: any) {
-  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
@@ -34,12 +29,7 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
     [emailFromRoute],
   );
 
-  const {
-    control,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm<FormValues>({ defaultValues, resolver: zodResolver(schema) });
+  const { control, handleSubmit, getValues, formState: { errors } } = useForm<FormValues>({ defaultValues, resolver: zodResolver(schema) });
 
   const onResend = async () => {
     try {
@@ -60,16 +50,14 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
       const res = await authApi.verifyOtp({ email: values.email.trim(), otp: values.otp.trim() });
       const auth = res.data;
 
-      dispatch(
-        setAuth({
-          accessToken: auth.accessToken,
-          refreshToken: auth.refreshToken,
-          tokenType: auth.tokenType,
-          accessTokenExpiresIn: auth.accessTokenExpiresIn,
-          user: auth.user,
-        }),
-      );
-      await setTokens({ accessToken: auth.accessToken, refreshToken: auth.refreshToken });
+      dispatch(setAuth({
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        tokenType: auth.tokenType,
+        accessTokenExpiresIn: auth.accessTokenExpiresIn,
+        user: auth.user,
+      }));
+
       await persistAuth({
         accessToken: auth.accessToken,
         refreshToken: auth.refreshToken,
@@ -79,7 +67,7 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
       });
 
       Alert.alert('Thành công', 'Xác thực OTP thành công');
-      navigation.popToTop();
+      // Navigation will automatically update to MainTabNavigator due to Redux state change
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Xác thực OTP thất bại');
     } finally {
@@ -88,107 +76,175 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
   });
 
   return (
-    <AuthLayout>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <MaterialCommunityIcons name="arrow-left" size={28} color="#1A1D26" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Xác thực OTP</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
         <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            { paddingTop: Math.max(insets.top + 20, 56), paddingBottom: Math.max(insets.bottom + 20, 32) },
-          ]}
+          contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Xác thực OTP</Text>
-            <Text style={styles.subtitle}>Nhập mã OTP 6 số đã gửi về email</Text>
-          </View>
+          <Text style={styles.subtitle}>Nhập mã OTP 6 số đã gửi về email của bạn</Text>
 
-          <LinearGradient colors={['rgba(26,26,46,0.45)', 'rgba(26,26,46,0.25)']} style={styles.card}>
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <View style={styles.field}>
-                  <TextInput
-                    mode="outlined"
-                    label="Email"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    autoCorrect={false}
-                    outlineColor={Colors.border}
-                    activeOutlineColor={Colors.primary}
-                    textColor={Colors.textPrimary}
-                  />
-                  <HelperText type="error" visible={!!errors.email}>
-                    {errors.email?.message}
-                  </HelperText>
-                </View>
-              )}
-            />
+          <Text style={styles.label}>Email</Text>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value, onBlur } }) => (
+              <View style={styles.field}>
+                <TextInput
+                  mode="outlined"
+                  placeholder="Nhập email"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  outlineColor="#E0E5ED"
+                  activeOutlineColor="#0066FF"
+                  style={styles.input}
+                  theme={{ colors: { background: '#FFFFFF' } }}
+                  textColor="#1A1D26"
+                />
+                <HelperText type="error" visible={!!errors.email} style={styles.errorText}>
+                  {errors.email?.message}
+                </HelperText>
+              </View>
+            )}
+          />
 
-            <Controller
-              control={control}
-              name="otp"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <View style={styles.field}>
-                  <TextInput
-                    mode="outlined"
-                    label="OTP (6 số)"
-                    value={value}
-                    onChangeText={(t) => onChange(t.replace(/[^\d]/g, ''))}
-                    onBlur={onBlur}
-                    keyboardType="number-pad"
-                    outlineColor={Colors.border}
-                    activeOutlineColor={Colors.primary}
-                    textColor={Colors.textPrimary}
-                  />
-                  <HelperText type="error" visible={!!errors.otp}>
-                    {errors.otp?.message}
-                  </HelperText>
-                </View>
-              )}
-            />
+          <Text style={styles.label}>Mã OTP</Text>
+          <Controller
+            control={control}
+            name="otp"
+            render={({ field: { onChange, value, onBlur } }) => (
+              <View style={styles.field}>
+                <TextInput
+                  mode="outlined"
+                  placeholder="Nhập 6 số OTP"
+                  value={value}
+                  onChangeText={(t) => onChange(t.replace(/[^\d]/g, ''))}
+                  onBlur={onBlur}
+                  keyboardType="number-pad"
+                  outlineColor="#E0E5ED"
+                  activeOutlineColor="#0066FF"
+                  style={styles.input}
+                  theme={{ colors: { background: '#FFFFFF' } }}
+                  textColor="#1A1D26"
+                />
+                <HelperText type="error" visible={!!errors.otp} style={styles.errorText}>
+                  {errors.otp?.message}
+                </HelperText>
+              </View>
+            )}
+          />
 
-            <Button mode="contained" onPress={onSubmit} loading={submitting} disabled={submitting} style={styles.btn}>
-              Xác thực
-            </Button>
+          <TouchableOpacity 
+            style={[styles.btnPrimary, submitting && styles.btnPrimaryDisabled]} 
+            onPress={onSubmit}
+            disabled={submitting}
+          >
+            <Text style={styles.btnPrimaryText}>{submitting ? 'Đang xác thực...' : 'Xác thực'}</Text>
+          </TouchableOpacity>
 
-            <Pressable onPress={onResend} disabled={resending} style={styles.linkRow}>
-              <Text style={[styles.linkText, resending && { opacity: 0.7 }]}>
-                {resending ? 'Đang gửi lại...' : 'Gửi lại OTP'}
-              </Text>
-            </Pressable>
-          </LinearGradient>
+          <TouchableOpacity 
+            style={styles.resendButton} 
+            onPress={onResend}
+            disabled={resending}
+          >
+            <Text style={[styles.resendText, resending && { opacity: 0.7 }]}>
+              {resending ? 'Đang gửi lại...' : 'Gửi lại mã OTP'}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </AuthLayout>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 24 },
-  header: { alignItems: 'center', marginBottom: 18 },
-  title: { fontSize: Typography.fontSize['3xl'], fontFamily: Typography.fontFamily.extraBold, color: Colors.textPrimary },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'android' ? 24 : 0,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1D26',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  container: { 
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
   subtitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.textSecondary,
-    marginTop: 6,
+    fontSize: 15,
+    color: '#70778C',
+    marginBottom: 32,
     textAlign: 'center',
+    lineHeight: 22,
   },
-  card: {
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(108,99,255,0.18)',
-    backgroundColor: 'rgba(26,26,46,0.35)',
+  label: {
+    fontSize: 14,
+    color: '#4A5568',
+    marginBottom: 8,
+    fontWeight: '600',
   },
-  field: { marginBottom: 4 },
-  btn: { marginTop: 8, backgroundColor: Colors.primary, borderRadius: 14 },
-  linkRow: { marginTop: 14, flexDirection: 'row', justifyContent: 'center' },
-  linkText: { color: Colors.accent, fontFamily: Typography.fontFamily.bold },
+  field: { 
+    marginBottom: 12,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    fontSize: 15,
+  },
+  errorText: {
+    marginTop: 4,
+  },
+  btnPrimary: {
+    backgroundColor: '#0066FF',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  btnPrimaryDisabled: {
+    backgroundColor: '#80B3FF',
+  },
+  btnPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  resendButton: {
+    marginTop: 24,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  resendText: {
+    color: '#0066FF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
-

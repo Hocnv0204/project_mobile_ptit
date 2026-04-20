@@ -1,0 +1,93 @@
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Routes } from '../constants/routes';
+
+// Import Screens
+import HomeScreen from '../screens/home/HomeScreen';
+import VocabularyScreen from '../screens/vocab/VocabularyScreen';
+import WritingScreen from '../screens/writing/WritingScreen';
+import DictationScreen from '../screens/dictation/DictationScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
+
+const Tab = createBottomTabNavigator();
+
+const COLORS = {
+  primary: '#0066FF',
+  inactive: '#A0A7BA',
+  background: '#FFFFFF',
+};
+
+export default function MainTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.inactive,
+        tabBarStyle: {
+          backgroundColor: COLORS.background,
+          borderTopWidth: 1,
+          borderTopColor: '#EEF0F6',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 64,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+          marginTop: 4,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof MaterialCommunityIcons.glyphMap = 'home';
+
+          switch (route.name) {
+            case Routes.HOME:
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case Routes.VOCABULARY:
+              iconName = focused ? 'book-open-variant' : 'book-open-blank-variant';
+              break;
+            case Routes.WRITING:
+              iconName = focused ? 'pencil' : 'pencil-outline';
+              break;
+            case Routes.DICTATION:
+              iconName = focused ? 'headphones' : 'headphones';
+              break;
+            case Routes.PROFILE:
+              iconName = focused ? 'account-circle' : 'account-circle-outline';
+              break;
+          }
+
+          return <MaterialCommunityIcons name={iconName} size={26} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen 
+        name={Routes.HOME} 
+        component={HomeScreen} 
+        options={{ tabBarLabel: 'Học tập' }} 
+      />
+      <Tab.Screen 
+        name={Routes.VOCABULARY} 
+        component={VocabularyScreen} 
+        options={{ tabBarLabel: 'Từ vựng' }} 
+      />
+      <Tab.Screen 
+        name={Routes.WRITING} 
+        component={WritingScreen} 
+        options={{ tabBarLabel: 'Luyện viết' }} 
+      />
+      <Tab.Screen 
+        name={Routes.DICTATION} 
+        component={DictationScreen} 
+        options={{ tabBarLabel: 'Chính tả' }} 
+      />
+      <Tab.Screen 
+        name={Routes.PROFILE} 
+        component={ProfileScreen} 
+        options={{ tabBarLabel: 'Tài khoản' }} 
+      />
+    </Tab.Navigator>
+  );
+}
