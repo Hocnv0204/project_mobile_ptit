@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, HelperText, TextInput } from 'react-native-paper';
+import { Button, HelperText, Snackbar, TextInput } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useIdTokenAuthRequest } from 'expo-auth-session/providers/google';
@@ -15,7 +15,11 @@ import { authApi } from '../../api/authApi';
 import { useAppDispatch } from '../../store';
 import { setAuth, persistAuth } from '../../store/slices/authSlice';
 import { setTokens } from '../../api/authStorage';
-import { GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from '../../config/google';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import {
+  GOOGLE_WEB_CLIENT_ID,
+  resolveGoogleOAuthRedirectUri,
+} from '../../config/google';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,26 +30,67 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+function getApiErrorMessage(e: unknown, fallback: string): string {
+  if (e && typeof e === 'object' && 'message' in e) {
+    const m = (e as { message?: string }).message;
+    if (typeof m === 'string' && m.trim()) return mapBackendLoginMessage(m.trim());
+  }
+  if (e instanceof Error && e.message) return mapBackendLoginMessage(e.message);
+  return fallback;
+}
+
+/** Chuẩn hoá thông báo backend (tiếng Anh) sang tiếng Việt khi cần. */
+function mapBackendLoginMessage(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('invalid') && (lower.includes('email') || lower.includes('password'))) {
+    return 'Sai username hoặc mật khẩu.';
+  }
+  return message;
+}
+
 export default function LoginScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [authErrorSnackbar, setAuthErrorSnackbar] = useState<string | null>(null);
   const handledGoogleIdTokenRef = useRef<string | null>(null);
+
+  const googleRedirectUri = useMemo(() => resolveGoogleOAuthRedirectUri(), []);
 
   const [request, response, promptAsync] = useIdTokenAuthRequest({
     webClientId: GOOGLE_WEB_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    ...(googleRedirectUri ? { redirectUri: googleRedirectUri } : {}),
   });
 
   useEffect(() => {
     if (!__DEV__ || !request?.redirectUri) return;
-    console.log(
-      '[Google OAuth] Thêm CHÍNH XÁC URI này vào Google Cloud → Credentials → OAuth 2.0 Client (Web) → Authorized redirect URIs:',
+
+    if (Platform.OS === 'web') {
+      console.warn(
+        '[Google OAuth] Bạn đang chạy Web (bare). Thêm CHÍNH XÁC URI sau vào Google Cloud → OAuth client (Web) → Authorized redirect URIs:',
+        request.redirectUri,
+      );
+      return;
+    }
+
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+      console.warn(
+        '[Google OAuth] Expo Go: redirect proxy / .env =',
+        googleRedirectUri ?? '(chưa có — cần EXPO_PUBLIC_EXPO_PROJECT_FULL_NAME hoặc EXPO_PUBLIC_GOOGLE_REDIRECT_URI)',
+        '| URI thực tế:',
+        request.redirectUri,
+      );
+      return;
+    }
+
+    console.warn(
+      '[Google OAuth] Dev build / bare native: URI gửi lên Google =',
       request.redirectUri,
+      '| Thêm URI này vào OAuth Web client trên GCP. executionEnvironment:',
+      Constants.executionEnvironment,
     );
-  }, [request?.redirectUri]);
+  }, [request?.redirectUri, googleRedirectUri]);
 
   const defaultValues = useMemo<FormValues>(() => ({ username: '', password: '' }), []);
   const {
@@ -80,9 +125,8 @@ export default function LoginScreen({ navigation }: any) {
 
       Alert.alert('Thành công', 'Đăng nhập thành công');
       navigation.goBack();
-    } catch (e: any) {
-      const msg = e?.message || 'Đăng nhập thất bại';
-      Alert.alert('Lỗi', msg);
+    } catch (e: unknown) {
+      setAuthErrorSnackbar(getApiErrorMessage(e, 'Đăng nhập thất bại'));
     } finally {
       setSubmitting(false);
     }
@@ -94,7 +138,13 @@ export default function LoginScreen({ navigation }: any) {
     if (response.type === 'error') {
       setGoogleSubmitting(false);
       const err = (response as any).error;
-      Alert.alert('Lỗi Google', err?.message || err?.code || 'Đăng nhập Google thất bại');
+      setAuthErrorSnackbar(
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
+          : typeof err?.code === 'string'
+            ? err.code
+            : 'Đăng nhập Google thất bại',
+      );
       return;
     }
 
@@ -140,9 +190,8 @@ export default function LoginScreen({ navigation }: any) {
 
         Alert.alert('Thành công', 'Đăng nhập Google thành công');
         navigation.goBack();
-      } catch (e: any) {
-        const msg = e?.message || 'Gọi API /api/auth/google thất bại';
-        Alert.alert('Lỗi', msg);
+      } catch (e: unknown) {
+        setAuthErrorSnackbar(getApiErrorMessage(e, 'Đăng nhập Google thất bại'));
       } finally {
         setGoogleSubmitting(false);
       }
@@ -258,6 +307,15 @@ export default function LoginScreen({ navigation }: any) {
           </LinearGradient>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Snackbar
+        visible={!!authErrorSnackbar}
+        onDismiss={() => setAuthErrorSnackbar(null)}
+        duration={5000}
+        style={{ backgroundColor: Colors.error }}
+        action={{ label: 'Đóng', onPress: () => setAuthErrorSnackbar(null) }}
+      >
+        <Text style={{ color: '#FFFFFF', fontFamily: Typography.fontFamily.medium }}>{authErrorSnackbar}</Text>
+      </Snackbar>
     </AuthLayout>
   );
 }

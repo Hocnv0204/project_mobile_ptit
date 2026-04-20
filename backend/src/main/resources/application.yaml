@@ -60,7 +60,7 @@ otp:
   length: 6
   sender-name: "PTIT English App"
 
-# Google OAuth2 — Client ID từ Google Cloud Console
-# Cần thêm cả Android client ID (được Google Sign-In Android SDK sử dụng)
+# Google OAuth2 — Web client (verify id_token aud); Android client khi token cấp cho app native
 google:
   client-id: "35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com"
+  android-client-id: "35790031845-25t0jogk4g8hvpke5uj920gpvvjhv5ii.apps.googleusercontent.com"

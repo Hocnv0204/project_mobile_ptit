@@ -42,6 +42,10 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
     @Value("${google.client-id}")
     private String googleClientId;
 
+    /** OAuth client Android — id_token từ app Android có thể có aud = client này thay vì web client-id. */
+    @Value("${google.android-client-id:}")
+    private String googleAndroidClientId;
+
     // ── RestClient (Spring Boot 3.2+, no-arg factory) ────────────────────────
     private final RestClient restClient = RestClient.create();
 
@@ -129,10 +133,14 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
             log.warn("Google client-id not configured — skipping audience validation (dev mode)");
             return;
         }
-        if (!googleClientId.equals(aud)) {
-            log.warn("Google token audience mismatch: expected={}, got={}", googleClientId, aud);
-            throw new BusinessException(ErrorCode.GOOGLE_TOKEN_AUDIENCE_MISMATCH);
+        if (googleClientId.equals(aud)) {
+            return;
         }
+        if (googleAndroidClientId != null && !googleAndroidClientId.isBlank() && googleAndroidClientId.equals(aud)) {
+            return;
+        }
+        log.warn("Google token audience mismatch: expected web or android client-id, got={}", aud);
+        throw new BusinessException(ErrorCode.GOOGLE_TOKEN_AUDIENCE_MISMATCH);
     }
 
     /**

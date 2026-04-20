@@ -5,17 +5,54 @@ import { clearTokens, getTokens, setTokens } from './authStorage';
 
 let refreshingPromise: Promise<AuthResponse> | null = null;
 
+function backendMessage(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const m = (data as { message?: unknown }).message;
+  return typeof m === 'string' && m.trim() ? m : null;
+}
+
 function toApiError(err: unknown): ApiError {
   if (axios.isAxiosError(err)) {
     const ae = err as AxiosError<any>;
     const data = ae.response?.data;
+    const status = ae.response?.status;
+    const isNetwork =
+      ae.code === 'ERR_NETWORK' ||
+      ae.code === 'ECONNABORTED' ||
+      ae.message === 'Network Error';
+
+    const networkHint = isNetwork
+      ? ` Không gọi được ${API_BASE_URL}. Trên Android emulator dùng http://10.0.2.2:8080; kiểm tra backend đang chạy, app.json usesCleartextTraffic (HTTP), và restart: npx expo start -c.`
+      : '';
+
+    const msgFromBody = backendMessage(data);
     const message =
-      (typeof data?.message === 'string' && data.message) ||
-      ae.message ||
-      'Đã có lỗi xảy ra';
-    return { code: typeof data?.code === 'number' ? data.code : undefined, message };
+      msgFromBody ||
+      (status != null ? `HTTP ${status}${ae.response?.statusText ? ` ${ae.response.statusText}` : ''}` : null) ||
+      (ae.message ? `${ae.message}.${networkHint}` : null) ||
+      `Đã có lỗi xảy ra.${networkHint}`;
+
+    if (__DEV__) {
+      console.warn('[API]', ae.config?.method?.toUpperCase(), ae.config?.baseURL, ae.config?.url, {
+        code: ae.code,
+        status,
+        data: ae.response?.data,
+      });
+    }
+
+    return {
+      code: typeof (data as { code?: unknown })?.code === 'number' ? (data as { code: number }).code : undefined,
+      message,
+    };
+  }
+  if (err instanceof Error) {
+    return { message: err.message || 'Đã có lỗi xảy ra' };
   }
   return { message: 'Đã có lỗi xảy ra' };
+}
+
+if (__DEV__) {
+  console.log('[API] Base URL:', API_BASE_URL);
 }
 
 async function refreshAccessToken(instance: AxiosInstance): Promise<AuthResponse> {
