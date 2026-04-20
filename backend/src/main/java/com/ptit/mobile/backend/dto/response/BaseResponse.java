@@ -16,8 +16,8 @@ public class BaseResponse {
         return BaseResponse.builder().message("Success").code(200L).data(data).build();
     }
 
-    public static  BaseResponse success(String message, Long code) {
-        return BaseResponse.builder().message(message).code(code).build();
+    public static  BaseResponse success(String message) {
+        return BaseResponse.builder().message(message).code(200L).build();
     }
 
     public static BaseResponse error(Long code, String message) {

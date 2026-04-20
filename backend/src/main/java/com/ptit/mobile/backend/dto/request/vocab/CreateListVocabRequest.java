@@ -5,14 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateVocabRequest {
-    private String term;
-    private String vi;
-    private String type;
-    private String pronunciation;
-    private String example;
+public class CreateListVocabRequest {
+    List<CreateVocabRequest> listVocabRequest;
 }
