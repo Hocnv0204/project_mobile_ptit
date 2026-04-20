@@ -1,7 +1,8 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { ApiEnvelope, ApiError, AuthResponse } from './types';
-import { clearTokens, getTokens, setTokens } from './authStorage';
+import { store } from '../store';
+import { setAuth, clearAuth, persistAuth, clearPersistedAuth } from '../store/slices/authSlice';
 
 let refreshingPromise: Promise<AuthResponse> | null = null;
 
@@ -56,7 +57,7 @@ if (__DEV__) {
 }
 
 async function refreshAccessToken(instance: AxiosInstance): Promise<AuthResponse> {
-  const { refreshToken } = await getTokens();
+  const { refreshToken } = store.getState().auth;
   if (!refreshToken) {
     throw new Error('TOKEN_NOT_FOUND');
   }
@@ -73,7 +74,7 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use(async (config) => {
-  const { accessToken } = await getTokens();
+  const { accessToken } = store.getState().auth;
   if (accessToken) {
     config.headers = config.headers ?? {};
     (config.headers as any).Authorization = `Bearer ${accessToken}`;
@@ -99,12 +100,26 @@ http.interceptors.response.use(
         });
       }
       const auth = await refreshingPromise;
-      await setTokens({ accessToken: auth.accessToken, refreshToken: auth.refreshToken });
+      store.dispatch(setAuth({
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        tokenType: auth.tokenType,
+        accessTokenExpiresIn: auth.accessTokenExpiresIn,
+        user: auth.user,
+      }));
+      await persistAuth({
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        tokenType: auth.tokenType,
+        accessTokenExpiresIn: auth.accessTokenExpiresIn,
+        user: auth.user,
+      });
       original.headers = original.headers ?? {};
       original.headers.Authorization = `Bearer ${auth.accessToken}`;
       return http(original);
     } catch (e) {
-      await clearTokens();
+      store.dispatch(clearAuth());
+      await clearPersistedAuth();
       return Promise.reject(toApiError(e));
     }
   },
