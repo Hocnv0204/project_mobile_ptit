@@ -24,7 +24,6 @@ spring:
     baseline-version: 0
     locations: classpath:db/migration
 
- 
   data:
     redis:
       host: localhost
@@ -32,12 +31,11 @@ spring:
       password: redis123
       timeout: 3000ms
 
- 
   mail:
     host: smtp.gmail.com
     port: 587
-    username: hocnguyen1102.work@gmail.com          
-    password: cxwl urxj wfhc twnb             
+    username: hocnguyen1102.work@gmail.com
+    password: cxwl urxj wfhc twnb
     properties:
       mail:
         smtp:
@@ -52,14 +50,17 @@ management:
     redis:
       enabled: true
 
-
 jwt:
   secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
   access-token-expiration: 900000        # 15 phút (ms)
   refresh-token-expiration: 604800000    # 7 ngày (ms)
 
-
 otp:
   expiration: 300000     # 5 phút (ms)
   length: 6
   sender-name: "PTIT English App"
+
+# Google OAuth2 — Client ID từ Google Cloud Console
+# Cần thêm cả Android client ID (được Google Sign-In Android SDK sử dụng)
+google:
+  client-id: "35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com"

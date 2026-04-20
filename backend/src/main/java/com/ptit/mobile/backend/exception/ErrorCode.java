@@ -46,7 +46,12 @@ public enum ErrorCode {
     OTP_EXPIRED(6002, "OTP has expired, please request a new one"),
     OTP_RESEND_TOO_SOON(6003, "Please wait before requesting a new OTP"),
     USER_ALREADY_VERIFIED(6004, "Email is already verified"),
-    REGISTRATION_PENDING(6005, "Account is pending email verification");
+    REGISTRATION_PENDING(6005, "Account is pending email verification"),
+
+    // ── Google OAuth2 (7xxx) ─────────────────────────────
+    GOOGLE_TOKEN_INVALID(7001, "Invalid or expired Google ID token"),
+    GOOGLE_TOKEN_AUDIENCE_MISMATCH(7002, "Google ID token audience does not match"),
+    GOOGLE_EMAIL_NOT_VERIFIED(7003, "Google account email is not verified");
 
     private final int code;
     private final String message;
