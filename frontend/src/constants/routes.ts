@@ -1,4 +1,5 @@
 export const Routes = {
+  WELCOME: 'Welcome',
   // Auth Stack
   SPLASH: 'Splash',
   ONBOARDING: 'Onboarding',

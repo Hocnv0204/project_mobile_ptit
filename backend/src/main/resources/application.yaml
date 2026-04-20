@@ -8,8 +8,6 @@ spring:
     password: postgres
     driver-class-name: org.postgresql.Driver
 
-  # Redis hiện để OPTIONAL: không cần chạy Redis vẫn khởi động được backend.
-  # Khi cần dùng Redis/Spring Session Redis thì cấu hình và bật lại sau.
   session:
     store-type: none
 
@@ -22,19 +20,47 @@ spring:
 
   flyway:
     enabled: true
-    baseline-on-migrate: true   # Cho phép Flyway chạy khi schema đã tồn tại (tạo bởi docker init.sql)
-    baseline-version: 0         # Đánh dấu baseline là version 0
+    baseline-on-migrate: true
+    baseline-version: 0
     locations: classpath:db/migration
 
-  # Redis: nếu chưa dùng tới thì không cần cấu hình (backend vẫn chạy).
-  # Khi cần, bạn có thể bật lại cấu hình bên dưới:
-  # data:
-  #   redis:
-  #     host: localhost
-  #     port: 6379
-  #     password: redis123
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: redis123
+      timeout: 3000ms
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: hocnguyen1102.work@gmail.com
+    password: cxwl urxj wfhc twnb
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        debug: false
 
 management:
   health:
     redis:
-      enabled: false
+      enabled: true
+
+jwt:
+  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+  access-token-expiration: 900000        # 15 phút (ms)
+  refresh-token-expiration: 604800000    # 7 ngày (ms)
+
+otp:
+  expiration: 300000     # 5 phút (ms)
+  length: 6
+  sender-name: "PTIT English App"
+
+# Google OAuth2 — Web client (verify id_token aud); Android client khi token cấp cho app native
+google:
+  client-id: "35790031845-lg7v97e8m39912hadbctj60o1gv2qc3d.apps.googleusercontent.com"
+  android-client-id: "35790031845-25t0jogk4g8hvpke5uj920gpvvjhv5ii.apps.googleusercontent.com"

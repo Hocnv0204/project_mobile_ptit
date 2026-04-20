@@ -2,6 +2,7 @@
   "expo": {
     "name": "LinguaBoost",
     "slug": "linguaboost",
+    "scheme": "linguaboost",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +15,12 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.ptit.linguaboost"
+      "bundleIdentifier": "com.ptit.linguaboost",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,13 +29,16 @@
       },
       "package": "com.ptit.linguaboost",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
     },
     "extra": {
-      "apiUrl": "http://10.0.2.2:8080/api"
+      "apiUrlWeb": "http://localhost:8080/api",
+      "apiUrlAndroid": "http://10.0.2.2:8080/api"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ]
   }
 }
