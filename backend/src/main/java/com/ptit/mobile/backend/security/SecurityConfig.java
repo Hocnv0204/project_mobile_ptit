@@ -30,6 +30,7 @@ public class SecurityConfig {
 
    
     private static final String[] PUBLIC_ENDPOINTS = {
+            "/api/**",
             "/api/auth/**",
             // Swagger / OpenAPI
             "/v3/api-docs/**",

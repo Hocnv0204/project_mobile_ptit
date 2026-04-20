@@ -51,7 +51,22 @@ public enum ErrorCode {
     // ── Google OAuth2 (7xxx) ─────────────────────────────
     GOOGLE_TOKEN_INVALID(7001, "Invalid or expired Google ID token"),
     GOOGLE_TOKEN_AUDIENCE_MISMATCH(7002, "Google ID token audience does not match"),
-    GOOGLE_EMAIL_NOT_VERIFIED(7003, "Google account email is not verified");
+    GOOGLE_EMAIL_NOT_VERIFIED(7003, "Google account email is not verified"),
+
+    // ── Gemini AI (8xxx) ─────────────────────────────────
+    GEMINI_API_KEY_MISSING(8001, "Gemini API key is missing"),
+    GEMINI_REQUEST_FAILED(8002, "Gemini request failed"),
+    GEMINI_INVALID_RESPONSE(8003, "Gemini response is invalid"),
+    // Vocabulary
+    VOCABULARY_ALREADY_EXISTS_BY_LESSON(9001, "Vocabulary already exists"),
+
+    // Level
+    LEVEL_NOT_FOUND(9101, "Level not found"),
+    LEVEL_NAME_ALREADY_EXISTS(9102, "Level name already exists"),
+
+    // Lesson Vocab
+    LESSON_VOCAB_NOT_FOUND(9201, "Lesson vocab not found"),
+    LESSON_VOCAB_ALREADY_EXISTS(9202, "Lesson vocab already exists");
 
     private final int code;
     private final String message;

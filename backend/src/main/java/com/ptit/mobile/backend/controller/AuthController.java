@@ -58,9 +58,9 @@ public class AuthController {
 
     @Operation(summary = "Bước 2 — Xác thực OTP, kích hoạt tài khoản và nhận tokens")
     @PostMapping("/verify-otp")
-    public ResponseEntity<BaseResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+    public BaseResponse verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         AuthResponse authResponse = authService.verifyOtp(request);
-        return ResponseEntity.ok(BaseResponse.success(authResponse));
+        return BaseResponse.success(authResponse);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -69,12 +69,12 @@ public class AuthController {
 
     @Operation(summary = "Gửi lại mã OTP (giới hạn 60 giây/lần)")
     @PostMapping("/resend-otp")
-    public ResponseEntity<BaseResponse> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+    public BaseResponse resendOtp(@Valid @RequestBody ResendOtpRequest request) {
         authService.resendOtp(request);
-        return ResponseEntity.ok(BaseResponse.builder()
+        return BaseResponse.builder()
                 .code(200L)
                 .message("A new OTP has been sent to your email.")
-                .build());
+                .build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -83,9 +83,9 @@ public class AuthController {
 
     @Operation(summary = "Đăng nhập bằng username và mật khẩu")
     @PostMapping("/login")
-    public ResponseEntity<BaseResponse> login(@Valid @RequestBody LoginRequest request) {
+    public BaseResponse login(@Valid @RequestBody LoginRequest request) {
         AuthResponse authResponse = authService.login(request);
-        return ResponseEntity.ok(BaseResponse.success(authResponse));
+        return BaseResponse.success(authResponse);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -98,9 +98,9 @@ public class AuthController {
                       "Backend sẽ verify token, tự động tạo tài khoản nếu lần đầu đăng nhập."
     )
     @PostMapping("/google")
-    public ResponseEntity<BaseResponse> loginWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
+    public BaseResponse loginWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
         AuthResponse authResponse = googleAuthService.loginWithGoogle(request.getIdToken());
-        return ResponseEntity.ok(BaseResponse.success(authResponse));
+        return BaseResponse.success(authResponse);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -110,9 +110,9 @@ public class AuthController {
 
     @Operation(summary = "Làm mới accessToken bằng refreshToken")
     @PostMapping("/refresh")
-    public ResponseEntity<BaseResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    public BaseResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse authResponse = authService.refreshToken(request);
-        return ResponseEntity.ok(BaseResponse.success(authResponse));
+        return BaseResponse.success(authResponse);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -121,9 +121,9 @@ public class AuthController {
 
     @Operation(summary = "Đăng xuất (thu hồi refreshToken)")
     @PostMapping("/logout")
-    public ResponseEntity<BaseResponse> logout(@Valid @RequestBody RefreshTokenRequest request) {
+    public BaseResponse logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.getRefreshToken());
-        return ResponseEntity.ok(BaseResponse.builder().code(200L).message("Logged out successfully").build());
+        return BaseResponse.builder().code(200L).message("Logged out successfully").build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -132,10 +132,10 @@ public class AuthController {
 
     @Operation(summary = "Đăng xuất tất cả thiết bị", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/logout-all")
-    public ResponseEntity<BaseResponse> logoutAll() {
+    public BaseResponse logoutAll() {
         Long userId = getCurrentUserId();
         authService.logoutAll(userId);
-        return ResponseEntity.ok(BaseResponse.builder().code(200L).message("Logged out from all devices").build());
+        return BaseResponse.builder().code(200L).message("Logged out from all devices").build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ public class AuthController {
 
     @Operation(summary = "Lấy thông tin user đang đăng nhập", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
-    public ResponseEntity<BaseResponse> getCurrentUser() {
+    public BaseResponse getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -152,7 +152,7 @@ public class AuthController {
                 .id(user.getId()).email(user.getEmail())
                 .username(user.getUsername()).fullName(user.getFullName())
                 .build();
-        return ResponseEntity.ok(BaseResponse.success(userInfo));
+        return BaseResponse.success(userInfo);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
