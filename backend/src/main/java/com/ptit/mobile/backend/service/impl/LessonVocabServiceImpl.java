@@ -113,7 +113,7 @@ public class LessonVocabServiceImpl implements LessonVocabService {
         lesson.setDeleteFlag(true);
         lesson.setUpdatedAt(LocalDateTime.now());
         lessonVocabRepository.save(lesson);
-        return BaseResponse.success("Delete lesson vocab successfully", 200L);
+        return BaseResponse.success("Delete lesson vocab successfully");
     }
 
     private LessonVocabResponse toResponse(LessonVocab lesson) {
