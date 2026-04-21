@@ -56,12 +56,13 @@ if (__DEV__) {
   console.log('[API] Base URL:', API_BASE_URL);
 }
 
-async function refreshAccessToken(instance: AxiosInstance): Promise<AuthResponse> {
+async function refreshAccessToken(): Promise<AuthResponse> {
   const { refreshToken } = store.getState().auth;
   if (!refreshToken) {
     throw new Error('TOKEN_NOT_FOUND');
   }
-  const res = await instance.post<ApiEnvelope<AuthResponse>>('/api/auth/refresh', {
+  const cleanAxios = axios.create({ baseURL: API_BASE_URL, headers: { 'Content-Type': 'application/json' } });
+  const res = await cleanAxios.post<ApiEnvelope<AuthResponse>>('/api/auth/refresh', {
     refreshToken,
   });
   return res.data.data;
@@ -87,7 +88,7 @@ http.interceptors.response.use(
   async (error) => {
     const status = error?.response?.status;
     const original = error.config;
-    if (status !== 401 || original?._retry) {
+    if (status !== 401 || original?._retry || original?.url === '/api/auth/refresh') {
       return Promise.reject(toApiError(error));
     }
 
@@ -95,25 +96,27 @@ http.interceptors.response.use(
 
     try {
       if (!refreshingPromise) {
-        refreshingPromise = refreshAccessToken(http).finally(() => {
+        refreshingPromise = refreshAccessToken().then(async (auth) => {
+          store.dispatch(setAuth({
+            accessToken: auth.accessToken,
+            refreshToken: auth.refreshToken,
+            tokenType: auth.tokenType,
+            accessTokenExpiresIn: auth.accessTokenExpiresIn,
+            user: auth.user,
+          }));
+          await persistAuth({
+            accessToken: auth.accessToken,
+            refreshToken: auth.refreshToken,
+            tokenType: auth.tokenType,
+            accessTokenExpiresIn: auth.accessTokenExpiresIn,
+            user: auth.user,
+          });
+          return auth;
+        }).finally(() => {
           refreshingPromise = null;
         });
       }
       const auth = await refreshingPromise;
-      store.dispatch(setAuth({
-        accessToken: auth.accessToken,
-        refreshToken: auth.refreshToken,
-        tokenType: auth.tokenType,
-        accessTokenExpiresIn: auth.accessTokenExpiresIn,
-        user: auth.user,
-      }));
-      await persistAuth({
-        accessToken: auth.accessToken,
-        refreshToken: auth.refreshToken,
-        tokenType: auth.tokenType,
-        accessTokenExpiresIn: auth.accessTokenExpiresIn,
-        user: auth.user,
-      });
       original.headers = original.headers ?? {};
       original.headers.Authorization = `Bearer ${auth.accessToken}`;
       return http(original);
