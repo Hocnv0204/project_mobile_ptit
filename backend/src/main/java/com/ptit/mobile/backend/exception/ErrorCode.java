@@ -66,7 +66,12 @@ public enum ErrorCode {
 
     // Lesson Vocab
     LESSON_VOCAB_NOT_FOUND(9201, "Lesson vocab not found"),
-    LESSON_VOCAB_ALREADY_EXISTS(9202, "Lesson vocab already exists");
+    LESSON_VOCAB_ALREADY_EXISTS(9202, "Lesson vocab already exists"),
+
+    // Quiz (9300)
+    QUIZ_NOT_ENOUGH_VOCAB(9301, "Need at least 4 vocabularies to start a quiz"),
+    QUIZ_VOCAB_NOT_FOUND(9302, "Vocabulary not found"),
+    QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED");
 
     private final int code;
     private final String message;
