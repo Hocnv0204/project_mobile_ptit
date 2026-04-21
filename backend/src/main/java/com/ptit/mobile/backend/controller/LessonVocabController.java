@@ -62,4 +62,10 @@ public class LessonVocabController {
     public BaseResponse getVocabularies(@PathVariable("id") Long lessonVocabId) {
         return BaseResponse.success(vocabularyRepository.findAllByLessonVocabIdOrderByIdAsc(lessonVocabId));
     }
+
+    @Operation(summary = "Danh sách lesson vocab theo userId (bài cá nhân)", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/user/{userId}")
+    public BaseResponse getByUserId(@PathVariable("userId") Long userId) {
+        return lessonVocabService.getByUserId(userId);
+    }
 }

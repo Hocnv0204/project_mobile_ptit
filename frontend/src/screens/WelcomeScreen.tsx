@@ -15,11 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface Props {
   onGetStarted?: () => void;
   onLogin?: () => void;
+  onExplore?: () => void;
 }
 
 const { width } = Dimensions.get('window');
 
-export default function WelcomeScreen({ onGetStarted, onLogin }: Props) {
+export default function WelcomeScreen({ onGetStarted, onLogin, onExplore }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -74,6 +75,7 @@ export default function WelcomeScreen({ onGetStarted, onLogin }: Props) {
           <Text style={styles.orText}>hoặc</Text>
 
           <Pressable
+            onPress={onExplore}
             style={({ pressed }) => [styles.btnSecondary, pressed && styles.pressed]}
           >
             <Text style={styles.btnSecondaryText}>Khám phá ngay</Text>

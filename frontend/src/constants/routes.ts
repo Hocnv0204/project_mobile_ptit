@@ -6,6 +6,7 @@ export const Routes = {
   LOGIN: 'Login',
   REGISTER: 'Register',
   EMAIL_VERIFY: 'EmailVerify',
+  SELECT_LEVEL: 'SelectLevel',
 
   // User Bottom Tabs
   HOME: 'Home',
@@ -16,11 +17,10 @@ export const Routes = {
   PODCAST: 'Podcast',
 
   // Vocab Stack
-  TOPIC_LIST: 'TopicList',
-  VOCAB_LIST: 'VocabList',
-  VOCAB_DETAIL: 'VocabDetail',
-  VOCAB_QUIZ: 'VocabQuiz',
-  ADD_VOCAB: 'AddVocab',
+  LESSON_DETAIL: 'LessonDetail',
+  ADD_VOCAB_AI: 'AddVocabAi',
+  AI_VOCAB_RESULT: 'AiVocabResult',
+  FLASHCARD: 'Flashcard',
 
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',

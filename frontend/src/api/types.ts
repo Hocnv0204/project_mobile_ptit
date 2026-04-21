@@ -15,6 +15,7 @@ export type AuthResponse = {
     username: string;
     fullName: string;
     roles?: string[];
+    levelId?: number;
   };
 };
 
@@ -22,4 +23,26 @@ export type ApiError = {
   code?: number;
   message: string;
 };
+
+export interface LessonVocab {
+  id: number;
+  name: string;
+  userId: number | null;
+  createBy: string | null;
+  levelId: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Vocabulary {
+  id: number;
+  term: string;
+  vi: string;
+  type: string;
+  pronunciation: string;
+  example: string;
+  audioUrl?: string;
+  imageUrl?: string;
+  lessonVocabId?: number;
+}
 

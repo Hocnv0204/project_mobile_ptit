@@ -5,7 +5,12 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerifyScreen from '../screens/auth/EmailVerifyScreen';
+import SelectLevelScreen from '../screens/auth/SelectLevelScreen';
 import MainTabNavigator from './MainTabNavigator';
+import LessonDetailScreen from '../screens/vocab/LessonDetailScreen';
+import AddVocabAiScreen from '../screens/vocab/AddVocabAiScreen';
+import AiVocabResultScreen from '../screens/vocab/AiVocabResultScreen';
+import FlashcardScreen from '../screens/vocab/FlashcardScreen';
 import { Routes } from '../constants/routes';
 import { useAppDispatch, useAppSelector } from '../store';
 import { hydrateAuth } from '../store/slices/authSlice';
@@ -16,6 +21,8 @@ export default function RootNavigator() {
   const dispatch = useAppDispatch();
   const isHydrated = useAppSelector((state) => state.auth.isHydrated);
   const accessToken = useAppSelector((state) => state.auth.accessToken);
+  const user = useAppSelector((state) => state.auth.user);
+  const [showWelcome, setShowWelcome] = React.useState(true);
 
   useEffect(() => {
     dispatch(hydrateAuth());
@@ -28,19 +35,41 @@ export default function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {showWelcome && (
+          <Stack.Screen name={Routes.WELCOME} options={{}}>
+            {(props) => (
+              <WelcomeScreen
+                {...props}
+                onGetStarted={() => {
+                  setShowWelcome(false);
+                  setTimeout(() => props.navigation.navigate(Routes.REGISTER), 0);
+                }}
+                onLogin={() => {
+                  setShowWelcome(false);
+                }}
+                onExplore={() => {
+                  setShowWelcome(false);
+                }}
+              />
+            )}
+          </Stack.Screen>
+        )}
+
         {accessToken ? (
-          <Stack.Screen name={Routes.USER_NAVIGATOR} component={MainTabNavigator} />
+          user?.levelId ? (
+            <>
+              <Stack.Screen name={Routes.USER_NAVIGATOR} component={MainTabNavigator} />
+              <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />
+              <Stack.Screen name={Routes.LESSON_DETAIL} component={LessonDetailScreen} />
+              <Stack.Screen name={Routes.ADD_VOCAB_AI} component={AddVocabAiScreen} />
+              <Stack.Screen name={Routes.AI_VOCAB_RESULT} component={AiVocabResultScreen} />
+              <Stack.Screen name={Routes.FLASHCARD} component={FlashcardScreen} />
+            </>
+          ) : (
+            <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />
+          )
         ) : (
           <>
-            <Stack.Screen name={Routes.WELCOME} options={{}}>
-              {(props) => (
-                <WelcomeScreen
-                  {...props}
-                  onGetStarted={() => props.navigation.navigate(Routes.REGISTER)}
-                  onLogin={() => props.navigation.navigate(Routes.LOGIN)}
-                />
-              )}
-            </Stack.Screen>
             <Stack.Screen name={Routes.LOGIN} component={LoginScreen} />
             <Stack.Screen name={Routes.REGISTER} component={RegisterScreen} />
             <Stack.Screen name={Routes.EMAIL_VERIFY} component={EmailVerifyScreen} />

@@ -151,6 +151,7 @@ public class AuthController {
         AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
                 .id(user.getId()).email(user.getEmail())
                 .username(user.getUsername()).fullName(user.getFullName())
+                .levelId(user.getLevelId())
                 .build();
         return BaseResponse.success(userInfo);
     }

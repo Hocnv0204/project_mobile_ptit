@@ -229,6 +229,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                         .email(user.getEmail())
                         .username(user.getUsername())
                         .fullName(user.getFullName())
+                        .levelId(user.getLevelId())
                         .roles(roles)
                         .build())
                 .build();

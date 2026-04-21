@@ -309,6 +309,7 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.UserInfo.builder()
                 .id(user.getId()).email(user.getEmail())
                 .username(user.getUsername()).fullName(user.getFullName())
+                .levelId(user.getLevelId())
                 .roles(roles).build();
     }
 }

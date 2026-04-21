@@ -17,5 +17,7 @@ public interface LessonVocabService {
     BaseResponse update(Integer id, UpdateLessonVocabRequest request);
 
     BaseResponse delete(Integer id);
+
+    BaseResponse getByUserId(Long userId);
 }
 
