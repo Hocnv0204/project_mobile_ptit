@@ -1,6 +1,6 @@
 package com.ptit.mobile.backend.dto.response.writing;
 
-import com.lmh.web.dto.response.suggest.SuggestVocabularyResponse;
+import com.ptit.mobile.backend.dto.response.writing.SuggestVocabularyResponse;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -1,12 +1,11 @@
 package com.ptit.mobile.backend.dto.response.writing;
 
-import com.lmh.web.dto.response.suggest.SuggestVocabularyResponse;
+import com.ptit.mobile.backend.dto.response.writing.SuggestVocabularyResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter

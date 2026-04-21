@@ -1,4 +1,4 @@
-package com.ptit.mobile.backend.repository;
+package com.ptit.mobile.backend.repository.writing;
 
 import com.ptit.mobile.backend.model.SuggestVocabulary;
 import org.springframework.data.domain.Page;

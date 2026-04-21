@@ -1,19 +1,24 @@
 package com.ptit.mobile.backend.service.writing.impl;
 
 import com.ptit.mobile.backend.common.exception.NotFoundException;
+import com.ptit.mobile.backend.config.AIConfig;
 import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResponse;
+import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResult;
 import com.ptit.mobile.backend.mapper.LessonMapper;
 import com.ptit.mobile.backend.model.LessonWriting;
+import com.ptit.mobile.backend.model.Level;
 import com.ptit.mobile.backend.model.SuggestVocabulary;
-import com.ptit.mobile.backend.repository.LessonWritingRepository;
-import com.ptit.mobile.backend.repository.SuggestVocabularyRepository;
-import com.ptit.mobile.backend.repository.TopicRepository;
+import com.ptit.mobile.backend.model.Topic;
+import com.ptit.mobile.backend.repository.LevelRepository;
+import com.ptit.mobile.backend.repository.writing.LessonWritingRepository;
+import com.ptit.mobile.backend.repository.writing.SuggestVocabularyRepository;
+import com.ptit.mobile.backend.repository.topic.TopicRepository;
 import com.ptit.mobile.backend.service.writing.AdminLessonService;
-import com.lmh.web.dto.request.suggest.AdminUpdateSuggestVocabularyRequest;
+import com.ptit.mobile.backend.dto.request.writing.AdminUpdateSuggestVocabularyRequest;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,14 +44,16 @@ public class AdminLessonServiceImpl implements AdminLessonService {
     private final LevelRepository levelRepository;
     private final SuggestVocabularyRepository suggestVocabularyRepository;
     private final LessonMapper lessonMapper;
+    private final LessonGenerationService lessonGenerationService;
+    private final AIConfig aiConfig;
 
     @Override
     @Transactional
-    public LessonGenerationResponse requestLessonGeneration(Integer userId, AdminCreateLessonRequest request) {
+    public AdminLessonDetailResponse requestLessonGeneration(AdminCreateLessonRequest request) {
         // 1. Validate Topic and Level
-        topicRepository.findById(request.getTopicId())
+        Topic topic = topicRepository.findById(request.getTopicId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề với ID: " + request.getTopicId()));
-        levelRepository.findById(request.getLevelId())
+        Level level = levelRepository.findById(request.getLevelId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trình độ với ID: " + request.getLevelId()));
 
         // 2. Create LessonWriting placeholder
@@ -62,12 +69,52 @@ public class AdminLessonServiceImpl implements AdminLessonService {
                 .build();
         LessonWriting savedLesson = lessonWritingRepository.save(lesson);
 
-        // 3. Return response immediately
-        return new LessonGenerationResponse(
-                savedLesson.getId(),
-                "ACCEPTED",
-                "Yêu cầu tạo bài học đã được chấp nhận và đang được xử lý."
-        );
+
+        String topicDescription = topic.getDescription();
+        String levelDescription = level.getDescription();
+
+        // 3. Call AI provider to generate lesson
+        try {
+            LessonGenerationResult result = lessonGenerationService.generateLesson(
+                    topicDescription,
+                    levelDescription,
+                    request.getDescription(),
+                    aiConfig.getProvider()
+            );
+
+            // 4. Update lesson with generated content
+            savedLesson.setName(result.getLessonTitle());
+            savedLesson.setParagraph(result.getVietnameseParagraph());
+            savedLesson.setStatus("COMPLETED");
+            savedLesson.setUpdatedAt(LocalDateTime.now());
+            LessonWriting updatedLesson = lessonWritingRepository.save(savedLesson);
+
+            // 5. Save suggested vocabularies
+            if (result.getSuggestVocabularyList() != null && !result.getSuggestVocabularyList().isEmpty()) {
+                List<SuggestVocabulary> vocabularies = result.getSuggestVocabularyList().stream()
+                        .map(item -> SuggestVocabulary.builder()
+                                .term(item.getTerm())
+                                .vietnamese(item.getVi())
+                                .type(item.getType())
+                                .pronunciation(item.getPronunciation())
+                                .example(item.getExample())
+                                .deleteFlag(false)
+                                .lessonWritingId(updatedLesson.getId())
+                                .build())
+                        .collect(Collectors.toList());
+                suggestVocabularyRepository.saveAll(vocabularies);
+            }
+
+            // 6. Return the full lesson details
+            return lessonMapper.toAdminDetailResponse(updatedLesson);
+        } catch (Exception e) {
+            // Update lesson status to FAILED if AI generation fails
+            savedLesson.setStatus("FAILED");
+            savedLesson.setUpdatedAt(LocalDateTime.now());
+            lessonWritingRepository.save(savedLesson);
+            
+            throw new RuntimeException("Lỗi khi tạo bài học: " + e.getMessage(), e);
+        }
     }
 
     @Override
