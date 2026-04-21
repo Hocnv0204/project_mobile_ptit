@@ -21,4 +21,12 @@ export const lessonVocabApi = {
     const res = await http.get<ApiEnvelope<LessonVocab[]>>(`/api/lesson-vocab/user/${userId}`);
     return res.data;
   },
+
+  /** Lấy lesson hệ thống do username (admin) tạo, lọc theo levelId của user */
+  getSystemLessons: async (username: string, levelId?: number) => {
+    const params = new URLSearchParams({ username });
+    if (levelId != null) params.append('levelId', String(levelId));
+    const res = await http.get<ApiEnvelope<LessonVocab[]>>(`/api/lesson-vocab/system?${params}`);
+    return res.data;
+  },
 };

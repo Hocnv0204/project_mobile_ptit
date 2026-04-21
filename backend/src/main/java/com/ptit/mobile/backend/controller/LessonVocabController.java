@@ -68,4 +68,12 @@ public class LessonVocabController {
     public BaseResponse getByUserId(@PathVariable("userId") Long userId) {
         return lessonVocabService.getByUserId(userId);
     }
+
+    @Operation(summary = "Danh sách lesson vocab hệ thống theo username và levelId", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/system")
+    public BaseResponse getSystemLessons(
+            @RequestParam("username") String username,
+            @RequestParam(value = "levelId", required = false) Long levelId) {
+        return lessonVocabService.getByUsernameAndLevel(username, levelId);
+    }
 }

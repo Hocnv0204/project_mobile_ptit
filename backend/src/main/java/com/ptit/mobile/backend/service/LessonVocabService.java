@@ -19,5 +19,6 @@ public interface LessonVocabService {
     BaseResponse delete(Integer id);
 
     BaseResponse getByUserId(Long userId);
-}
 
+    BaseResponse getByUsernameAndLevel(String username, Long levelId);
+}
