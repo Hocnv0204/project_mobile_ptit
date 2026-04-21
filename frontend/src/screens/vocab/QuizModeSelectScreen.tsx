@@ -58,6 +58,17 @@ export default function QuizModeSelectScreen({ route, navigation }: any) {
     });
   };
 
+  const handleStartFillBlank = () => {
+    if (vocabularies.length === 0) {
+      Alert.alert('Thông báo', 'Bài này chưa có từ vựng nào.');
+      return;
+    }
+    navigation.navigate(Routes.FILL_BLANK_SESSION, {
+      lesson,
+      vocabularies,
+    });
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -130,6 +141,27 @@ export default function QuizModeSelectScreen({ route, navigation }: any) {
           </Text>
           <View style={styles.cardBadge}>
             <MaterialCommunityIcons name="arrow-right" size={20} color="#F59E0B" />
+          </View>
+        </Pressable>
+
+        {/* Điền từ vào chỗ trống (AI) */}
+        <Pressable
+          style={({ pressed }) => [styles.card, styles.cardFillBlank, pressed && styles.cardPressed]}
+          onPress={handleStartFillBlank}
+        >
+          <View style={styles.aiBadge}>
+            <MaterialCommunityIcons name="robot-outline" size={12} color="#10B981" />
+            <Text style={styles.aiBadgeText}>AI</Text>
+          </View>
+          <View style={[styles.cardIconWrap, styles.cardIconWrapFillBlank]}>
+            <MaterialCommunityIcons name="format-text" size={36} color="#10B981" />
+          </View>
+          <Text style={styles.cardTitle}>Điền từ vào chỗ trống</Text>
+          <Text style={styles.cardDesc}>
+            AI tạo câu hỏi, bạn tìm từ còn thiếu dựa vào ngữ cảnh
+          </Text>
+          <View style={styles.cardBadge}>
+            <MaterialCommunityIcons name="arrow-right" size={20} color="#10B981" />
           </View>
         </Pressable>
       </View>
@@ -212,6 +244,7 @@ const styles = StyleSheet.create({
   },
   cardMC: { borderLeftWidth: 4, borderLeftColor: '#8B5CF6' },
   cardEssay: { borderLeftWidth: 4, borderLeftColor: '#F59E0B' },
+  cardFillBlank: { borderLeftWidth: 4, borderLeftColor: '#10B981' },
   cardPressed: { opacity: 0.85 },
   cardIconWrap: {
     width: 64,
@@ -223,11 +256,31 @@ const styles = StyleSheet.create({
   },
   cardIconWrapMC: { backgroundColor: '#F3F0FF' },
   cardIconWrapEssay: { backgroundColor: '#FFFBEB' },
+  cardIconWrapFillBlank: { backgroundColor: '#ECFDF5' },
   cardTitle: { fontSize: 20, fontWeight: '700', color: '#1A1D26', marginBottom: 6 },
   cardDesc: { fontSize: 14, color: '#70778C', lineHeight: 20 },
   cardBadge: {
     position: 'absolute',
     right: 20,
     top: '50%',
+  },
+  aiBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+  },
+  aiBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#10B981',
   },
 });

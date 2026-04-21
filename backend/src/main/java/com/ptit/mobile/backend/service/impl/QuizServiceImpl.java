@@ -2,6 +2,8 @@ package com.ptit.mobile.backend.service.impl;
 
 import com.ptit.mobile.backend.dto.request.quiz.CheckAnswerRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
+import com.ptit.mobile.backend.dto.response.quiz.FillBlankQuestionResponse;
+import com.ptit.mobile.backend.dto.response.quiz.FillBlankSessionResponse;
 import com.ptit.mobile.backend.dto.response.quiz.QuizCheckResponse;
 import com.ptit.mobile.backend.dto.response.quiz.QuizQuestionResponse;
 import com.ptit.mobile.backend.dto.response.quiz.QuizSessionResponse;
@@ -9,6 +11,7 @@ import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
 import com.ptit.mobile.backend.model.Vocabulary;
 import com.ptit.mobile.backend.repository.VocabularyRepository;
+import com.ptit.mobile.backend.service.GeminiService;
 import com.ptit.mobile.backend.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,8 +19,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +32,7 @@ public class QuizServiceImpl implements QuizService {
     private static final Set<String> VALID_MODES = Set.of("EN_TO_VI", "VI_TO_EN", "MIXED");
 
     private final VocabularyRepository vocabularyRepository;
+    private final GeminiService geminiService;
     private final Random random = new Random();
 
     @Override
@@ -154,5 +160,64 @@ public class QuizServiceImpl implements QuizService {
         }
 
         return distractors;
+    }
+
+    @Override
+    public BaseResponse generateFillBlankSession(Long lessonVocabId) {
+        List<Vocabulary> allVocabs = vocabularyRepository.findAllByLessonVocabIdOrderByIdAsc(lessonVocabId);
+        if (allVocabs.isEmpty()) {
+            throw new BusinessException(ErrorCode.QUIZ_NOT_ENOUGH_VOCAB);
+        }
+
+        // Gọi AI batch
+        List<GeminiService.FillBlankResult> aiResults = geminiService.generateFillBlankSentences(allVocabs);
+        Map<Integer, String> aiSentenceMap = aiResults.stream()
+                .collect(Collectors.toMap(GeminiService.FillBlankResult::vocabularyId, GeminiService.FillBlankResult::sentence));
+
+        List<FillBlankQuestionResponse> questions = new ArrayList<>();
+        int total = allVocabs.size();
+
+        for (int i = 0; i < total; i++) {
+            Vocabulary vocab = allVocabs.get(i);
+            String term = vocab.getTerm();
+
+            // Lấy câu AI, nếu AI lỡ rớt thì fallback về example trong DB
+            String sentence = aiSentenceMap.get(vocab.getId());
+            if (sentence == null || sentence.isBlank()) {
+                String example = vocab.getExample();
+                if (example != null && !example.isBlank() && term != null) {
+                    // Dùng regex replace không phân biệt hoa thường
+                    sentence = example.replaceAll("(?i)\\b" + term + "\\b", "___");
+                }
+            }
+
+            // Nếu vẫn không có câu thì skip (hoặc có thể dùng 1 câu mặc định, nhưng skip an toàn hơn)
+            if (sentence == null || sentence.isBlank()) {
+                continue;
+            }
+
+            questions.add(FillBlankQuestionResponse.builder()
+                    .vocabularyId(vocab.getId())
+                    .sentence(sentence)
+                    .hint(vocab.getVi())
+                    .wordLength(term != null ? term.length() : 0)
+                    .build());
+        }
+
+        // Shuffle
+        Collections.shuffle(questions);
+        
+        // Re-index
+        for (int i = 0; i < questions.size(); i++) {
+            questions.get(i).setQuestionIndex(i);
+            questions.get(i).setTotal(questions.size());
+        }
+
+        FillBlankSessionResponse session = FillBlankSessionResponse.builder()
+                .lessonVocabId(lessonVocabId)
+                .questions(questions)
+                .build();
+
+        return BaseResponse.success(session);
     }
 }

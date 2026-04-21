@@ -13,6 +13,7 @@ import AiVocabResultScreen from '../screens/vocab/AiVocabResultScreen';
 import FlashcardScreen from '../screens/vocab/FlashcardScreen';
 import QuizModeSelectScreen from '../screens/vocab/QuizModeSelectScreen';
 import QuizSessionScreen from '../screens/vocab/QuizSessionScreen';
+import FillBlankSessionScreen from '../screens/vocab/FillBlankSessionScreen';
 import { Routes } from '../constants/routes';
 import { useAppDispatch, useAppSelector } from '../store';
 import { hydrateAuth } from '../store/slices/authSlice';
@@ -68,6 +69,7 @@ export default function RootNavigator() {
               <Stack.Screen name={Routes.FLASHCARD} component={FlashcardScreen} />
               <Stack.Screen name={Routes.QUIZ_MODE_SELECT} component={QuizModeSelectScreen} />
               <Stack.Screen name={Routes.QUIZ_SESSION} component={QuizSessionScreen} />
+              <Stack.Screen name={Routes.FILL_BLANK_SESSION} component={FillBlankSessionScreen} />
             </>
           ) : (
             <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />

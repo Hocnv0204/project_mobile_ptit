@@ -21,4 +21,12 @@ public interface QuizService {
      * @return QuizCheckResponse: correct, correctAnswer, explanation
      */
     BaseResponse checkAnswer(CheckAnswerRequest request);
+
+    /**
+     * Sinh session câu hỏi điền từ vào chỗ trống cho 1 bài học (gọi qua AI).
+     *
+     * @param lessonVocabId Id bài học từ vựng
+     * @return FillBlankSessionResponse chứa danh sách câu đã tạo
+     */
+    BaseResponse generateFillBlankSession(Long lessonVocabId);
 }

@@ -23,6 +23,7 @@ export const Routes = {
   FLASHCARD: 'Flashcard',
   QUIZ_MODE_SELECT: 'QuizModeSelect',
   QUIZ_SESSION: 'QuizSession',
+  FILL_BLANK_SESSION: 'FillBlankSession',
 
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',

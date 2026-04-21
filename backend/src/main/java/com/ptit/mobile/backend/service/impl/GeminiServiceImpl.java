@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.mobile.backend.dto.response.ai.TermFormatResult;
 import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
+import com.ptit.mobile.backend.model.Vocabulary;
 import com.ptit.mobile.backend.service.GeminiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -319,6 +320,70 @@ Input:
         if (v == null || v.isNull()) return null;
         String s = v.asText();
         return s == null ? null : s.trim();
+    }
+
+    @Override
+    public List<FillBlankResult> generateFillBlankSentences(List<Vocabulary> vocabs) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BusinessException(ErrorCode.GEMINI_API_KEY_MISSING);
+        }
+
+        if (vocabs == null || vocabs.isEmpty()) {
+            return List.of();
+        }
+
+        try {
+            // Build simple input format for the prompt
+            List<Object> inputList = new ArrayList<>();
+            for (Vocabulary v : vocabs) {
+                inputList.add(new Object() {
+                    public final Integer id = v.getId();
+                    public final String term = v.getTerm();
+                    public final String vi = v.getVi();
+                });
+            }
+            String inputJson = objectMapper.writeValueAsString(inputList);
+
+            String prompt = """
+Bạn là hệ thống tạo câu hỏi điền từ tiếng Anh cho học sinh Việt Nam.
+
+Cho danh sách từ vựng (id, term tiếng Anh, vi nghĩa tiếng Việt).
+Với MỖI từ, tạo 1 câu tiếng Anh hoàn chỉnh (trình độ B1-B2) trong đó từ đó được thay bằng "___".
+
+Yêu cầu:
+- Câu đủ ngữ cảnh để đoán từ (không quá dễ, không quá khó).
+- KHÔNG để lộ từ trong phần còn lại của câu.
+- Không dùng từ đồng nghĩa rõ ràng trong câu.
+- Chỉ trả JSON thuần (không markdown, không giải thích):
+  [{"vocabularyId": <id>, "sentence": "...___..."}, ...]
+- Mảng phải có đúng số phần tử = số từ input.
+
+Input: %s
+""".formatted(inputJson);
+
+            String rawText = callGroq(prompt);
+            String jsonText = extractJson(rawText);
+
+            JsonNode node = objectMapper.readTree(jsonText);
+            if (!node.isArray()) {
+                throw new BusinessException(ErrorCode.GEMINI_INVALID_RESPONSE);
+            }
+
+            List<FillBlankResult> results = new ArrayList<>();
+            for (JsonNode item : node) {
+                Integer vid = item.path("vocabularyId").asInt();
+                String sentence = item.path("sentence").asText(null);
+                if (vid != 0 && sentence != null) {
+                    results.add(new FillBlankResult(vid, sentence));
+                }
+            }
+            return results;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error generating fill blank sentences: ", e);
+            throw new BusinessException(ErrorCode.GEMINI_REQUEST_FAILED);
+        }
     }
 }
 

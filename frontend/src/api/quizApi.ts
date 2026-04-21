@@ -25,6 +25,20 @@ export interface QuizCheckResult {
   explanation?: string;
 }
 
+export interface FillBlankQuestion {
+  questionIndex: number;
+  total: number;
+  vocabularyId: number;
+  sentence: string;
+  hint: string;
+  wordLength: number;
+}
+
+export interface FillBlankSession {
+  lessonVocabId: number;
+  questions: FillBlankQuestion[];
+}
+
 export const quizApi = {
   /** Sinh toàn bộ session câu hỏi trắc nghiệm */
   generateSession: async (lessonVocabId: number, mode: QuizMode = 'MIXED') => {
@@ -41,6 +55,14 @@ export const quizApi = {
       mode,
       answer,
     });
+    return res.data;
+  },
+
+  /** Sinh session điền từ vào chỗ trống (AI) */
+  generateFillBlankSession: async (lessonVocabId: number) => {
+    const res = await http.get<ApiEnvelope<FillBlankSession>>(
+      `/api/quiz/lesson/${lessonVocabId}/fill-blank`,
+    );
     return res.data;
   },
 };

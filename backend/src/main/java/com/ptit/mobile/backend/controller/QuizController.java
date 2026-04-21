@@ -48,4 +48,17 @@ public class QuizController {
     public BaseResponse checkAnswer(@Valid @RequestBody CheckAnswerRequest request) {
         return quizService.checkAnswer(request);
     }
+
+    /**
+     * Sinh session câu hỏi điền từ vào chỗ trống (AI).
+     */
+    @Operation(
+            summary = "Sinh session điền từ vào chỗ trống (AI)",
+            description = "AI tự động tạo câu tiếng Anh với chỗ trống tương ứng với từ vựng",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/lesson/{lessonVocabId}/fill-blank")
+    public BaseResponse generateFillBlankSession(@PathVariable Long lessonVocabId) {
+        return quizService.generateFillBlankSession(lessonVocabId);
+    }
 }

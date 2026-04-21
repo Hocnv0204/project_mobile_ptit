@@ -172,6 +172,34 @@ export default function QuizSessionScreen({ route, navigation }: any) {
     }
   };
 
+  const handleShowAnswer = async () => {
+    if (checkResult || isChecking) return;
+    try {
+      setIsChecking(true);
+      if (type === 'MULTIPLE_CHOICE') {
+        const q = questions[currentIndex];
+        const res = await quizApi.checkAnswer(q.vocabularyId, q.mode as any, '@@@@@');
+        showFeedback(res.data);
+      } else {
+        const vocab = essayVocabs[currentIndex];
+        const res = await quizApi.checkAnswer(vocab.id, 'EN_TO_VI', '@@@@@');
+        showFeedback(res.data);
+      }
+    } catch (e: any) {
+      Alert.alert('Lỗi', e?.message || 'Không thể lấy đáp án');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleSkip = () => {
+    if (isChecking) return;
+    if (autoNextTimer.current) {
+      clearTimeout(autoNextTimer.current);
+    }
+    handleNext();
+  };
+
   const handleRetry = () => {
     setCurrentIndex(0);
     setSelectedOption(null);
@@ -317,6 +345,29 @@ export default function QuizSessionScreen({ route, navigation }: any) {
                   </Pressable>
                 );
               })}
+              
+              {!checkResult && (
+                <View style={[styles.actionContainer, { marginTop: 16 }]}>
+                  <View style={styles.secondaryActionRow}>
+                    <Pressable
+                      style={[styles.secondaryBtn, isChecking && styles.secondaryBtnDisabled]}
+                      onPress={handleSkip}
+                      disabled={isChecking}
+                    >
+                      <MaterialCommunityIcons name="debug-step-over" size={18} color="#64748B" />
+                      <Text style={styles.secondaryBtnText}>Bỏ qua</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.secondaryBtn, isChecking && styles.secondaryBtnDisabled]}
+                      onPress={handleShowAnswer}
+                      disabled={isChecking}
+                    >
+                      <MaterialCommunityIcons name="eye-outline" size={18} color="#64748B" />
+                      <Text style={styles.secondaryBtnText}>Hiện đáp án</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -339,20 +390,40 @@ export default function QuizSessionScreen({ route, navigation }: any) {
                 autoCapitalize="none"
               />
               {!checkResult && (
-                <Pressable
-                  style={[styles.submitBtn, (!typedAnswer.trim() || isChecking) && styles.submitBtnDisabled]}
-                  onPress={handleSubmitEssay}
-                  disabled={!typedAnswer.trim() || isChecking}
-                >
-                  {isChecking ? (
-                    <ActivityIndicator color="#FFF" size="small" />
-                  ) : (
-                    <>
-                      <MaterialCommunityIcons name="check" size={20} color="#FFF" />
-                      <Text style={styles.submitBtnText}>Kiểm tra</Text>
-                    </>
-                  )}
-                </Pressable>
+                <View style={styles.actionContainer}>
+                  <View style={styles.secondaryActionRow}>
+                    <Pressable
+                      style={[styles.secondaryBtn, isChecking && styles.secondaryBtnDisabled]}
+                      onPress={handleSkip}
+                      disabled={isChecking}
+                    >
+                      <MaterialCommunityIcons name="debug-step-over" size={18} color="#64748B" />
+                      <Text style={styles.secondaryBtnText}>Bỏ qua</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.secondaryBtn, isChecking && styles.secondaryBtnDisabled]}
+                      onPress={handleShowAnswer}
+                      disabled={isChecking}
+                    >
+                      <MaterialCommunityIcons name="eye-outline" size={18} color="#64748B" />
+                      <Text style={styles.secondaryBtnText}>Hiện đáp án</Text>
+                    </Pressable>
+                  </View>
+                  <Pressable
+                    style={[styles.submitBtn, (!typedAnswer.trim() || isChecking) && styles.submitBtnDisabled]}
+                    onPress={handleSubmitEssay}
+                    disabled={!typedAnswer.trim() || isChecking}
+                  >
+                    {isChecking ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <>
+                        <MaterialCommunityIcons name="check" size={20} color="#FFF" />
+                        <Text style={styles.submitBtnText}>Kiểm tra</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
               )}
             </View>
           )}
@@ -529,11 +600,25 @@ const styles = StyleSheet.create({
   },
   essayInputCorrect: { borderColor: '#22C55E', backgroundColor: '#F0FDF4' },
   essayInputWrong: { borderColor: '#EF4444', backgroundColor: '#FEF2F2' },
+  actionContainer: { gap: 12, marginTop: 8 },
+  secondaryActionRow: { flexDirection: 'row', gap: 12 },
+  secondaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  secondaryBtnDisabled: { opacity: 0.5 },
+  secondaryBtnText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#8B5CF6',
     borderRadius: 14,
     paddingVertical: 16,
     gap: 8,
