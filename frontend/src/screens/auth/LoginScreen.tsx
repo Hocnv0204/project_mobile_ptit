@@ -52,6 +52,7 @@ export default function LoginScreen({ navigation }: any) {
 
   const [request, response, promptAsync] = useIdTokenAuthRequest({
     webClientId: GOOGLE_WEB_CLIENT_ID,
+    androidClientId: GOOGLE_WEB_CLIENT_ID,
     ...(googleRedirectUri ? { redirectUri: googleRedirectUri } : {}),
   });
 
