@@ -7,6 +7,10 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerifyScreen from '../screens/auth/EmailVerifyScreen';
 import SelectLevelScreen from '../screens/auth/SelectLevelScreen';
 import MainTabNavigator from './MainTabNavigator';
+import LessonDetailScreen from '../screens/vocab/LessonDetailScreen';
+import AddVocabAiScreen from '../screens/vocab/AddVocabAiScreen';
+import AiVocabResultScreen from '../screens/vocab/AiVocabResultScreen';
+import FlashcardScreen from '../screens/vocab/FlashcardScreen';
 import { Routes } from '../constants/routes';
 import { useAppDispatch, useAppSelector } from '../store';
 import { hydrateAuth } from '../store/slices/authSlice';
@@ -56,6 +60,10 @@ export default function RootNavigator() {
             <>
               <Stack.Screen name={Routes.USER_NAVIGATOR} component={MainTabNavigator} />
               <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />
+              <Stack.Screen name={Routes.LESSON_DETAIL} component={LessonDetailScreen} />
+              <Stack.Screen name={Routes.ADD_VOCAB_AI} component={AddVocabAiScreen} />
+              <Stack.Screen name={Routes.AI_VOCAB_RESULT} component={AiVocabResultScreen} />
+              <Stack.Screen name={Routes.FLASHCARD} component={FlashcardScreen} />
             </>
           ) : (
             <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />

@@ -116,6 +116,16 @@ public class LessonVocabServiceImpl implements LessonVocabService {
         return BaseResponse.success("Delete lesson vocab successfully");
     }
 
+    @Override
+    public BaseResponse getByUserId(Long userId) {
+        List<LessonVocabResponse> data = lessonVocabRepository
+                .findAllByUserIdAndDeleteFlagFalseOrderByIdAsc(userId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+        return BaseResponse.success(data);
+    }
+
     private LessonVocabResponse toResponse(LessonVocab lesson) {
         return LessonVocabResponse.builder()
                 .id(lesson.getId())
