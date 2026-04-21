@@ -1,4 +1,4 @@
-package com.lmh.web.dto.request.suggest;
+package com.ptit.mobile.backend.dto.request.writing;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

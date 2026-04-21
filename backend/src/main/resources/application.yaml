@@ -52,11 +52,11 @@ management:
 
 jwt:
   secret: ${JWT_SECRET:}
-  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}        # 15 phút (ms)
-  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}   # 7 ngày (ms)
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000} # 15 phút (ms)
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000} # 7 ngày (ms)
 
 otp:
-  expiration: ${OTP_EXPIRATION:300000}     # 5 phút (ms)
+  expiration: ${OTP_EXPIRATION:300000} # 5 phút (ms)
   length: ${OTP_LENGTH:6}
   sender-name: ${OTP_SENDER_NAME:"PTIT English App"}
 
@@ -69,3 +69,11 @@ groq:
   api-key: ${GROQ_API_KEY:}
   model: ${GROQ_MODEL:llama-3.1-8b-instant}
   base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-1.5-flash}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/models}
+
+ai:
+  provider: ${AI_PROVIDER:groq}

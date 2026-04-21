@@ -2,6 +2,7 @@ package com.ptit.mobile.backend.service.writing;
 
 import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
+import com.ptit.mobile.backend.dto.request.writing.AdminUpdateSuggestVocabularyRequest;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResponse;
@@ -11,7 +12,7 @@ import java.util.List;
 
 public interface AdminLessonService {
 
-    LessonGenerationResponse requestLessonGeneration(Integer userId, AdminCreateLessonRequest request);
+    AdminLessonDetailResponse requestLessonGeneration(AdminCreateLessonRequest request);
 
     Page<AdminLessonSummaryResponse> getAllLessonsForAdmin(
             String searchTerm, Integer topicId, Integer levelId, Boolean isDeleted,
@@ -22,7 +23,7 @@ public interface AdminLessonService {
 
     AdminLessonDetailResponse updateLessonForAdmin(Integer lessonId, AdminUpdateLessonRequest request);
 
-    void updateVocabulariesForLesson(Integer lessonId, List<com.lmh.web.dto.request.suggest.AdminUpdateSuggestVocabularyRequest> vocabularyRequests);
+    void updateVocabulariesForLesson(Integer lessonId, List<AdminUpdateSuggestVocabularyRequest> vocabularyRequests);
 
     void deleteLessonForAdmin(Integer lessonId);
 

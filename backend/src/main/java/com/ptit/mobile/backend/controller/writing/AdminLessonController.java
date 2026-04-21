@@ -1,14 +1,18 @@
 package com.ptit.mobile.backend.controller.writing;
 
 
+import com.ptit.mobile.backend.dto.request.ai.GradingRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.PageResponse;
+import com.ptit.mobile.backend.dto.response.ai.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResponse;
+import com.ptit.mobile.backend.service.writing.impl.LessonGradingService;
 import com.ptit.mobile.backend.service.writing.impl.AdminLessonServiceImpl;
+import com.ptit.mobile.backend.dto.request.writing.AdminUpdateSuggestVocabularyRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,26 +30,35 @@ import java.util.List;
 public class AdminLessonController {
 
     private final AdminLessonServiceImpl adminLessonService;
+    private final LessonGradingService lessonGradingService;
 
+
+    // create lesson with AI
     @PostMapping("/generate-with-ai")
     public BaseResponse createLessonWithAi(
             @Valid @RequestBody AdminCreateLessonRequest request,
             Authentication authentication
     ) {
-        Jwt jwtPrincipal = (Jwt) authentication.getPrincipal();
-        Long userIdLong = jwtPrincipal.getClaim("id");
-        Integer userId;
-        try {
-            userId = Math.toIntExact(userIdLong);
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("User ID from token is too large.", e);
-        }
-
-        LessonGenerationResponse response = adminLessonService.requestLessonGeneration(userId, request);
+        AdminLessonDetailResponse response = adminLessonService.requestLessonGeneration(request);
         return BaseResponse.builder()
-                .code(202L)
-                .message("Lesson generation request accepted")
+                .code(200L)
+                .message("Lesson generated successfully")
                 .data(response)
+                .build();
+    }
+
+    @PostMapping("/grade")
+    public BaseResponse gradeAnswer(@Valid @RequestBody GradingRequest request) {
+        String providerType = request.getAiProvider() != null ? request.getAiProvider() : "gemini";
+        GradingResponse gradingResponse = lessonGradingService.gradeAnswer(
+                request.getQuestion(),
+                request.getAnswer(),
+                providerType
+        );
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Answer graded successfully")
+                .data(gradingResponse)
                 .build();
     }
 
@@ -97,7 +110,7 @@ public class AdminLessonController {
     @PutMapping("/{lessonId}/vocabularies")
     public BaseResponse updateLessonVocabularies(
             @PathVariable Integer lessonId,
-            @Valid @RequestBody List<com.lmh.web.dto.request.suggest.AdminUpdateSuggestVocabularyRequest> vocabularies
+            @Valid @RequestBody List<AdminUpdateSuggestVocabularyRequest> vocabularies
     ) {
         adminLessonService.updateVocabulariesForLesson(lessonId, vocabularies);
         return BaseResponse.builder()

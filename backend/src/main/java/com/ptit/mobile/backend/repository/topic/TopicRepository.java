@@ -1,4 +1,4 @@
-package com.ptit.mobile.backend.repository;
+package com.ptit.mobile.backend.repository.topic;
 
 import com.ptit.mobile.backend.model.Topic;
 import org.springframework.data.jpa.repository.JpaRepository;
