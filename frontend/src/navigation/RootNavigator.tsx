@@ -5,6 +5,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerifyScreen from '../screens/auth/EmailVerifyScreen';
+import SelectLevelScreen from '../screens/auth/SelectLevelScreen';
 import MainTabNavigator from './MainTabNavigator';
 import { Routes } from '../constants/routes';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -16,6 +17,7 @@ export default function RootNavigator() {
   const dispatch = useAppDispatch();
   const isHydrated = useAppSelector((state) => state.auth.isHydrated);
   const accessToken = useAppSelector((state) => state.auth.accessToken);
+  const user = useAppSelector((state) => state.auth.user);
   const [showWelcome, setShowWelcome] = React.useState(true);
 
   useEffect(() => {
@@ -50,7 +52,14 @@ export default function RootNavigator() {
         )}
 
         {accessToken ? (
-          <Stack.Screen name={Routes.USER_NAVIGATOR} component={MainTabNavigator} />
+          user?.levelId ? (
+            <>
+              <Stack.Screen name={Routes.USER_NAVIGATOR} component={MainTabNavigator} />
+              <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />
+            </>
+          ) : (
+            <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />
+          )
         ) : (
           <>
             <Stack.Screen name={Routes.LOGIN} component={LoginScreen} />

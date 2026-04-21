@@ -7,6 +7,7 @@ export type AuthUser = {
   username: string;
   fullName: string;
   roles?: string[];
+  levelId?: number;
 };
 
 export type AuthState = {

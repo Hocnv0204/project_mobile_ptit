@@ -6,6 +6,7 @@ export const Routes = {
   LOGIN: 'Login',
   REGISTER: 'Register',
   EMAIL_VERIFY: 'EmailVerify',
+  SELECT_LEVEL: 'SelectLevel',
 
   // User Bottom Tabs
   HOME: 'Home',

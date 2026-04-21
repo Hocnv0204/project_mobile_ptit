@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_email_verified  BOOLEAN DEFAULT FALSE,
     delete_flag        BOOLEAN DEFAULT FALSE,
 
+    level_id    BIGINT,
+
     created_at  TIMESTAMP,
     updated_at  TIMESTAMP,
     last_login  TIMESTAMP

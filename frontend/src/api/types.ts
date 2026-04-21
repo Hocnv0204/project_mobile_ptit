@@ -15,6 +15,7 @@ export type AuthResponse = {
     username: string;
     fullName: string;
     roles?: string[];
+    levelId?: number;
   };
 };
 

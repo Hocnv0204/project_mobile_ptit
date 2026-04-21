@@ -14,6 +14,8 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { clearAuth, clearPersistedAuth } from '../../store/slices/authSlice';
 import { authApi } from '../../api/authApi';
+import { useNavigation } from '@react-navigation/native';
+import { Routes } from '../../constants/routes';
 
 // Reusable menu item component
 interface MenuItemProps {
@@ -37,6 +39,7 @@ const MenuItem = ({ icon, iconFamily = 'MaterialCommunityIcons', label, onPress,
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
+  const navigation = useNavigation<any>();
   const { refreshToken, user } = useAppSelector((state) => state.auth);
 
   const handleLogout = async () => {
@@ -76,6 +79,11 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>TÀI KHOẢN</Text>
         <View style={styles.sectionContainer}>
           <MenuItem icon="account-outline" label="Hồ sơ" />
+          <MenuItem 
+            icon="star-outline" 
+            label={`Trình độ hiện tại: ${user?.levelId ? 'Đã chọn' : 'Chưa chọn'}`} 
+            onPress={() => navigation.navigate(Routes.SELECT_LEVEL)} 
+          />
           <MenuItem icon="lock-outline" label="Đổi mật khẩu" isLast />
         </View>
 
