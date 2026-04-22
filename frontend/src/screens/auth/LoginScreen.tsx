@@ -1,20 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { HelperText, Snackbar, TextInput } from 'react-native-paper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
-import { useIdTokenAuthRequest } from 'expo-auth-session/providers/google';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
-import { useAppDispatch } from '../../store';
-import { setAuth, persistAuth } from '../../store/slices/authSlice';
-
-import { GOOGLE_WEB_CLIENT_ID, resolveGoogleOAuthRedirectUri } from '../../config/google';
-
-WebBrowser.maybeCompleteAuthSession();
+import { useAuthStore } from '../../store/authStore';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 
 const schema = z.object({
   username: z.string().min(1, 'Vui lòng nhập username'),
@@ -41,24 +35,18 @@ function mapBackendLoginMessage(message: string): string {
 }
 
 export default function LoginScreen({ navigation }: any) {
-  const dispatch = useAppDispatch();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const { signInWithGoogle, loading: googleLoading, error: googleError } = useGoogleAuth();
+  
   const [submitting, setSubmitting] = useState(false);
-  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [authErrorSnackbar, setAuthErrorSnackbar] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const handledGoogleIdTokenRef = useRef<string | null>(null);
-
-  const googleRedirectUri = useMemo(() => resolveGoogleOAuthRedirectUri(), []);
-
-  const [request, response, promptAsync] = useIdTokenAuthRequest({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    androidClientId: GOOGLE_WEB_CLIENT_ID,
-    ...(googleRedirectUri ? { redirectUri: googleRedirectUri } : {}),
-  });
 
   useEffect(() => {
-    if (!__DEV__ || !request?.redirectUri) return;
-  }, [request?.redirectUri, googleRedirectUri]);
+    if (googleError) {
+      setAuthErrorSnackbar(googleError);
+    }
+  }, [googleError]);
 
   const defaultValues = useMemo<FormValues>(() => ({ username: '', password: '' }), []);
   const { control, handleSubmit, formState: { errors } } = useForm<FormValues>({ defaultValues, resolver: zodResolver(schema) });
@@ -69,21 +57,14 @@ export default function LoginScreen({ navigation }: any) {
       const res = await authApi.login(values);
       const auth = res.data;
 
-      dispatch(setAuth({
+      setAuth({
         accessToken: auth.accessToken,
         refreshToken: auth.refreshToken,
-        tokenType: auth.tokenType,
-        accessTokenExpiresIn: auth.accessTokenExpiresIn,
-        user: auth.user,
-      }));
-
-      await persistAuth({
-        accessToken: auth.accessToken,
-        refreshToken: auth.refreshToken,
-        tokenType: auth.tokenType,
-        accessTokenExpiresIn: auth.accessTokenExpiresIn,
         user: auth.user,
       });
+
+      // Navigation is usually handled by an auth listener or manually if needed
+      // navigation.navigate('Home'); 
 
     } catch (e: unknown) {
       setAuthErrorSnackbar(getApiErrorMessage(e, 'Đăng nhập thất bại'));
@@ -92,66 +73,10 @@ export default function LoginScreen({ navigation }: any) {
     }
   });
 
-  useEffect(() => {
-    if (!response) return;
-    if (response.type === 'error') {
-      setGoogleSubmitting(false);
-      const err = (response as any).error;
-      setAuthErrorSnackbar(typeof err?.message === 'string' && err.message.trim() ? err.message : typeof err?.code === 'string' ? err.code : 'Đăng nhập Google thất bại');
-      return;
-    }
-    if (response.type === 'dismiss' || response.type === 'cancel') {
-      setGoogleSubmitting(false);
-      return;
-    }
-    if (response.type !== 'success') return;
-    const idToken = (response.params as { id_token?: string })?.id_token;
-    if (!idToken) return;
-
-    if (handledGoogleIdTokenRef.current === idToken) return;
-    handledGoogleIdTokenRef.current = idToken;
-
-    (async () => {
-      try {
-        setGoogleSubmitting(true);
-        const apiRes = await authApi.google({ idToken });
-        const auth = apiRes.data;
-
-        dispatch(setAuth({
-          accessToken: auth.accessToken,
-          refreshToken: auth.refreshToken,
-          tokenType: auth.tokenType,
-          accessTokenExpiresIn: auth.accessTokenExpiresIn,
-          user: auth.user,
-        }));
-
-        await persistAuth({
-          accessToken: auth.accessToken,
-          refreshToken: auth.refreshToken,
-          tokenType: auth.tokenType,
-          accessTokenExpiresIn: auth.accessTokenExpiresIn,
-          user: auth.user,
-        });
-      } catch (e: unknown) {
-        setAuthErrorSnackbar(getApiErrorMessage(e, 'Đăng nhập Google thất bại'));
-      } finally {
-        setGoogleSubmitting(false);
-      }
-    })();
-  }, [response, dispatch]);
-
   const onGoogleLogin = async () => {
-    if (!request) {
-      Alert.alert('Chưa sẵn sàng', 'Đang khởi tạo Google OAuth. Thử lại sau vài giây.');
-      return;
-    }
-    try {
-      setGoogleSubmitting(true);
-      const result = await promptAsync();
-      if (result.type !== 'success') setGoogleSubmitting(false);
-    } catch (e: any) {
-      setGoogleSubmitting(false);
-      Alert.alert('Lỗi', e?.message || 'Không mở được đăng nhập Google');
+    const result = await signInWithGoogle();
+    if (result) {
+      // Success is handled by the hook updating the store
     }
   };
 
@@ -159,7 +84,11 @@ export default function LoginScreen({ navigation }: any) {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity 
+            onPress={() => navigation.canGoBack() && navigation.goBack()} 
+            style={[styles.backButton, !navigation.canGoBack() && { opacity: 0 }]}
+            disabled={!navigation.canGoBack()}
+          >
             <MaterialCommunityIcons name="arrow-left" size={28} color="#1A1D26" />
           </TouchableOpacity>
           <View style={styles.logoContainer}>
@@ -249,15 +178,16 @@ export default function LoginScreen({ navigation }: any) {
           </View>
 
           <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialBtn}>
-              <MaterialCommunityIcons name="apple" size={28} color="#000" />
-            </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.socialBtn, googleSubmitting && styles.socialBtnDisabled]} 
+              style={[styles.googleBtn, googleLoading && styles.socialBtnDisabled]}
               onPress={onGoogleLogin}
-              disabled={googleSubmitting || !request}
+              disabled={googleLoading}
+              activeOpacity={0.8}
             >
-              <MaterialCommunityIcons name="google" size={28} color="#0066FF" />
+              <View style={styles.googleIconContainer}>
+                <MaterialCommunityIcons name="google" size={24} color="#EA4335" />
+              </View>
+              <Text style={styles.googleBtnText}>Tiếp tục với Google</Text>
             </TouchableOpacity>
           </View>
 
@@ -365,19 +295,33 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 16,
   },
-  socialBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E5ED',
-    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  googleIconContainer: {
+    marginRight: 12,
+  },
+  googleBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1D26',
   },
   socialBtnDisabled: {
     opacity: 0.5,

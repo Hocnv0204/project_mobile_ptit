@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAppSelector } from '../../store';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { LessonVocab } from '../../api/types';
 import { Routes } from '../../constants/routes';
+import { useAuthStore } from '../../store/authStore';
 
 export default function VocabularyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const user = useAppSelector((state) => state.auth.user);
+  const { user } = useAuthStore();
   
   const [loadingSystem, setLoadingSystem] = useState(true);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
@@ -28,12 +28,9 @@ export default function VocabularyScreen({ navigation }: any) {
   const fetchSystemLessons = async () => {
     try {
       setLoadingSystem(true);
-      const res = await lessonVocabApi.getAll();
-      // System = lessons not owned by current user
-      const sys = (res.data || []).filter(
-        (l) => l.userId == null || Number(l.userId) !== Number(user?.id)
-      );
-      setSystemLessons(sys);
+      // Lấy lesson của admin, lọc theo levelId của user hiện tại
+      const res = await lessonVocabApi.getSystemLessons('admin', user?.levelId ?? undefined);
+      setSystemLessons(res.data || []);
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể tải danh sách bài học');
     } finally {

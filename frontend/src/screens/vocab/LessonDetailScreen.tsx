@@ -89,7 +89,13 @@ export default function LessonDetailScreen({ route, navigation }: any) {
         </Pressable>
         <Pressable 
           style={[styles.tabBtn, activeTab === 'practice' && styles.tabBtnActivePractice]}
-          onPress={() => setActiveTab('practice')}
+          onPress={() => {
+            if (vocabularies.length === 0) {
+              Alert.alert('Thông báo', 'Chưa có từ vựng nào để luyện tập.');
+              return;
+            }
+            navigation.navigate(Routes.QUIZ_MODE_SELECT, { lesson, vocabularies });
+          }}
         >
           <MaterialCommunityIcons name="head-question-outline" size={20} color={activeTab === 'practice' ? '#FFF' : '#8B5CF6'} />
           <Text style={[styles.tabBtnText, activeTab === 'practice' && styles.tabBtnTextActive]}>

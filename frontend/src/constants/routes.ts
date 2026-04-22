@@ -21,6 +21,9 @@ export const Routes = {
   ADD_VOCAB_AI: 'AddVocabAi',
   AI_VOCAB_RESULT: 'AiVocabResult',
   FLASHCARD: 'Flashcard',
+  QUIZ_MODE_SELECT: 'QuizModeSelect',
+  QUIZ_SESSION: 'QuizSession',
+  FILL_BLANK_SESSION: 'FillBlankSession',
 
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',

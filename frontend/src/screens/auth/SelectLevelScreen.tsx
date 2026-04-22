@@ -4,18 +4,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { levelApi, Level } from '../../api/levelApi';
 import { userApi } from '../../api/userApi';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { setAuth, persistAuth } from '../../store/slices/authSlice';
+import { useAuthStore } from '../../store/authStore';
 import { Routes } from '../../constants/routes';
 
 export default function SelectLevelScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const dispatch = useAppDispatch();
-  const authState = useAppSelector(state => state.auth);
+  const { user, setAuth, accessToken, refreshToken } = useAuthStore();
   
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLevelId, setSelectedLevelId] = useState<number | null>(authState.user?.levelId || null);
+  const [selectedLevelId, setSelectedLevelId] = useState<number | null>(user?.levelId || null);
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -50,12 +48,14 @@ export default function SelectLevelScreen({ navigation }: any) {
       setShowSuccess(true);
       
       setTimeout(async () => {
-        // Update local state
-        if (authState.user) {
-          const updatedUser = { ...authState.user, levelId: selectedLevelId };
-          const updatedAuth = { ...authState, user: updatedUser };
-          dispatch(setAuth(updatedAuth as any));
-          await persistAuth(updatedAuth as any);
+        // Update store state
+        if (user && accessToken && refreshToken) {
+          const updatedUser = { ...user, levelId: selectedLevelId };
+          await setAuth({
+            accessToken,
+            refreshToken,
+            user: updatedUser
+          });
         }
 
         if (navigation.canGoBack()) {

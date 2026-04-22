@@ -126,6 +126,22 @@ public class LessonVocabServiceImpl implements LessonVocabService {
         return BaseResponse.success(data);
     }
 
+    @Override
+    public BaseResponse getByUsernameAndLevel(String username, Long levelId) {
+        List<LessonVocab> lessons;
+        if (levelId != null) {
+            lessons = lessonVocabRepository
+                    .findAllByUsernameAndLevelIdAndDeleteFlagFalse(username, levelId);
+        } else {
+            lessons = lessonVocabRepository
+                    .findAllByUsernameAndDeleteFlagFalse(username);
+        }
+        List<LessonVocabResponse> data = lessons.stream()
+                .map(this::toResponse)
+                .toList();
+        return BaseResponse.success(data);
+    }
+
     private LessonVocabResponse toResponse(LessonVocab lesson) {
         return LessonVocabResponse.builder()
                 .id(lesson.getId())
