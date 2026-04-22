@@ -59,7 +59,7 @@ public enum ErrorCode {
     GEMINI_INVALID_RESPONSE(8003, "Gemini response is invalid"),
     // Vocabulary
     VOCABULARY_ALREADY_EXISTS_BY_LESSON(9001, "Vocabulary already exists"),
-
+    CREATE_REQUEST_VOCAB_INVALID(9002, "Create request vocabulary invalid"),
     // Level
     LEVEL_NOT_FOUND(9101, "Level not found"),
     LEVEL_NAME_ALREADY_EXISTS(9102, "Level name already exists"),
