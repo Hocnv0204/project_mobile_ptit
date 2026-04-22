@@ -26,8 +26,9 @@ public class LessonVocabServiceImpl implements LessonVocabService {
     public BaseResponse create(CreateLessonVocabRequest request) {
         String name = normalizeName(request.getName());
         Integer levelId = request.getLevelId();
+        Long userId = SecurityUtils.getCurrentUserId();
 
-        if (lessonVocabRepository.existsByNameAndLevelIdAndDeleteFlagFalse(name, levelId)) {
+        if (lessonVocabRepository.existsByNameAndUserIdAndLevelIdAndDeleteFlagFalse(name, userId, levelId)) {
             throw new BusinessException(ErrorCode.LESSON_VOCAB_ALREADY_EXISTS);
         }
 
@@ -48,8 +49,9 @@ public class LessonVocabServiceImpl implements LessonVocabService {
 
     @Override
     public BaseResponse createSimple(CreateLessonVocabSimpleRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
         String name = normalizeName(request.getName());
-        if (lessonVocabRepository.existsByNameAndLevelIdIsNullAndDeleteFlagFalse(name)) {
+        if (lessonVocabRepository.existsByNameAndUserIdAndDeleteFlagFalse(name, userId)) {
             throw new BusinessException(ErrorCode.LESSON_VOCAB_ALREADY_EXISTS);
         }
 
@@ -86,6 +88,7 @@ public class LessonVocabServiceImpl implements LessonVocabService {
 
     @Override
     public BaseResponse update(Integer id, UpdateLessonVocabRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
         LessonVocab lesson = lessonVocabRepository.findByIdAndDeleteFlagFalse(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.LESSON_VOCAB_NOT_FOUND));
 
@@ -93,7 +96,7 @@ public class LessonVocabServiceImpl implements LessonVocabService {
         Integer levelId = request.getLevelId();
 
         boolean changedUniqueKey = !name.equals(lesson.getName()) || !levelId.equals(lesson.getLevelId());
-        if (changedUniqueKey && lessonVocabRepository.existsByNameAndLevelIdAndDeleteFlagFalse(name, levelId)) {
+        if (changedUniqueKey && lessonVocabRepository.existsByNameAndUserIdAndLevelIdAndDeleteFlagFalse(name, userId, levelId)) {
             throw new BusinessException(ErrorCode.LESSON_VOCAB_ALREADY_EXISTS);
         }
 

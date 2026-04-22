@@ -15,7 +15,10 @@ public interface LessonVocabRepository extends JpaRepository<LessonVocab, Intege
 
     boolean existsByNameAndLevelIdAndDeleteFlagFalse(String name, Integer levelId);
 
-    boolean existsByNameAndLevelIdIsNullAndDeleteFlagFalse(String name);
+    boolean existsByNameAndUserIdAndDeleteFlagFalse(String name, Long userId);
+
+    boolean existsByNameAndUserIdAndLevelIdAndDeleteFlagFalse(String name, Long userId, Integer levelId);
+
 
     List<LessonVocab> findAllByUserIdAndDeleteFlagFalseOrderByIdAsc(Long userId);
 

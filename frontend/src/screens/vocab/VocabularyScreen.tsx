@@ -19,7 +19,9 @@ export default function VocabularyScreen({ navigation }: any) {
   
   const [isModalVisible, setModalVisible] = useState(false);
   const [newLessonName, setNewLessonName] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<LessonVocab | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchSystemLessons();
@@ -58,22 +60,69 @@ export default function VocabularyScreen({ navigation }: any) {
     }
   };
 
-  const handleCreateLesson = async () => {
+  const handleSaveLesson = async () => {
     if (!newLessonName.trim()) {
       Alert.alert('Lỗi', 'Vui lòng nhập tên bài học');
       return;
     }
     try {
-      setIsCreating(true);
-      const res = await lessonVocabApi.createSimple(newLessonName.trim());
-      setPersonalLessons((prev) => [...prev, res.data]);
+      setIsSaving(true);
+      const name = newLessonName.trim();
+
+      if (editingLesson) {
+        const levelId = editingLesson.levelId ?? user?.levelId ?? 1;
+        const res = await lessonVocabApi.update(editingLesson.id, { name, levelId });
+        setPersonalLessons((prev) => prev.map((x) => (x.id === editingLesson.id ? res.data : x)));
+      } else {
+        const res = await lessonVocabApi.createSimple(name);
+        setPersonalLessons((prev) => [...prev, res.data]);
+      }
+
       setModalVisible(false);
       setNewLessonName('');
+      setEditingLesson(null);
     } catch (e: any) {
-      Alert.alert('Lỗi', e?.message || 'Không thể tạo bài học');
+      Alert.alert('Lỗi', e?.message || (editingLesson ? 'Không thể cập nhật bài học' : 'Không thể tạo bài học'));
     } finally {
-      setIsCreating(false);
+      setIsSaving(false);
     }
+  };
+
+  const openCreateModal = () => {
+    setEditingLesson(null);
+    setNewLessonName('');
+    setModalVisible(true);
+  };
+
+  const openEditModal = (lesson: LessonVocab) => {
+    setEditingLesson(lesson);
+    setNewLessonName(lesson.name ?? '');
+    setModalVisible(true);
+  };
+
+  const handleDeleteLesson = (lesson: LessonVocab) => {
+    Alert.alert(
+      'Xoá bài học?',
+      `Bạn có chắc muốn xoá "${lesson.name}"?`,
+      [
+        { text: 'Huỷ', style: 'cancel' },
+        {
+          text: 'Xoá',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingId(lesson.id);
+              await lessonVocabApi.delete(lesson.id);
+              setPersonalLessons((prev) => prev.filter((x) => x.id !== lesson.id));
+            } catch (e: any) {
+              Alert.alert('Lỗi', e?.message || 'Không thể xoá bài học');
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const renderItem = ({ item }: { item: LessonVocab }) => (
@@ -90,7 +139,43 @@ export default function VocabularyScreen({ navigation }: any) {
           {new Date(item.createdAt).toLocaleDateString('vi-VN')}
         </Text>
       </View>
-      <MaterialCommunityIcons name="chevron-right" size={24} color="#C4C8D4" />
+      {activeTab === 'personal' ? (
+        <View style={styles.rowActions}>
+          <Pressable
+            style={styles.editBtn}
+            onPress={(e) => {
+              // @ts-ignore - RN press events support stopPropagation in runtime
+              e?.stopPropagation?.();
+              if (deletingId || isSaving) return;
+              openEditModal(item);
+            }}
+            disabled={deletingId === item.id || isSaving}
+            hitSlop={10}
+          >
+            <MaterialCommunityIcons name="pencil-outline" size={22} color="#2563EB" />
+          </Pressable>
+
+          <Pressable
+            style={styles.deleteBtn}
+            onPress={(e) => {
+              // @ts-ignore - RN press events support stopPropagation in runtime
+              e?.stopPropagation?.();
+              if (deletingId || isSaving) return;
+              handleDeleteLesson(item);
+            }}
+            disabled={deletingId === item.id || isSaving}
+            hitSlop={10}
+          >
+            {deletingId === item.id ? (
+              <ActivityIndicator size="small" color="#EF4444" />
+            ) : (
+              <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+            )}
+          </Pressable>
+        </View>
+      ) : (
+        <MaterialCommunityIcons name="chevron-right" size={24} color="#C4C8D4" />
+      )}
     </Pressable>
   );
 
@@ -138,7 +223,7 @@ export default function VocabularyScreen({ navigation }: any) {
       {activeTab === 'personal' && (
         <Pressable 
           style={styles.fab}
-          onPress={() => setModalVisible(true)}
+          onPress={openCreateModal}
         >
           <MaterialCommunityIcons name="plus" size={30} color="#FFF" />
         </Pressable>
@@ -148,7 +233,9 @@ export default function VocabularyScreen({ navigation }: any) {
       <Modal visible={isModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Tạo bài học mới</Text>
+            <Text style={styles.modalTitle}>
+              {editingLesson ? 'Đổi tên bài học' : 'Tạo bài học mới'}
+            </Text>
             <TextInput
               style={styles.modalInput}
               placeholder="Nhập tên bài học (VD: Động từ bất quy tắc)"
@@ -157,18 +244,28 @@ export default function VocabularyScreen({ navigation }: any) {
               autoFocus
             />
             <View style={styles.modalActions}>
-              <Pressable style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setModalVisible(false)}>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => {
+                  setModalVisible(false);
+                  setEditingLesson(null);
+                  setNewLessonName('');
+                }}
+                disabled={isSaving}
+              >
                 <Text style={styles.modalBtnCancelText}>Hủy</Text>
               </Pressable>
               <Pressable 
-                style={[styles.modalBtn, styles.modalBtnSubmit, isCreating && styles.modalBtnDisabled]} 
-                onPress={handleCreateLesson}
-                disabled={isCreating}
+                style={[styles.modalBtn, styles.modalBtnSubmit, isSaving && styles.modalBtnDisabled]} 
+                onPress={handleSaveLesson}
+                disabled={isSaving}
               >
-                {isCreating ? (
+                {isSaving ? (
                   <ActivityIndicator color="#FFF" size="small" />
                 ) : (
-                  <Text style={styles.modalBtnSubmitText}>Tạo</Text>
+                  <Text style={styles.modalBtnSubmitText}>
+                    {editingLesson ? 'Lưu' : 'Tạo'}
+                  </Text>
                 )}
               </Pressable>
             </View>
@@ -231,6 +328,27 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#1A1D26', marginBottom: 4 },
   cardSubtitle: { fontSize: 13, color: '#A0A7BA' },
+  rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  editBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  deleteBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
   emptyContainer: { alignItems: 'center', marginTop: 40 },
   emptyText: { color: '#A0A7BA', fontSize: 16 },
   fab: {
