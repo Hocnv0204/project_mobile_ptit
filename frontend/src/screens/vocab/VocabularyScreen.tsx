@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAppSelector } from '../../store';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { LessonVocab } from '../../api/types';
 import { Routes } from '../../constants/routes';
+import { useAuthStore } from '../../store/authStore';
 
 export default function VocabularyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const user = useAppSelector((state) => state.auth.user);
+  const { user } = useAuthStore();
   
   const [loadingSystem, setLoadingSystem] = useState(true);
   const [loadingPersonal, setLoadingPersonal] = useState(false);

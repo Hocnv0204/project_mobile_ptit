@@ -15,21 +15,19 @@ import QuizModeSelectScreen from '../screens/vocab/QuizModeSelectScreen';
 import QuizSessionScreen from '../screens/vocab/QuizSessionScreen';
 import FillBlankSessionScreen from '../screens/vocab/FillBlankSessionScreen';
 import { Routes } from '../constants/routes';
-import { useAppDispatch, useAppSelector } from '../store';
-import { hydrateAuth } from '../store/slices/authSlice';
+// import { useAppDispatch, useAppSelector } from '../store';
+// import { hydrateAuth } from '../store/slices/authSlice';
+import { useAuthStore } from '../store/authStore';
 
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
-  const dispatch = useAppDispatch();
-  const isHydrated = useAppSelector((state) => state.auth.isHydrated);
-  const accessToken = useAppSelector((state) => state.auth.accessToken);
-  const user = useAppSelector((state) => state.auth.user);
+  const { isHydrated, accessToken, user, hydrate } = useAuthStore();
   const [showWelcome, setShowWelcome] = React.useState(true);
 
   useEffect(() => {
-    dispatch(hydrateAuth());
-  }, [dispatch]);
+    hydrate();
+  }, [hydrate]);
 
   if (!isHydrated) {
     return null; // Or a splash screen

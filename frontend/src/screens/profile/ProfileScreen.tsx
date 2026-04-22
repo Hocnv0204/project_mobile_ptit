@@ -5,14 +5,14 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  SafeAreaView, 
-  Platform, 
+  Platform,
   StatusBar,
   Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { clearAuth, clearPersistedAuth } from '../../store/slices/authSlice';
+import { useAuthStore } from '../../store/authStore';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { authApi } from '../../api/authApi';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '../../constants/routes';
@@ -38,20 +38,23 @@ const MenuItem = ({ icon, iconFamily = 'MaterialCommunityIcons', label, onPress,
 );
 
 export default function ProfileScreen() {
-  const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
-  const { refreshToken, user } = useAppSelector((state) => state.auth);
+  const { refreshToken, user, logout } = useAuthStore();
+  const { signOut: googleSignOut } = useGoogleAuth();
 
   const handleLogout = async () => {
     try {
       if (refreshToken) {
+        // Option 1: Call API logout
         await authApi.logout({ refreshToken });
       }
+      // Option 2: Sign out from Google if applicable
+      await googleSignOut();
     } catch (e) {
-      console.error('Logout API failed', e);
+      console.error('Logout failed', e);
     } finally {
-      await clearPersistedAuth();
-      dispatch(clearAuth());
+      // Clear store and secure storage
+      logout();
     }
   };
 

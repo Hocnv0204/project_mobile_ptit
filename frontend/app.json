@@ -2,7 +2,7 @@
   "expo": {
     "name": "LinguaBoost",
     "slug": "linguaboost",
-    "scheme": "linguaboost",
+    "scheme": "com.ptit.linguaboost",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +19,15 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
-        }
+        },
+        "CFBundleURLTypes": [
+          {
+            "CFBundleTypeRole": "Editor",
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.35790031845-86alfa4bq4t4pmp9ajkqbohnmi7j88lf"
+            ]
+          }
+        ]
       }
     },
     "android": {
@@ -33,12 +41,21 @@
       "usesCleartextTraffic": true
     },
     "extra": {
-      "apiUrlWeb": "http://localhost:8080/api",
-      "apiUrlAndroid": "http://10.0.2.2:8080/api"
+      "apiUrlWeb": "http://172.20.10.4:8080/api",
+      "apiUrlAndroid": "http://172.20.10.4:8080/api"
     },
     "plugins": [
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-asset",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosClientId": "35790031845-86alfa4bq4t4pmp9ajkqbohnmi7j88lf.apps.googleusercontent.com",
+          "iosUrlScheme": "com.googleusercontent.apps.35790031845-86alfa4bq4t4pmp9ajkqbohnmi7j88lf"
+        }
+      ]
     ]
   }
 }

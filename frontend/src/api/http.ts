@@ -1,10 +1,9 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { ApiEnvelope, ApiError, AuthResponse } from './types';
-import { store } from '../store';
-import { setAuth, clearAuth, persistAuth, clearPersistedAuth } from '../store/slices/authSlice';
+import { useAuthStore } from '../store/authStore';
 
-let refreshingPromise: Promise<AuthResponse> | null = null;
+let refreshingPromise: Promise<any> | null = null;
 
 function backendMessage(data: unknown): string | null {
   if (!data || typeof data !== 'object') return null;
@@ -56,13 +55,13 @@ if (__DEV__) {
   console.log('[API] Base URL:', API_BASE_URL);
 }
 
-async function refreshAccessToken(): Promise<AuthResponse> {
-  const { refreshToken } = store.getState().auth;
+async function refreshAccessToken(): Promise<any> {
+  const { refreshToken } = useAuthStore.getState();
   if (!refreshToken) {
     throw new Error('TOKEN_NOT_FOUND');
   }
   const cleanAxios = axios.create({ baseURL: API_BASE_URL, headers: { 'Content-Type': 'application/json' } });
-  const res = await cleanAxios.post<ApiEnvelope<AuthResponse>>('/api/auth/refresh', {
+  const res = await cleanAxios.post<ApiEnvelope<any>>('/api/auth/refresh', {
     refreshToken,
   });
   return res.data.data;
@@ -75,7 +74,7 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use(async (config) => {
-  const { accessToken } = store.getState().auth;
+  const { accessToken } = useAuthStore.getState();
   if (accessToken) {
     config.headers = config.headers ?? {};
     (config.headers as any).Authorization = `Bearer ${accessToken}`;
@@ -97,18 +96,9 @@ http.interceptors.response.use(
     try {
       if (!refreshingPromise) {
         refreshingPromise = refreshAccessToken().then(async (auth) => {
-          store.dispatch(setAuth({
+          useAuthStore.getState().setAuth({
             accessToken: auth.accessToken,
             refreshToken: auth.refreshToken,
-            tokenType: auth.tokenType,
-            accessTokenExpiresIn: auth.accessTokenExpiresIn,
-            user: auth.user,
-          }));
-          await persistAuth({
-            accessToken: auth.accessToken,
-            refreshToken: auth.refreshToken,
-            tokenType: auth.tokenType,
-            accessTokenExpiresIn: auth.accessTokenExpiresIn,
             user: auth.user,
           });
           return auth;
@@ -121,8 +111,7 @@ http.interceptors.response.use(
       original.headers.Authorization = `Bearer ${auth.accessToken}`;
       return http(original);
     } catch (e) {
-      store.dispatch(clearAuth());
-      await clearPersistedAuth();
+      useAuthStore.getState().logout();
       return Promise.reject(toApiError(e));
     }
   },
