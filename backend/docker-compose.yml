@@ -18,6 +18,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./docker/init_data.sql:/docker-entrypoint-initdb.d/init_data.sql:ro
     networks:
       - mobile_ptit_network
     healthcheck:
