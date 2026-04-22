@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
+import { Audio } from 'expo-av';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { vocabApi } from '../../api/vocabApi';
 import { Vocabulary } from '../../api/types';
@@ -34,12 +35,24 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   const [manualTerm, setManualTerm] = useState('');
   const [manualVi, setManualVi] = useState('');
   const [isSavingManual, setIsSavingManual] = useState(false);
+  const [playingAudioForId, setPlayingAudioForId] = useState<number | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     if (isFocused) {
       fetchVocabularies();
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    // cleanup sound on unmount
+    return () => {
+      if (sound) {
+        // fire-and-forget cleanup
+        sound.unloadAsync().catch(() => undefined);
+      }
+    };
+  }, [sound]);
 
   const fetchVocabularies = async () => {
     try {
@@ -59,6 +72,37 @@ export default function LessonDetailScreen({ route, navigation }: any) {
       return;
     }
     // TODO: Implement Expo AV to play audio url
+  };
+
+  const handlePlayAudioByItem = async (item: Vocabulary) => {
+    const url = item.audioUrl;
+    if (!url) return;
+    if (playingAudioForId === item.id) return;
+
+    try {
+      setPlayingAudioForId(item.id);
+
+      // Stop/unload previous sound
+      if (sound) {
+        await sound.unloadAsync().catch(() => undefined);
+      }
+
+      const { sound: nextSound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true },
+      );
+
+      setSound(nextSound);
+      nextSound.setOnPlaybackStatusUpdate((status) => {
+        if (!status.isLoaded) return;
+        if (status.didJustFinish) {
+          setPlayingAudioForId(null);
+        }
+      });
+    } catch (e: any) {
+      setPlayingAudioForId(null);
+      Alert.alert('Lỗi', e?.message || 'Không thể phát audio');
+    }
   };
 
   const openManualModal = () => {
@@ -95,8 +139,20 @@ export default function LessonDetailScreen({ route, navigation }: any) {
         <Text style={styles.vocabTerm}>{item.term.toUpperCase()}</Text>
         <Text style={styles.vocabVi}>{item.vi}</Text>
       </View>
-      <Pressable onPress={() => handlePlayAudio(item.audioUrl)} style={styles.audioBtn}>
-        <MaterialCommunityIcons name="volume-high" size={24} color="#A0A7BA" />
+      <Pressable
+        onPress={() => handlePlayAudioByItem(item)}
+        style={styles.audioBtn}
+        disabled={!item.audioUrl || playingAudioForId === item.id}
+      >
+        {playingAudioForId === item.id ? (
+          <ActivityIndicator size="small" color="#0066FF" />
+        ) : (
+          <MaterialCommunityIcons
+            name="volume-high"
+            size={24}
+            color={item.audioUrl ? '#A0A7BA' : '#E2E8F0'}
+          />
+        )}
       </Pressable>
     </View>
   );

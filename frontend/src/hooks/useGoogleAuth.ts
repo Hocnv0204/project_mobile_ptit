@@ -6,6 +6,8 @@ import Constants from 'expo-constants';
 import { apiClient } from '../services/apiClient';
 import { useAuthStore } from '../store/authStore';
 import { Alert, Platform } from 'react-native';
+import { toApiError } from '../utils/apiErrors';
+import { API_BASE_URL } from '../config/env';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -61,8 +63,9 @@ export const useGoogleAuth = () => {
       console.log('Login success');
     } catch (err: any) {
       console.error('Backend Auth Error:', err);
-      setError(err.response?.data?.message || 'Backend authentication failed');
-      Alert.alert('Lỗi', 'Không thể xác thực với máy chủ');
+      const apiError = toApiError(err, API_BASE_URL);
+      setError(apiError.message);
+      Alert.alert('Lỗi', apiError.message);
     } finally {
       setLoading(false);
     }

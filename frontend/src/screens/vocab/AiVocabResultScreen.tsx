@@ -1,13 +1,27 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { vocabApi } from '../../api/vocabApi';
 import { Vocabulary } from '../../api/types';
+import { useToast } from '../../components/ToastProvider';
+
+function errorMessage(e: any): string {
+  if (!e) return 'Không thể lưu từ vựng';
+  if (typeof e === 'string') return e;
+  if (typeof e?.message === 'string' && e.message.trim()) return e.message;
+  // axios raw error (trường hợp chưa qua chuẩn hoá)
+  const m1 = e?.response?.data?.message;
+  if (typeof m1 === 'string' && m1.trim()) return m1;
+  const m2 = e?.data?.message;
+  if (typeof m2 === 'string' && m2.trim()) return m2;
+  return 'Không thể lưu từ vựng';
+}
 
 export default function AiVocabResultScreen({ route, navigation }: any) {
   const { lesson, vocabularies: initialVocabularies } = route.params;
   const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>(initialVocabularies || []);
   const [saving, setSaving] = useState(false);
@@ -36,7 +50,7 @@ export default function AiVocabResultScreen({ route, navigation }: any) {
 
   const handleSaveAll = async () => {
     if (vocabularies.length === 0) {
-      Alert.alert('Thông báo', 'Danh sách trống. Không có gì để lưu.');
+      toast.show('Danh sách trống. Không có gì để lưu.', { type: 'info' });
       return;
     }
 
@@ -46,7 +60,7 @@ export default function AiVocabResultScreen({ route, navigation }: any) {
       await vocabApi.createListVocab(lesson.id, payload);
       showSuccessOverlay();
     } catch (e: any) {
-      Alert.alert('Lỗi', e?.message || 'Không thể lưu từ vựng');
+      toast.show(errorMessage(e), { type: 'error', durationMs: 4500 });
     } finally {
       setSaving(false);
     }

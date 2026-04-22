@@ -17,14 +17,14 @@ import com.ptit.mobile.backend.repository.VocabularyRepository;
 import com.ptit.mobile.backend.security.SecurityUtils;
 import com.ptit.mobile.backend.service.VocabularyService;
 import com.ptit.mobile.backend.utils.DataUtils;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.ptit.mobile.backend.exception.ErrorCode.CREATE_REQUEST_VOCAB_INVALID;
-import static com.ptit.mobile.backend.exception.ErrorCode.VOCABULARY_ALREADY_EXISTS_BY_LESSON;
+import static com.ptit.mobile.backend.exception.ErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +61,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         for (Vocabulary vocabulary : listVocab) {
             vocabulary.setUserId(userId);
             vocabulary.setCreatedAt(LocalDateTime.now());
+            vocabulary.setAudioUrl(getAudioUrl(vocabulary.getTerm()));
             if(!vocabularyRepository.existsByTermAndLessonVocabId(vocabulary.getTerm(), lessonVocabId)){
                 vocabulary.setLessonVocabId(lessonVocabId);
                 vocabularyRepository.save(vocabulary);
@@ -74,8 +75,16 @@ public class VocabularyServiceImpl implements VocabularyService {
         if(DataUtils.isNullOrEmpty(request.getTerm()) || DataUtils.isNullOrEmpty(request.getVi())){
             throw new BusinessException(CREATE_REQUEST_VOCAB_INVALID);
         }
-        List<FreeDictionaryResponse> freeDictionaryResponseList = freeDictionaryClient.getWord(request.getTerm());
-        FreeDictionaryResponse freeDictionaryResponse = freeDictionaryResponseList.getFirst();
+        if(vocabularyRepository.existsByTermAndLessonVocabId(request.getTerm(), lessonVocabId)){
+            throw new BusinessException(VOCABULARY_ALREADY_EXISTS_BY_LESSON);
+        }
+        FreeDictionaryResponse freeDictionaryResponse;
+        try {
+            List<FreeDictionaryResponse> freeDictionaryResponseList = freeDictionaryClient.getWord(request.getTerm());
+            freeDictionaryResponse = freeDictionaryResponseList.getFirst();
+        }catch (FeignException e){
+            throw new BusinessException(9004, "Term not found: " + request.getTerm());
+        }
         Vocabulary vocabulary = Vocabulary.builder()
                 .term(request.getTerm().toUpperCase())
                 .vi(normalizeTerm(request.getVi()))
@@ -121,5 +130,22 @@ public class VocabularyServiceImpl implements VocabularyService {
         StringBuilder stringBuilder = new StringBuilder(term.toLowerCase());
         stringBuilder.setCharAt(0, Character.toUpperCase(stringBuilder.charAt(0)));
         return stringBuilder.toString();
+    }
+
+    private String getAudioUrl(String term){
+        FreeDictionaryResponse freeDictionaryResponse;
+        try {
+            List<FreeDictionaryResponse> freeDictionaryResponseList = freeDictionaryClient.getWord(term);
+            freeDictionaryResponse = freeDictionaryResponseList.getFirst();
+        }catch (FeignException e){
+            throw new BusinessException(9004, "Term not found: " + term + ".Bạn hãy xoá từ này khỏi danh sách.");
+        }
+        List<Phonetic> phonetics = freeDictionaryResponse.getPhonetics();
+        for(Phonetic phonetic : phonetics){
+            if(!DataUtils.isNullOrEmpty(phonetic.getAudio())){
+                return phonetic.getAudio();
+            }
+        }
+        return null;
     }
 }

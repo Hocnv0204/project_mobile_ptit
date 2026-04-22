@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { HelperText, TextInput, Snackbar } from 'react-native-paper';
+import { HelperText, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
+import { useToast } from '../../components/ToastProvider';
+import { toApiError } from '../../utils/apiErrors';
 
 const registerSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -28,6 +30,7 @@ const registerSchema = z.object({
 type FormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterScreen({ navigation }: any) {
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -52,8 +55,6 @@ export default function RegisterScreen({ navigation }: any) {
   const isNotEmail = passwordValue.length > 0 && passwordValue !== emailValue;
   const hasMixedChars = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordValue);
 
-  const [registerErrorSnackbar, setRegisterErrorSnackbar] = useState<string | null>(null);
-
   const onSubmit = async (values: FormValues) => {
     try {
       setSubmitting(true);
@@ -66,7 +67,8 @@ export default function RegisterScreen({ navigation }: any) {
       const res = await authApi.register(body) as any;
       navigation.navigate('EmailVerify', { email: body.email });
     } catch (e: any) {
-      setRegisterErrorSnackbar(e?.message || 'Đăng ký thất bại');
+      const apiError = toApiError(e);
+      toast.show(apiError.message || 'Đăng ký thất bại', { type: 'error', durationMs: 4500 });
     } finally {
       setSubmitting(false);
     }
@@ -294,15 +296,6 @@ export default function RegisterScreen({ navigation }: any) {
 
         </ScrollView>
       </KeyboardAvoidingView>
-      <Snackbar
-        visible={!!registerErrorSnackbar}
-        onDismiss={() => setRegisterErrorSnackbar(null)}
-        duration={5000}
-        style={{ backgroundColor: '#E91E63' }}
-        action={{ label: 'Đóng', onPress: () => setRegisterErrorSnackbar(null), textColor: '#FFF' }}
-      >
-        <Text style={{ color: '#FFFFFF' }}>{registerErrorSnackbar}</Text>
-      </Snackbar>
     </SafeAreaView>
   );
 }

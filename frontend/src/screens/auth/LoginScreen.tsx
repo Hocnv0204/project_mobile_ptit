@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { HelperText, Snackbar, TextInput } from 'react-native-paper';
+import { HelperText, TextInput } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { useAuthStore } from '../../store/authStore';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
+import { useToast } from '../../components/ToastProvider';
+import { toApiError, extractBackendMessage } from '../../utils/apiErrors';
 
 const schema = z.object({
   username: z.string().min(1, 'Vui lòng nhập username'),
@@ -17,34 +19,27 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+
 function getApiErrorMessage(e: unknown, fallback: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: string }).message;
-    if (typeof m === 'string' && m.trim()) return mapBackendLoginMessage(m.trim());
-  }
-  if (e instanceof Error && e.message) return mapBackendLoginMessage(e.message);
-  return fallback;
+  const apiError = toApiError(e);
+  return mapBackendLoginMessage(apiError.message || fallback);
 }
 
 function mapBackendLoginMessage(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes('invalid') && (lower.includes('email') || lower.includes('password'))) {
-    return 'Sai username hoặc mật khẩu.';
-  }
   return message;
 }
 
 export default function LoginScreen({ navigation }: any) {
   const setAuth = useAuthStore((state) => state.setAuth);
   const { signInWithGoogle, loading: googleLoading, error: googleError } = useGoogleAuth();
+  const toast = useToast();
   
   const [submitting, setSubmitting] = useState(false);
-  const [authErrorSnackbar, setAuthErrorSnackbar] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (googleError) {
-      setAuthErrorSnackbar(googleError);
+      toast.show(googleError, { type: 'error', durationMs: 4500 });
     }
   }, [googleError]);
 
@@ -60,24 +55,26 @@ export default function LoginScreen({ navigation }: any) {
       setAuth({
         accessToken: auth.accessToken,
         refreshToken: auth.refreshToken,
-        user: auth.user,
+        user: {
+          ...auth.user,
+          levelId: auth.user.levelId ?? null,
+          roles: auth.user.roles ?? [],
+        },
       });
 
       // Navigation is usually handled by an auth listener or manually if needed
       // navigation.navigate('Home'); 
 
     } catch (e: unknown) {
-      setAuthErrorSnackbar(getApiErrorMessage(e, 'Đăng nhập thất bại'));
+      toast.show(getApiErrorMessage(e, 'Đăng nhập thất bại'), { type: 'error', durationMs: 4500 });
     } finally {
       setSubmitting(false);
     }
   });
 
   const onGoogleLogin = async () => {
-    const result = await signInWithGoogle();
-    if (result) {
-      // Success is handled by the hook updating the store
-    }
+    await signInWithGoogle();
+    // Success is handled by the hook updating the store
   };
 
   return (
@@ -199,16 +196,6 @@ export default function LoginScreen({ navigation }: any) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      
-      <Snackbar
-        visible={!!authErrorSnackbar}
-        onDismiss={() => setAuthErrorSnackbar(null)}
-        duration={5000}
-        style={{ backgroundColor: '#E91E63' }}
-        action={{ label: 'Đóng', onPress: () => setAuthErrorSnackbar(null), textColor: '#FFF' }}
-      >
-        <Text style={{ color: '#FFFFFF' }}>{authErrorSnackbar}</Text>
-      </Snackbar>
     </SafeAreaView>
   );
 }

@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { store } from './src/store';
 import { AppTheme } from './src/constants/theme';
 import RootNavigator from './src/navigation/RootNavigator';
+import { ToastProvider } from './src/components/ToastProvider';
 
 export default function App() {
   return (
@@ -15,8 +16,10 @@ export default function App() {
       <Provider store={store}>
         <PaperProvider theme={AppTheme}>
           <SafeAreaProvider>
-            <StatusBar style="light" backgroundColor="#0F0F1A" />
-            <RootNavigator />
+            <ToastProvider>
+              <StatusBar style="light" backgroundColor="#0F0F1A" />
+              <RootNavigator />
+            </ToastProvider>
           </SafeAreaProvider>
         </PaperProvider>
       </Provider>
