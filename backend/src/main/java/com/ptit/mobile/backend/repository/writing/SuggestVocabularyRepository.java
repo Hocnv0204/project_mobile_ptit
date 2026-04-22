@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface SuggestVocabularyRepository extends JpaRepository<SuggestVocabulary, Integer> {
 
@@ -16,6 +18,8 @@ public interface SuggestVocabularyRepository extends JpaRepository<SuggestVocabu
             "WHERE sv.deleteFlag = false " +
             "AND sv.lessonWritingId = :lessonId")
     Page<SuggestVocabulary> findSuggestVocabulariesByLessonId(@Param("lessonId") Integer lessonId, Pageable pageable);
+
+    List<SuggestVocabulary> findAllByLessonWritingIdAndDeleteFlagFalse(Integer lessonWritingId);
 
     /**
      * Delete all SuggestVocabulary entries for a specific lesson.

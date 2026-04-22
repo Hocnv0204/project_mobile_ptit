@@ -1,5 +1,6 @@
-package com.ptit.mobile.backend.dto.response.ai;
+package com.ptit.mobile.backend.dto.response.writing;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,9 +14,13 @@ import lombok.Setter;
 @Builder
 public class GradingResponse {
     private Integer score;
-    private String status; // perfect, good, needs_improvement
+    private String status;
     private String message;
     private String comment;
+
+    @JsonProperty("improvement_suggestions")
     private String improvementSuggestions;
+
+    @JsonProperty("correct_answer")
     private String correctAnswer;
 }

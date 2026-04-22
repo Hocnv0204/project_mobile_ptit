@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.mobile.backend.config.GroqConfig;
-import com.ptit.mobile.backend.dto.response.ai.GradingResponse;
+import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResult;
 import com.ptit.mobile.backend.integration.writing.AIProvider;
 import lombok.extern.slf4j.Slf4j;

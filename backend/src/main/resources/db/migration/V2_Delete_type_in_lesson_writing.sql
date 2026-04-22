@@ -1,0 +1,1 @@
+ALTER TABLE lesson_writing DROP COLUMN type;

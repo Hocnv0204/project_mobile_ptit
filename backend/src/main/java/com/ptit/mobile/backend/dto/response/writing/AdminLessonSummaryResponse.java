@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 public class AdminLessonSummaryResponse {
     private Integer id;
     private String name;
-    private String topicName;
-    private String levelName;
     private LocalDateTime createdAt;
     private Boolean deleteFlag;
 }

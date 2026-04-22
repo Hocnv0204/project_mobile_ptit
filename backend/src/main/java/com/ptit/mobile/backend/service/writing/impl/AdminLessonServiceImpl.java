@@ -6,9 +6,8 @@ import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
-import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResult;
-import com.ptit.mobile.backend.mapper.LessonMapper;
+import com.ptit.mobile.backend.mapper.lesson.LessonMapper;
 import com.ptit.mobile.backend.model.LessonWriting;
 import com.ptit.mobile.backend.model.Level;
 import com.ptit.mobile.backend.model.SuggestVocabulary;
@@ -63,7 +62,6 @@ public class AdminLessonServiceImpl implements AdminLessonService {
                 .levelId(request.getLevelId())
                 .description(request.getDescription())
                 .status("GENERATING")
-                .type("DEFAULT")
                 .deleteFlag(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -90,6 +88,7 @@ public class AdminLessonServiceImpl implements AdminLessonService {
             LessonWriting updatedLesson = lessonWritingRepository.save(savedLesson);
 
             // 5. Save suggested vocabularies
+            List<SuggestVocabulary> savedVocabularies = new ArrayList<>();
             if (result.getSuggestVocabularyList() != null && !result.getSuggestVocabularyList().isEmpty()) {
                 List<SuggestVocabulary> vocabularies = result.getSuggestVocabularyList().stream()
                         .map(item -> SuggestVocabulary.builder()
@@ -102,11 +101,11 @@ public class AdminLessonServiceImpl implements AdminLessonService {
                                 .lessonWritingId(updatedLesson.getId())
                                 .build())
                         .collect(Collectors.toList());
-                suggestVocabularyRepository.saveAll(vocabularies);
+                savedVocabularies = suggestVocabularyRepository.saveAll(vocabularies);
             }
 
             // 6. Return the full lesson details
-            return lessonMapper.toAdminDetailResponse(updatedLesson);
+            return lessonMapper.toAdminDetailResponse(updatedLesson, savedVocabularies);
         } catch (Exception e) {
             // Update lesson status to FAILED if AI generation fails
             savedLesson.setStatus("FAILED");
@@ -151,7 +150,9 @@ public class AdminLessonServiceImpl implements AdminLessonService {
     public AdminLessonDetailResponse getLessonDetailsForAdmin(Integer lessonId) {
         LessonWriting lesson = lessonWritingRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bài học với ID: " + lessonId));
-        return lessonMapper.toAdminDetailResponse(lesson);
+
+        List<SuggestVocabulary> vocabularies = suggestVocabularyRepository.findAllByLessonWritingIdAndDeleteFlagFalse(lessonId);
+        return lessonMapper.toAdminDetailResponse(lesson, vocabularies);
     }
 
     @Override
@@ -164,7 +165,8 @@ public class AdminLessonServiceImpl implements AdminLessonService {
         lesson.setUpdatedAt(LocalDateTime.now());
 
         LessonWriting updatedLesson = lessonWritingRepository.save(lesson);
-        return lessonMapper.toAdminDetailResponse(updatedLesson);
+        List<SuggestVocabulary> vocabularies = suggestVocabularyRepository.findAllByLessonWritingIdAndDeleteFlagFalse(lessonId);
+        return lessonMapper.toAdminDetailResponse(updatedLesson, vocabularies);
     }
 
     @Override

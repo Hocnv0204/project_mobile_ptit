@@ -3,7 +3,7 @@ package com.ptit.mobile.backend.service.writing.impl;
 import com.ptit.mobile.backend.config.AIConfig;
 import com.ptit.mobile.backend.config.GeminiConfig;
 import com.ptit.mobile.backend.config.GroqConfig;
-import com.ptit.mobile.backend.dto.response.ai.GradingResponse;
+import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.integration.writing.AIProvider;
 import com.ptit.mobile.backend.integration.writing.AIProviderFactory;
 import lombok.RequiredArgsConstructor;

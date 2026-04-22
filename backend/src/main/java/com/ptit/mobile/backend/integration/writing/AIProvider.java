@@ -1,8 +1,6 @@
 package com.ptit.mobile.backend.integration.writing;
 
-import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
-import com.ptit.mobile.backend.dto.request.ai.GradingRequest;
-import com.ptit.mobile.backend.dto.response.ai.GradingResponse;
+import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResult;
 
 public interface AIProvider {
