@@ -1,9 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
+import { Audio } from 'expo-av';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
+import { vocabApi } from '../../api/vocabApi';
 import { Vocabulary } from '../../api/types';
 import { Routes } from '../../constants/routes';
 
@@ -15,12 +30,29 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
   const [activeTab, setActiveTab] = useState<'flashcard' | 'practice'>('flashcard');
+  const [isAddOptionsVisible, setAddOptionsVisible] = useState(false);
+  const [isManualModalVisible, setManualModalVisible] = useState(false);
+  const [manualTerm, setManualTerm] = useState('');
+  const [manualVi, setManualVi] = useState('');
+  const [isSavingManual, setIsSavingManual] = useState(false);
+  const [playingAudioForId, setPlayingAudioForId] = useState<number | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     if (isFocused) {
       fetchVocabularies();
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    // cleanup sound on unmount
+    return () => {
+      if (sound) {
+        // fire-and-forget cleanup
+        sound.unloadAsync().catch(() => undefined);
+      }
+    };
+  }, [sound]);
 
   const fetchVocabularies = async () => {
     try {
@@ -42,14 +74,85 @@ export default function LessonDetailScreen({ route, navigation }: any) {
     // TODO: Implement Expo AV to play audio url
   };
 
+  const handlePlayAudioByItem = async (item: Vocabulary) => {
+    const url = item.audioUrl;
+    if (!url) return;
+    if (playingAudioForId === item.id) return;
+
+    try {
+      setPlayingAudioForId(item.id);
+
+      // Stop/unload previous sound
+      if (sound) {
+        await sound.unloadAsync().catch(() => undefined);
+      }
+
+      const { sound: nextSound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true },
+      );
+
+      setSound(nextSound);
+      nextSound.setOnPlaybackStatusUpdate((status) => {
+        if (!status.isLoaded) return;
+        if (status.didJustFinish) {
+          setPlayingAudioForId(null);
+        }
+      });
+    } catch (e: any) {
+      setPlayingAudioForId(null);
+      Alert.alert('Lỗi', e?.message || 'Không thể phát audio');
+    }
+  };
+
+  const openManualModal = () => {
+    setAddOptionsVisible(false);
+    setManualTerm('');
+    setManualVi('');
+    setManualModalVisible(true);
+  };
+
+  const handleCreateManualVocab = async () => {
+    const term = manualTerm.trim();
+    const vi = manualVi.trim();
+    if (!term || !vi) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ Từ (term) và Nghĩa (vi).');
+      return;
+    }
+    try {
+      setIsSavingManual(true);
+      await vocabApi.createVocabSimple(lesson.id, { term, vi });
+      setManualModalVisible(false);
+      setManualTerm('');
+      setManualVi('');
+      fetchVocabularies();
+    } catch (e: any) {
+      Alert.alert('Lỗi', e?.message || 'Không thể thêm từ vựng');
+    } finally {
+      setIsSavingManual(false);
+    }
+  };
+
   const renderItem = ({ item }: { item: Vocabulary }) => (
     <View style={styles.vocabCard}>
       <View style={styles.vocabContent}>
         <Text style={styles.vocabTerm}>{item.term.toUpperCase()}</Text>
         <Text style={styles.vocabVi}>{item.vi}</Text>
       </View>
-      <Pressable onPress={() => handlePlayAudio(item.audioUrl)} style={styles.audioBtn}>
-        <MaterialCommunityIcons name="volume-high" size={24} color="#A0A7BA" />
+      <Pressable
+        onPress={() => handlePlayAudioByItem(item)}
+        style={styles.audioBtn}
+        disabled={!item.audioUrl || playingAudioForId === item.id}
+      >
+        {playingAudioForId === item.id ? (
+          <ActivityIndicator size="small" color="#0066FF" />
+        ) : (
+          <MaterialCommunityIcons
+            name="volume-high"
+            size={24}
+            color={item.audioUrl ? '#A0A7BA' : '#E2E8F0'}
+          />
+        )}
       </Pressable>
     </View>
   );
@@ -62,7 +165,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>{lesson.name}</Text>
         {isPersonal ? (
-          <Pressable onPress={() => navigation.navigate(Routes.ADD_VOCAB_AI, { lesson })} style={styles.addBtn}>
+          <Pressable onPress={() => setAddOptionsVisible(true)} style={styles.addBtn}>
             <MaterialCommunityIcons name="plus" size={24} color="#0066FF" />
           </Pressable>
         ) : (
@@ -123,6 +226,98 @@ export default function LessonDetailScreen({ route, navigation }: any) {
           }
         />
       )}
+
+      {/* Add options modal */}
+      <Modal visible={isAddOptionsVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setAddOptionsVisible(false)}>
+          <View style={styles.optionSheet}>
+            <Text style={styles.optionTitle}>Thêm từ vựng</Text>
+
+            <Pressable
+              style={styles.optionBtn}
+              onPress={() => {
+                setAddOptionsVisible(false);
+                navigation.navigate(Routes.ADD_VOCAB_AI, { lesson });
+              }}
+            >
+              <MaterialCommunityIcons name="robot-outline" size={22} color="#10B981" />
+              <Text style={styles.optionText}>Thêm bằng AI</Text>
+            </Pressable>
+
+            <Pressable style={styles.optionBtn} onPress={openManualModal}>
+              <MaterialCommunityIcons name="pencil-outline" size={22} color="#2563EB" />
+              <Text style={styles.optionText}>Thêm thủ công</Text>
+            </Pressable>
+
+            <Pressable style={[styles.optionBtn, styles.optionCancel]} onPress={() => setAddOptionsVisible(false)}>
+              <MaterialCommunityIcons name="close" size={22} color="#64748B" />
+              <Text style={[styles.optionText, { color: '#64748B' }]}>Huỷ</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Manual add modal */}
+      <Modal visible={isManualModalVisible} transparent animationType="fade">
+        <KeyboardAvoidingView
+          style={styles.modalOverlayCenter}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => !isSavingManual && setManualModalVisible(false)} />
+
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.manualScrollContent,
+              { paddingBottom: Math.max(insets.bottom, 12) },
+            ]}
+          >
+            <View style={styles.manualModal}>
+              <Text style={styles.manualTitle}>Thêm từ vựng thủ công</Text>
+              <TextInput
+                style={styles.manualInput}
+                placeholder="Term (tiếng Anh)"
+                placeholderTextColor="#A0A7BA"
+                value={manualTerm}
+                onChangeText={setManualTerm}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TextInput
+                style={styles.manualInput}
+                placeholder="Nghĩa (tiếng Việt)"
+                placeholderTextColor="#A0A7BA"
+                value={manualVi}
+                onChangeText={setManualVi}
+              />
+
+              <View style={styles.manualActions}>
+                <Pressable
+                  style={[styles.manualBtn, styles.manualBtnCancel]}
+                  onPress={() => {
+                    if (isSavingManual) return;
+                    setManualModalVisible(false);
+                  }}
+                  disabled={isSavingManual}
+                >
+                  <Text style={styles.manualBtnCancelText}>Huỷ</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.manualBtn, styles.manualBtnSubmit, isSavingManual && styles.manualBtnDisabled]}
+                  onPress={handleCreateManualVocab}
+                  disabled={isSavingManual}
+                >
+                  {isSavingManual ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <Text style={styles.manualBtnSubmitText}>Thêm</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -183,4 +378,68 @@ const styles = StyleSheet.create({
   audioBtn: { padding: 8 },
   emptyContainer: { alignItems: 'center', marginTop: 40 },
   emptyText: { color: '#A0A7BA', fontSize: 16 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  optionSheet: {
+    backgroundColor: '#FFF',
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    gap: 10,
+  },
+  optionTitle: { fontSize: 16, fontWeight: '800', color: '#1A1D26', marginBottom: 4 },
+  optionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: '#F8F9FA',
+  },
+  optionCancel: { backgroundColor: '#F1F5F9' },
+  optionText: { fontSize: 15, fontWeight: '700', color: '#1A1D26' },
+
+  manualScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  manualModal: {
+    backgroundColor: '#FFF',
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderRadius: 20,
+  },
+  manualTitle: { fontSize: 16, fontWeight: '800', color: '#1A1D26', marginBottom: 12 },
+  manualInput: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#EEF0F6',
+    marginBottom: 10,
+    color: '#1A1D26',
+  },
+  manualActions: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  manualBtn: { flex: 1, paddingVertical: 12, borderRadius: 14, alignItems: 'center' },
+  manualBtnCancel: { backgroundColor: '#F1F5F9' },
+  manualBtnSubmit: { backgroundColor: '#0066FF' },
+  manualBtnDisabled: { opacity: 0.6 },
+  manualBtnCancelText: { fontSize: 15, fontWeight: '800', color: '#64748B' },
+  manualBtnSubmitText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
 });

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { useAppDispatch } from '../../store';
 import { setAuth, persistAuth } from '../../store/slices/authSlice';
+import { useToast } from '../../components/ToastProvider';
 
 
 const schema = z.object({
@@ -20,6 +21,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function EmailVerifyScreen({ route, navigation }: any) {
   const dispatch = useAppDispatch();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
 
@@ -37,9 +39,9 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
       setResending(true);
       const email = getValues('email').trim();
       const res = await authApi.resendOtp({ email });
-      Alert.alert('Đã gửi lại', res.message || 'OTP mới đã được gửi về email');
+      toast.show(res.message || 'OTP mới đã được gửi về email', { type: 'success', durationMs: 3500 });
     } catch (e: any) {
-      Alert.alert('Lỗi', e?.message || 'Gửi lại OTP thất bại');
+      toast.show(e?.message || 'Gửi lại OTP thất bại', { type: 'error', durationMs: 4500 });
     } finally {
       setResending(false);
     }
@@ -67,10 +69,10 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
         user: auth.user,
       });
 
-      Alert.alert('Thành công', 'Xác thực OTP thành công');
+      toast.show('Xác thực OTP thành công', { type: 'success', durationMs: 3000 });
       // Navigation will automatically update to MainTabNavigator due to Redux state change
     } catch (e: any) {
-      Alert.alert('Lỗi', e?.message || 'Xác thực OTP thất bại');
+      toast.show(e?.message || 'Xác thực OTP thất bại', { type: 'error', durationMs: 4500 });
     } finally {
       setSubmitting(false);
     }

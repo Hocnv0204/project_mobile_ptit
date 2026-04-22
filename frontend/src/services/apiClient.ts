@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { getAccessToken, getRefreshToken, saveTokens } from '../utils/tokenStorage';
 import { API_BASE_URL } from '../config/env';
+import { toApiError } from '../utils/apiErrors';
 
 const BASE_URL = API_BASE_URL;
 
@@ -50,9 +51,9 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         useAuthStore.getState().logout();
-        return Promise.reject(refreshError);
+        return Promise.reject(toApiError(refreshError, API_BASE_URL));
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(toApiError(error, API_BASE_URL));
   }
 );
