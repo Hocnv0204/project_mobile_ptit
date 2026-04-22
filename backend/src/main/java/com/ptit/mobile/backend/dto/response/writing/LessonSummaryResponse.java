@@ -16,5 +16,4 @@ public class LessonSummaryResponse {
     private String name;
     private String description;
     private LocalDateTime createdAt;
-    private String levelName;
 }

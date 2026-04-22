@@ -1,23 +1,18 @@
 package com.ptit.mobile.backend.controller.writing;
 
 
-import com.ptit.mobile.backend.dto.request.ai.GradingRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.PageResponse;
-import com.ptit.mobile.backend.dto.response.ai.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
-import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResponse;
-import com.ptit.mobile.backend.service.writing.impl.LessonGradingService;
 import com.ptit.mobile.backend.service.writing.impl.AdminLessonServiceImpl;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateSuggestVocabularyRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
@@ -30,7 +25,7 @@ import java.util.List;
 public class AdminLessonController {
 
     private final AdminLessonServiceImpl adminLessonService;
-    private final LessonGradingService lessonGradingService;
+
 
 
     // create lesson with AI
@@ -47,20 +42,7 @@ public class AdminLessonController {
                 .build();
     }
 
-    @PostMapping("/grade")
-    public BaseResponse gradeAnswer(@Valid @RequestBody GradingRequest request) {
-        String providerType = request.getAiProvider() != null ? request.getAiProvider() : "gemini";
-        GradingResponse gradingResponse = lessonGradingService.gradeAnswer(
-                request.getQuestion(),
-                request.getAnswer(),
-                providerType
-        );
-        return BaseResponse.builder()
-                .code(200L)
-                .message("Answer graded successfully")
-                .data(gradingResponse)
-                .build();
-    }
+
 
     @GetMapping
     public BaseResponse getAllLessons(

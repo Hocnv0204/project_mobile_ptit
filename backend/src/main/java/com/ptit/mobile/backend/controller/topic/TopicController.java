@@ -20,7 +20,7 @@ public class TopicController {
 
     private final TopicService topicService;
 
-        @GetMapping("/get")
+        @GetMapping()
         public BaseResponse getTopics(
                 @RequestParam(required = false) String searchTerm,
                 @RequestParam(defaultValue = "0") int page,

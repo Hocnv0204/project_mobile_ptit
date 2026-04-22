@@ -33,9 +33,6 @@ public class LessonWriting {
     @Column(length = 50)
     private String status;
 
-    @Column(length = 50)
-    private String type;
-
     @Column(name = "delete_flag")
     private Boolean deleteFlag;
 
