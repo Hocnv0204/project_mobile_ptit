@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Pressable,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -82,89 +83,95 @@ export default function QuizModeSelectScreen({ route, navigation }: any) {
         <View style={styles.backBtn} />
       </View>
 
-      <Text style={styles.lessonName} numberOfLines={2}>{lesson.name}</Text>
-      <Text style={styles.vocabCount}>{vocabularies.length} từ vựng</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.lessonName} numberOfLines={2}>{lesson.name}</Text>
+        <Text style={styles.vocabCount}>{vocabularies.length} từ vựng</Text>
 
-      {/* Mode Selector (chỉ hiện khi chọn trắc nghiệm) */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Chọn hướng câu hỏi</Text>
-        <View style={styles.modeRow}>
-          {MODES.map((m) => (
-            <Pressable
-              key={m.key}
-              style={[styles.modeChip, selectedMode === m.key && styles.modeChipActive]}
-              onPress={() => setSelectedMode(m.key)}
-            >
-              <Text
-                style={[styles.modeChipText, selectedMode === m.key && styles.modeChipTextActive]}
+        {/* Mode Selector (chỉ hiện khi chọn trắc nghiệm) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Chọn hướng câu hỏi</Text>
+          <View style={styles.modeRow}>
+            {MODES.map((m) => (
+              <Pressable
+                key={m.key}
+                style={[styles.modeChip, selectedMode === m.key && styles.modeChipActive]}
+                onPress={() => setSelectedMode(m.key)}
               >
-                {m.label}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[styles.modeChipText, selectedMode === m.key && styles.modeChipTextActive]}
+                >
+                  {m.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.modeDesc}>
+            {MODES.find((m) => m.key === selectedMode)?.desc}
+          </Text>
         </View>
-        <Text style={styles.modeDesc}>
-          {MODES.find((m) => m.key === selectedMode)?.desc}
-        </Text>
-      </View>
 
-      {/* Cards */}
-      <View style={styles.cardsContainer}>
-        {/* Trắc nghiệm */}
-        <Pressable
-          style={({ pressed }) => [styles.card, styles.cardMC, pressed && styles.cardPressed]}
-          onPress={handleStartMultipleChoice}
-        >
-          <View style={[styles.cardIconWrap, styles.cardIconWrapMC]}>
-            <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={36} color="#8B5CF6" />
-          </View>
-          <Text style={styles.cardTitle}>Trắc nghiệm</Text>
-          <Text style={styles.cardDesc}>
-            Chọn 1 trong 4 đáp án dựa trên từ vựng trong bài
-          </Text>
-          <View style={styles.cardBadge}>
-            <MaterialCommunityIcons name="arrow-right" size={20} color="#8B5CF6" />
-          </View>
-        </Pressable>
+        {/* Cards */}
+        <View style={styles.cardsContainer}>
+          {/* Trắc nghiệm */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.cardMC, pressed && styles.cardPressed]}
+            onPress={handleStartMultipleChoice}
+          >
+            <View style={[styles.cardIconWrap, styles.cardIconWrapMC]}>
+              <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={36} color="#8B5CF6" />
+            </View>
+            <Text style={styles.cardTitle}>Trắc nghiệm</Text>
+            <Text style={styles.cardDesc}>
+              Chọn 1 trong 4 đáp án dựa trên từ vựng trong bài
+            </Text>
+            <View style={styles.cardBadge}>
+              <MaterialCommunityIcons name="arrow-right" size={20} color="#8B5CF6" />
+            </View>
+          </Pressable>
 
-        {/* Tự luận */}
-        <Pressable
-          style={({ pressed }) => [styles.card, styles.cardEssay, pressed && styles.cardPressed]}
-          onPress={handleStartEssay}
-        >
-          <View style={[styles.cardIconWrap, styles.cardIconWrapEssay]}>
-            <MaterialCommunityIcons name="pencil-outline" size={36} color="#F59E0B" />
-          </View>
-          <Text style={styles.cardTitle}>Tự luận</Text>
-          <Text style={styles.cardDesc}>
-            Đọc từ tiếng Anh rồi tự gõ nghĩa tiếng Việt
-          </Text>
-          <View style={styles.cardBadge}>
-            <MaterialCommunityIcons name="arrow-right" size={20} color="#F59E0B" />
-          </View>
-        </Pressable>
+          {/* Tự luận */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.cardEssay, pressed && styles.cardPressed]}
+            onPress={handleStartEssay}
+          >
+            <View style={[styles.cardIconWrap, styles.cardIconWrapEssay]}>
+              <MaterialCommunityIcons name="pencil-outline" size={36} color="#F59E0B" />
+            </View>
+            <Text style={styles.cardTitle}>Tự luận</Text>
+            <Text style={styles.cardDesc}>
+              Đọc từ tiếng Anh rồi tự gõ nghĩa tiếng Việt
+            </Text>
+            <View style={styles.cardBadge}>
+              <MaterialCommunityIcons name="arrow-right" size={20} color="#F59E0B" />
+            </View>
+          </Pressable>
 
-        {/* Điền từ vào chỗ trống (AI) */}
-        <Pressable
-          style={({ pressed }) => [styles.card, styles.cardFillBlank, pressed && styles.cardPressed]}
-          onPress={handleStartFillBlank}
-        >
-          <View style={styles.aiBadge}>
-            <MaterialCommunityIcons name="robot-outline" size={12} color="#10B981" />
-            <Text style={styles.aiBadgeText}>AI</Text>
-          </View>
-          <View style={[styles.cardIconWrap, styles.cardIconWrapFillBlank]}>
-            <MaterialCommunityIcons name="format-text" size={36} color="#10B981" />
-          </View>
-          <Text style={styles.cardTitle}>Điền từ vào chỗ trống</Text>
-          <Text style={styles.cardDesc}>
-            AI tạo câu hỏi, bạn tìm từ còn thiếu dựa vào ngữ cảnh
-          </Text>
-          <View style={styles.cardBadge}>
-            <MaterialCommunityIcons name="arrow-right" size={20} color="#10B981" />
-          </View>
-        </Pressable>
-      </View>
+          {/* Điền từ vào chỗ trống (AI) */}
+          <Pressable
+            style={({ pressed }) => [styles.card, styles.cardFillBlank, pressed && styles.cardPressed]}
+            onPress={handleStartFillBlank}
+          >
+            <View style={styles.aiBadge}>
+              <MaterialCommunityIcons name="robot-outline" size={12} color="#10B981" />
+              <Text style={styles.aiBadgeText}>AI</Text>
+            </View>
+            <View style={[styles.cardIconWrap, styles.cardIconWrapFillBlank]}>
+              <MaterialCommunityIcons name="format-text" size={36} color="#10B981" />
+            </View>
+            <Text style={styles.cardTitle}>Điền từ vào chỗ trống</Text>
+            <Text style={styles.cardDesc}>
+              AI tạo câu hỏi, bạn tìm từ còn thiếu dựa vào ngữ cảnh
+            </Text>
+            <View style={styles.cardBadge}>
+              <MaterialCommunityIcons name="arrow-right" size={20} color="#10B981" />
+            </View>
+          </Pressable>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -201,6 +208,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
     marginBottom: 24,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   section: {
     marginHorizontal: 24,
