@@ -43,10 +43,13 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     @Transactional
-    public BaseResponse getSession(Long lessonVocabId) {
+    public BaseResponse getSession(Long lessonVocabId, String mode) {
         if (!lessonVocabRepository.existsById(Math.toIntExact(lessonVocabId))) {
             throw new BusinessException(ErrorCode.FLASHCARD_LESSON_VOCAB_NOT_FOUND);
         }
+
+        String upperMode = mode != null ? mode.toUpperCase() : "DUE";
+        boolean includeAll = "ALL".equals(upperMode);
 
         Long userId = SecurityUtils.getCurrentUserId();
         List<Vocabulary> vocabs = vocabularyRepository.findAllByLessonVocabIdOrderByIdAsc(lessonVocabId);
@@ -80,14 +83,14 @@ public class FlashcardServiceImpl implements FlashcardService {
 
             String status = resolveStatus(card, today);
 
-            if ("UPCOMING".equals(status)) {
+            if (!includeAll && "UPCOMING".equals(status)) {
                 upcomingCount++;
             } else {
                 dueCards.add(buildCardResponse(card, vocab, status));
             }
         }
 
-        // Sắp xếp: OVERDUE trước, DUE_TODAY sau, NEW cuối
+        // Sắp xếp: OVERDUE trước, DUE_TODAY sau, NEW, UPCOMING cuối
         dueCards.sort(Comparator.comparingInt(c -> statusOrder(c.getStatus())));
 
         FlashcardSessionResponse session = FlashcardSessionResponse.builder()

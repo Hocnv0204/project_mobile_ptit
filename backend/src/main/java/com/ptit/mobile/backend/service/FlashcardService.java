@@ -10,7 +10,7 @@ public interface FlashcardService {
      * - Nếu thẻ chưa tồn tại trong card_reviews thì tự khởi tạo với giá trị mặc định.
      * - Trả về danh sách thẻ đến hạn hôm nay (OVERDUE + DUE_TODAY + NEW).
      */
-    BaseResponse getSession(Long lessonVocabId);
+    BaseResponse getSession(Long lessonVocabId, String mode);
 
     /**
      * Gửi kết quả ôn một thẻ (SM-2):

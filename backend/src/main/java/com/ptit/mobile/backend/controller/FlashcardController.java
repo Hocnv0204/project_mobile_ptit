@@ -25,8 +25,11 @@ public class FlashcardController {
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @GetMapping("/{lessonVocabId}/session")
-    public BaseResponse getSession(@PathVariable Long lessonVocabId) {
-        return flashcardService.getSession(lessonVocabId);
+    public BaseResponse getSession(
+            @PathVariable Long lessonVocabId,
+            @RequestParam(value = "mode", required = false, defaultValue = "DUE") String mode
+    ) {
+        return flashcardService.getSession(lessonVocabId, mode);
     }
 
     @Operation(
