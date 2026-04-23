@@ -9,6 +9,7 @@ import VocabularyScreen from '../screens/vocab/VocabularyScreen';
 import WritingScreen from '../screens/writing/WritingScreen';
 import DictationScreen from '../screens/dictation/DictationScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import PodcastNavigator from './PodcastNavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -57,6 +58,9 @@ export default function MainTabNavigator() {
             case Routes.PROFILE:
               iconName = focused ? 'account-circle' : 'account-circle-outline';
               break;
+            case Routes.PODCAST:
+              iconName = focused ? 'podcast' : 'podcast';
+              break;
           }
 
           return <MaterialCommunityIcons name={iconName} size={26} color={color} />;
@@ -82,6 +86,11 @@ export default function MainTabNavigator() {
         name={Routes.DICTATION} 
         component={DictationScreen} 
         options={{ tabBarLabel: 'Chính tả' }} 
+      />
+      <Tab.Screen 
+        name={Routes.PODCAST} 
+        component={PodcastNavigator} 
+        options={{ tabBarLabel: 'Podcast' }} 
       />
       <Tab.Screen 
         name={Routes.PROFILE} 
