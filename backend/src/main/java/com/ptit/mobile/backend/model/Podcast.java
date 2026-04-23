@@ -42,6 +42,7 @@ public class Podcast {
     @Column(name = "order_index")
     private Integer orderIndex;
 
+    @Builder.Default
     @Column(name = "delete_flag")
     private Boolean deleteFlag = false;
 
@@ -50,4 +51,18 @@ public class Podcast {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        if (this.deleteFlag == null) {
+            this.deleteFlag = false;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

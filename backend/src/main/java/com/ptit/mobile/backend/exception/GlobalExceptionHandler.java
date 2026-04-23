@@ -2,6 +2,7 @@ package com.ptit.mobile.backend.exception;
 
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -29,19 +30,25 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .data(ex.getData())
                 .build();
-        return ResponseEntity.status(httpStatus).body(response);
+        return ResponseEntity.status(httpStatus)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<BaseResponse> handleAuthenticationException(AuthenticationException ex) {
         BaseResponse response = BaseResponse.error(401L, "Unauthorized: " + ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<BaseResponse> handleAccessDeniedException(AccessDeniedException ex) {
         BaseResponse response = BaseResponse.error(403L, "Forbidden: You don't have permission");
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -57,13 +64,18 @@ public class GlobalExceptionHandler {
                 .message("Validation failed")
                 .data(errors)
                 .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseResponse> handleException(Exception ex) {
-        BaseResponse response = BaseResponse.error(500L, "Internal Server Error");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        ex.printStackTrace();
+        BaseResponse response = BaseResponse.error(500L, "Internal Server Error: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 }
 

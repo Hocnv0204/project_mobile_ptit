@@ -7,7 +7,8 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GeneratePodcastRequest {
-    private Integer levelId;
-    private Integer topicId;
+public class SaveHistoryRequest {
+    private Integer podcastId;
+    private Integer progressSeconds;
+    private Boolean isCompleted;
 }
