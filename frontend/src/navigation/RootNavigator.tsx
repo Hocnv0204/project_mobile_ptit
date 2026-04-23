@@ -16,6 +16,7 @@ import QuizSessionScreen from '../screens/vocab/QuizSessionScreen';
 import FillBlankSessionScreen from '../screens/vocab/FillBlankSessionScreen';
 import SelectLessonScreen from '../screens/writing/SelectLessonScreen';
 import LessonPracticeScreen from '../screens/writing/LessonPracticeScreen';
+import DictationPlayerScreen from '../screens/dictation/DictationPlayerScreen';
 import { Routes } from '../constants/routes';
 // import { useAppDispatch, useAppSelector } from '../store';
 // import { hydrateAuth } from '../store/slices/authSlice';
@@ -72,6 +73,7 @@ export default function RootNavigator() {
               <Stack.Screen name={Routes.FILL_BLANK_SESSION} component={FillBlankSessionScreen} />
               <Stack.Screen name={Routes.SELECT_LESSON} component={SelectLessonScreen} />
               <Stack.Screen name={Routes.LESSON_PRACTICE} component={LessonPracticeScreen} />
+              <Stack.Screen name={Routes.DICTATION_PLAYER} component={DictationPlayerScreen} />
             </>
           ) : (
             <Stack.Screen name={Routes.SELECT_LEVEL} component={SelectLevelScreen} />
