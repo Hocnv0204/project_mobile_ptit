@@ -75,6 +75,12 @@ public enum ErrorCode {
     QUIZ_VOCAB_NOT_FOUND(9302, "Vocabulary not found"),
     QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED"),
 
+    // Dictation (9400)
+    DICTATION_NOT_FOUND(9401, "Dictation not found"),
+    DICTATION_SEGMENT_NOT_FOUND(9402, "Dictation segment not found"),
+    DICTATION_PROGRESS_NOT_FOUND(9403, "Dictation progress not found");
+    QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED"),
+
     // Flashcard / SM-2 (9400)
     FLASHCARD_CARD_REVIEW_NOT_FOUND(9401, "Card review not found"),
     FLASHCARD_VOCAB_NOT_FOUND(9402, "Vocabulary not found for flashcard"),
