@@ -37,7 +37,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             // Actuator health
-            "/actuator/health"
+            "/actuator/health",
+            // Static uploads (podcast audio)
+            "/uploads/**"
     };
 
     @Bean

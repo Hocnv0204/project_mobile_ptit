@@ -36,7 +36,6 @@ export const Routes = {
   // Podcast Stack
   PODCAST_LIST: 'PodcastList',
   PODCAST_PLAYER: 'PodcastPlayer',
-  DICTATION: 'Dictation',
 
   // Admin Drawer
   ADMIN_DASHBOARD: 'AdminDashboard',
