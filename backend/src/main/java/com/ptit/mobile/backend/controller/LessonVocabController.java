@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -87,6 +88,8 @@ public class LessonVocabController {
                 .map(v -> {
                     CardReview card = cardReviewMap.get(v.getId().longValue());
                     String status = resolveStatus(card, today);
+                    LocalDate nextReviewDate = resolveNextReviewDate(card, today);
+                    long daysUntilReview = Math.max(0, ChronoUnit.DAYS.between(today, nextReviewDate));
                     return VocabularyWithStatusResponse.builder()
                             .id(v.getId())
                             .term(v.getTerm())
@@ -97,6 +100,8 @@ public class LessonVocabController {
                             .audioUrl(v.getAudioUrl())
                             .imageUrl(v.getImageUrl())
                             .status(status)
+                            .nextReviewDate(nextReviewDate)
+                            .daysUntilReview(daysUntilReview)
                             .build();
                 })
                 .toList();
@@ -115,6 +120,14 @@ public class LessonVocabController {
             return "DUE_TODAY";
         }
         return "UPCOMING";
+    }
+
+    private LocalDate resolveNextReviewDate(CardReview card, LocalDate today) {
+        if (card == null || card.getNextReviewDate() == null) {
+            return today;
+        }
+        // Overdue / Due today / Upcoming đều trả về next_review_date; UI sẽ hiển thị daysUntilReview (>=0)
+        return card.getNextReviewDate();
     }
 
     @Operation(summary = "Danh sách lesson vocab theo userId (bài cá nhân)", security = @SecurityRequirement(name = "bearerAuth"))

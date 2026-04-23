@@ -44,8 +44,8 @@ export type ReviewResult = {
 };
 
 export const flashcardApi = {
-  getSession: async (lessonVocabId: number) => {
-    const res = await http.get<ApiEnvelope<FlashcardSession>>(`/api/flashcard/${lessonVocabId}/session`);
+  getSession: async (lessonVocabId: number, mode: 'DUE' | 'ALL' = 'DUE') => {
+    const res = await http.get<ApiEnvelope<FlashcardSession>>(`/api/flashcard/${lessonVocabId}/session?mode=${mode}`);
     return res.data;
   },
   submitReview: async (payload: SubmitReviewRequest) => {

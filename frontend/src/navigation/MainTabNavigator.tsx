@@ -10,6 +10,7 @@ import WritingScreen from '../screens/writing/WritingScreen';
 import DictationScreen from '../screens/dictation/DictationScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PodcastNavigator from './PodcastNavigator';
+import { useI18n } from '../i18n/useI18n';
 
 const Tab = createBottomTabNavigator();
 
@@ -20,6 +21,7 @@ const COLORS = {
 };
 
 export default function MainTabNavigator() {
+  const { t } = useI18n();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -70,32 +72,32 @@ export default function MainTabNavigator() {
       <Tab.Screen 
         name={Routes.HOME} 
         component={HomeScreen} 
-        options={{ tabBarLabel: 'Học tập' }} 
+        options={{ tabBarLabel: t('tabs.study') }} 
       />
       <Tab.Screen 
         name={Routes.VOCABULARY} 
         component={VocabularyScreen} 
-        options={{ tabBarLabel: 'Từ vựng' }} 
+        options={{ tabBarLabel: t('tabs.vocabulary') }} 
       />
       <Tab.Screen 
         name={Routes.WRITING} 
         component={WritingScreen} 
-        options={{ tabBarLabel: 'Luyện viết' }} 
+        options={{ tabBarLabel: t('tabs.writing') }} 
       />
       <Tab.Screen 
         name={Routes.DICTATION} 
         component={DictationScreen} 
-        options={{ tabBarLabel: 'Chính tả' }} 
+        options={{ tabBarLabel: t('tabs.dictation') }} 
       />
       <Tab.Screen 
         name={Routes.PODCAST} 
         component={PodcastNavigator} 
-        options={{ tabBarLabel: 'Podcast' }} 
+        options={{ tabBarLabel: t('tabs.podcast') }} 
       />
       <Tab.Screen 
         name={Routes.PROFILE} 
         component={ProfileScreen} 
-        options={{ tabBarLabel: 'Tài khoản' }} 
+        options={{ tabBarLabel: t('tabs.account') }} 
       />
     </Tab.Navigator>
   );

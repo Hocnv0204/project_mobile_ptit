@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,9 @@ import {
   ScrollView, 
   Platform,
   StatusBar,
-  Image
+  Image,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -16,6 +18,7 @@ import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { authApi } from '../../api/authApi';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '../../constants/routes';
+import { useI18n } from '../../i18n/useI18n';
 
 // Reusable menu item component
 interface MenuItemProps {
@@ -41,6 +44,8 @@ export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { refreshToken, user, logout } = useAuthStore();
   const { signOut: googleSignOut } = useGoogleAuth();
+  const { t, language, setLanguage } = useI18n();
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -63,10 +68,14 @@ export default function ProfileScreen() {
   // Use a generic placeholder avatar if no URL is provided
   const avatarUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=0066FF&color=fff&size=200';
 
+  const levelLabel = useMemo(() => {
+    return user?.levelId ? t('profile.level.value', { id: user.levelId }) : t('profile.level.notSelected');
+  }, [user?.levelId, t]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tài khoản</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -79,44 +88,76 @@ export default function ProfileScreen() {
         </View>
 
         {/* Section: TÀI KHOẢN */}
-        <Text style={styles.sectionTitle}>TÀI KHOẢN</Text>
+        <Text style={styles.sectionTitle}>{t('profile.sections.account')}</Text>
         <View style={styles.sectionContainer}>
-          <MenuItem icon="account-outline" label="Hồ sơ" />
+          <MenuItem icon="account-outline" label={t('profile.items.profile')} />
           <MenuItem 
             icon="star-outline" 
-            label={`Trình độ hiện tại: ${user?.levelId ? 'Đã chọn' : 'Chưa chọn'}`} 
+            label={t('profile.items.currentLevel', { value: levelLabel })} 
             onPress={() => navigation.navigate(Routes.SELECT_LEVEL)} 
           />
-          <MenuItem icon="lock-outline" label="Đổi mật khẩu" isLast />
+          <MenuItem icon="lock-outline" label={t('profile.items.changePassword')} isLast />
         </View>
 
         {/* Section: THANH TOÁN */}
-        <Text style={styles.sectionTitle}>THANH TOÁN</Text>
+        <Text style={styles.sectionTitle}>{t('profile.sections.payment')}</Text>
         <View style={styles.sectionContainer}>
-          <MenuItem icon="file-document-outline" label="Lịch sử đơn hàng" isLast />
+          <MenuItem icon="file-document-outline" label={t('profile.items.orderHistory')} isLast />
         </View>
 
         {/* Section: CÔNG CỤ */}
-        <Text style={styles.sectionTitle}>CÔNG CỤ</Text>
+        <Text style={styles.sectionTitle}>{t('profile.sections.tools')}</Text>
         <View style={styles.sectionContainer}>
-          <MenuItem icon="ticket-percent-outline" label="Mã kích hoạt" />
-          <MenuItem icon="home-outline" label="Quản lý gia đình" isLast />
+          <MenuItem icon="ticket-percent-outline" label={t('profile.items.activationCode')} />
+          <MenuItem icon="home-outline" label={t('profile.items.familyManagement')} isLast />
         </View>
 
         {/* Section: CÀI ĐẶT */}
-        <Text style={styles.sectionTitle}>CÀI ĐẶT</Text>
+        <Text style={styles.sectionTitle}>{t('profile.sections.settings')}</Text>
         <View style={styles.sectionContainer}>
-          <MenuItem icon="laptop" label="Quản lý thiết bị" />
-          <MenuItem icon="web" label="Ngôn ngữ" />
-          <MenuItem icon="file-document-outline" label="Điều khoản & Điều kiện" />
-          <MenuItem icon="certificate-outline" label="Chính sách bảo mật" />
-          <MenuItem icon="headphones" label="Liên hệ/ Hỗ trợ" />
-          <MenuItem icon="logout" label="Đăng xuất" onPress={handleLogout} isLast />
+          <MenuItem icon="laptop" label={t('profile.items.deviceManagement')} />
+          <MenuItem icon="web" label={t('profile.items.language')} onPress={() => setLanguageModalVisible(true)} />
+          <MenuItem icon="file-document-outline" label={t('profile.items.terms')} />
+          <MenuItem icon="certificate-outline" label={t('profile.items.privacy')} />
+          <MenuItem icon="headphones" label={t('profile.items.support')} />
+          <MenuItem icon="logout" label={t('profile.items.logout')} onPress={handleLogout} isLast />
         </View>
 
         <Text style={styles.versionText}>Phiên bản: 2.30.1</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <Modal visible={languageModalVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>{t('profile.language.modalTitle')}</Text>
+
+            <Pressable
+              style={[styles.langOption, language === 'vi' && styles.langOptionActive]}
+              onPress={async () => {
+                await setLanguage('vi');
+                setLanguageModalVisible(false);
+              }}
+            >
+              <Text style={[styles.langText, language === 'vi' && styles.langTextActive]}>
+                {t('profile.language.vietnamese')}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.langOption, language === 'en' && styles.langOptionActive]}
+              onPress={async () => {
+                await setLanguage('en');
+                setLanguageModalVisible(false);
+              }}
+            >
+              <Text style={[styles.langText, language === 'en' && styles.langTextActive]}>
+                {t('profile.language.english')}
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -219,5 +260,28 @@ const styles = StyleSheet.create({
     color: '#70778C',
     marginLeft: 4,
     marginBottom: 16,
-  }
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFF',
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    gap: 10,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800', color: '#1A1D26', marginBottom: 4 },
+  langOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: '#F8F9FA',
+  },
+  langOptionActive: { backgroundColor: '#1A1D26' },
+  langText: { fontSize: 15, fontWeight: '800', color: '#1A1D26' },
+  langTextActive: { color: '#FFFFFF' },
 });
