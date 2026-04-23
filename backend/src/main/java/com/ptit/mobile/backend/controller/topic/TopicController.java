@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/topics")
+@RequestMapping("api/topics")
 @Validated
 public class TopicController {
 

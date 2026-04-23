@@ -1,20 +1,20 @@
 package com.ptit.mobile.backend.controller.writing;
 
-import com.ptit.mobile.backend.dto.request.ai.GradingRequest;
+import com.ptit.mobile.backend.dto.request.writing.GradingRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonSummaryResponse;
+import com.ptit.mobile.backend.dto.response.writing.UserLessonProgressResponse;
 import com.ptit.mobile.backend.service.writing.LessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/lessons")
+@RequestMapping("api/lesson-writings")
 @RequiredArgsConstructor
 public class LessonController {
 
@@ -60,6 +60,21 @@ public class LessonController {
                 .code(200L)
                 .message("Answer graded successfully")
                 .data(gradingResponse)
+                .build();
+    }
+
+    @GetMapping("/progress/{lessonId}")
+    public BaseResponse getLessonProgress(
+            @PathVariable Integer lessonId,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+
+        UserLessonProgressResponse progress = lessonService.getLessonProgress(userId, lessonId);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(progress)
                 .build();
     }
 }

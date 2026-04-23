@@ -82,27 +82,26 @@ public class AdminLessonServiceImpl implements AdminLessonService {
 
             // 4. Update lesson with generated content
             savedLesson.setName(result.getLessonTitle());
-            savedLesson.setParagraph(result.getVietnameseParagraph());
+            // savedLesson.setParagraph(result.getVietnameseParagraph());
             savedLesson.setStatus("COMPLETED");
             savedLesson.setUpdatedAt(LocalDateTime.now());
             LessonWriting updatedLesson = lessonWritingRepository.save(savedLesson);
 
             // 5. Save suggested vocabularies
+            // TODO: Update Admin AI lesson generation to create sentences first
             List<SuggestVocabulary> savedVocabularies = new ArrayList<>();
-            if (result.getSuggestVocabularyList() != null && !result.getSuggestVocabularyList().isEmpty()) {
-                List<SuggestVocabulary> vocabularies = result.getSuggestVocabularyList().stream()
-                        .map(item -> SuggestVocabulary.builder()
-                                .term(item.getTerm())
-                                .vietnamese(item.getVi())
-                                .type(item.getType())
-                                .pronunciation(item.getPronunciation())
-                                .example(item.getExample())
-                                .deleteFlag(false)
-                                .lessonWritingId(updatedLesson.getId())
-                                .build())
-                        .collect(Collectors.toList());
-                savedVocabularies = suggestVocabularyRepository.saveAll(vocabularies);
-            }
+            // if (result.getSuggestVocabularyList() != null && !result.getSuggestVocabularyList().isEmpty()) {
+            //    List<SuggestVocabulary> vocabularies = result.getSuggestVocabularyList().stream()
+            //            .map(item -> SuggestVocabulary.builder()
+            //                    .term(item.getTerm())
+            //                    .vietnamese(item.getVi())
+            //                    .type(item.getType())
+            //                    .pronunciation(item.getPronunciation())
+            //                    .example(item.getExample())
+            //                    .build())
+            //            .collect(Collectors.toList());
+            //    savedVocabularies = suggestVocabularyRepository.saveAll(vocabularies);
+            // }
 
             // 6. Return the full lesson details
             return lessonMapper.toAdminDetailResponse(updatedLesson, savedVocabularies);
@@ -151,7 +150,7 @@ public class AdminLessonServiceImpl implements AdminLessonService {
         LessonWriting lesson = lessonWritingRepository.findById(lessonId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bài học với ID: " + lessonId));
 
-        List<SuggestVocabulary> vocabularies = suggestVocabularyRepository.findAllByLessonWritingIdAndDeleteFlagFalse(lessonId);
+        List<SuggestVocabulary> vocabularies = new ArrayList<>(); // TODO: Fix admin fetch
         return lessonMapper.toAdminDetailResponse(lesson, vocabularies);
     }
 
@@ -165,7 +164,7 @@ public class AdminLessonServiceImpl implements AdminLessonService {
         lesson.setUpdatedAt(LocalDateTime.now());
 
         LessonWriting updatedLesson = lessonWritingRepository.save(lesson);
-        List<SuggestVocabulary> vocabularies = suggestVocabularyRepository.findAllByLessonWritingIdAndDeleteFlagFalse(lessonId);
+        List<SuggestVocabulary> vocabularies = new ArrayList<>(); // TODO: Fix admin update
         return lessonMapper.toAdminDetailResponse(updatedLesson, vocabularies);
     }
 
@@ -177,23 +176,21 @@ public class AdminLessonServiceImpl implements AdminLessonService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bài học với ID: " + lessonId));
 
         // 2. Delete all old vocabularies for this lesson
-        suggestVocabularyRepository.deleteAllByLessonWritingId(lessonId);
+        // suggestVocabularyRepository.deleteAllByLessonWritingId(lessonId);
 
         // 3. If new vocabulary list is not empty, add them
         if (vocabularyRequests != null && !vocabularyRequests.isEmpty()) {
-            List<SuggestVocabulary> newVocabularies = vocabularyRequests.stream()
-                    .map(dto -> SuggestVocabulary.builder()
-                            .term(dto.getTerm())
-                            .vietnamese(dto.getVietnamese())
-                            .type(dto.getType())
-                            .pronunciation(dto.getPronunciation())
-                            .example(dto.getExample())
-                            .deleteFlag(false)
-                            .lessonWritingId(lessonId)
-                            .build())
-                    .collect(Collectors.toList());
+            // List<SuggestVocabulary> newVocabularies = vocabularyRequests.stream()
+            //         .map(dto -> SuggestVocabulary.builder()
+            //                 .term(dto.getTerm())
+            //                 .vietnamese(dto.getVietnamese())
+            //                 .type(dto.getType())
+            //                 .pronunciation(dto.getPronunciation())
+            //                 .example(dto.getExample())
+            //                 .build())
+            //         .collect(Collectors.toList());
 
-            suggestVocabularyRepository.saveAll(newVocabularies);
+            // suggestVocabularyRepository.saveAll(newVocabularies);
         }
     }
 

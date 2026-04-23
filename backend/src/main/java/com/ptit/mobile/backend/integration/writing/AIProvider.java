@@ -16,6 +16,7 @@ public interface AIProvider {
     GradingResponse gradeAnswer(
             String question,
             String answer,
+            String suggestVocab,
             String apiUrl,
             String apiKey
     );

@@ -3,6 +3,7 @@ package com.ptit.mobile.backend.mapper.lesson;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.response.writing.*;
 import com.ptit.mobile.backend.model.LessonWriting;
+import com.ptit.mobile.backend.model.LessonSentence;
 import com.ptit.mobile.backend.model.SuggestVocabulary;
 import org.springframework.stereotype.Component;
 
@@ -25,26 +26,40 @@ public class LessonMapper {
         return response;
     }
 
-    public LessonResponse toResponse(LessonWriting lesson) {
+    public LessonResponse toResponse(LessonWriting lesson, List<LessonSentence> sentences, List<SuggestVocabulary> vocabularies) {
         if (lesson == null) {
             return null;
         }
         LessonResponse response = new LessonResponse();
         response.setId(lesson.getId());
         response.setName(lesson.getName());
-        response.setParagraph(lesson.getParagraph());
         response.setDescription(lesson.getDescription());
-        response.setSuggestVocabularies(Collections.emptyList());
-        return response;
-    }
-
-    public LessonResponse toResponse(LessonWriting lesson, List<SuggestVocabulary> vocabularies) {
-        LessonResponse response = toResponse(lesson);
-        if (response != null && vocabularies != null) {
-            response.setSuggestVocabularies(vocabularies.stream()
-                    .map(this::toSuggestVocabularyResponse)
-                    .collect(Collectors.toList()));
+        response.setTotalSentences(lesson.getTotalSentences());
+        
+        if (sentences != null) {
+            List<LessonSentenceResponse> sentenceResponses = sentences.stream().map(sentence -> {
+                LessonSentenceResponse sentenceResponse = new LessonSentenceResponse();
+                sentenceResponse.setId(sentence.getId());
+                sentenceResponse.setSentenceVi(sentence.getSentenceVi());
+                sentenceResponse.setOrderIndex(sentence.getOrderIndex());
+                
+                if (vocabularies != null) {
+                    List<SuggestVocabularyResponse> vocabsForSentence = vocabularies.stream()
+                            .filter(v -> sentence.getId().equals(v.getLessonSentenceId()))
+                            .map(this::toSuggestVocabularyResponse)
+                            .collect(Collectors.toList());
+                    sentenceResponse.setSuggestVocabularies(vocabsForSentence);
+                } else {
+                    sentenceResponse.setSuggestVocabularies(Collections.emptyList());
+                }
+                
+                return sentenceResponse;
+            }).collect(Collectors.toList());
+            response.setSentences(sentenceResponses);
+        } else {
+            response.setSentences(Collections.emptyList());
         }
+        
         return response;
     }
 
@@ -84,8 +99,6 @@ public class LessonMapper {
         AdminLessonDetailResponse response = new AdminLessonDetailResponse();
         response.setId(lesson.getId());
         response.setName(lesson.getName());
-        response.setParagraph(lesson.getParagraph());
-        response.setNote(lesson.getNote());
         response.setDescription(lesson.getDescription());
         response.setDeleteFlag(lesson.getDeleteFlag());
         response.setCreatedAt(lesson.getCreatedAt());
@@ -118,12 +131,6 @@ public class LessonMapper {
 
         if (request.getName() != null) {
             lesson.setName(request.getName());
-        }
-        if (request.getParagraph() != null) {
-            lesson.setParagraph(request.getParagraph());
-        }
-        if (request.getNote() != null) {
-            lesson.setNote(request.getNote());
         }
         if (request.getDescription() != null) {
             lesson.setDescription(request.getDescription());

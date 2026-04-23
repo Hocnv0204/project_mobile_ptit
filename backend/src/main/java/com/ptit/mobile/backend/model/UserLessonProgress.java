@@ -6,42 +6,36 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "lesson_writing")
+@Table(name = "user_lesson_progress")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LessonWriting {
+public class UserLessonProgress {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
-    @Column(length = 100)
-    private String name;
+    @Column(name = "user_id")
+    private Long userId;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "lesson_writing_id")
+    private Integer lessonWritingId;
+
+    @Column(name = "current_order_index")
+    private Integer currentOrderIndex;
 
     @Column(name = "total_sentences")
     private Integer totalSentences;
 
-    @Column(length = 50)
+    @Column(length = 20)
     private String status;
-
-    @Column(name = "delete_flag")
-    private Boolean deleteFlag;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Column(name = "topic_id")
-    private Integer topicId;
-
-    @Column(name = "level_id")
-    private Integer levelId;
 }
