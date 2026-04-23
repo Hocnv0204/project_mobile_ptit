@@ -1,5 +1,5 @@
 import { http } from './http';
-import { ApiEnvelope, LessonVocab, Vocabulary } from './types';
+import { ApiEnvelope, LessonVocab, VocabularyWithStatus } from './types';
 
 export type UpdateLessonVocabRequest = {
   name: string;
@@ -13,7 +13,7 @@ export const lessonVocabApi = {
   },
 
   getVocabularies: async (lessonId: number) => {
-    const res = await http.get<ApiEnvelope<Vocabulary[]>>(`/api/lesson-vocab/${lessonId}/vocabularies`);
+    const res = await http.get<ApiEnvelope<VocabularyWithStatus[]>>(`/api/lesson-vocab/${lessonId}/vocabularies`);
     return res.data;
   },
 

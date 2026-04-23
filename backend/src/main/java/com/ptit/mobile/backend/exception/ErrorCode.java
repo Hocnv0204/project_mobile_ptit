@@ -72,7 +72,13 @@ public enum ErrorCode {
     // Quiz (9300)
     QUIZ_NOT_ENOUGH_VOCAB(9301, "Need at least 4 vocabularies to start a quiz"),
     QUIZ_VOCAB_NOT_FOUND(9302, "Vocabulary not found"),
-    QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED");
+    QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED"),
+
+    // Flashcard / SM-2 (9400)
+    FLASHCARD_CARD_REVIEW_NOT_FOUND(9401, "Card review not found"),
+    FLASHCARD_VOCAB_NOT_FOUND(9402, "Vocabulary not found for flashcard"),
+    FLASHCARD_INVALID_QUALITY(9403, "Quality must be between 0 and 5"),
+    FLASHCARD_LESSON_VOCAB_NOT_FOUND(9404, "Lesson vocab not found for flashcard session");
 
     private final int code;
     private final String message;
