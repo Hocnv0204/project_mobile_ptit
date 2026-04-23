@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, Pressable, Animated, ActivityIndicator, Alert }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { flashcardApi, FlashcardCard } from '../../api/flashcardApi';
+import { useAppColors } from '../../theme/useAppColors';
 
 export default function FlashcardScreen({ route, navigation }: any) {
   const { lessonVocabId, lessonName } = route.params as { lessonVocabId: number; lessonName?: string };
   const insets = useSafeAreaInsets();
+  const { background, text, mutedText, surface, border } = useAppColors();
 
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<FlashcardCard[]>([]);
@@ -114,6 +116,7 @@ export default function FlashcardScreen({ route, navigation }: any) {
         style={[
           styles.container,
           {
+            backgroundColor: background,
             paddingTop: insets.top,
             paddingBottom: insets.bottom,
             justifyContent: 'center',
@@ -128,16 +131,16 @@ export default function FlashcardScreen({ route, navigation }: any) {
 
   if (!currentCard) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: background }]}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
-            <MaterialCommunityIcons name="close" size={24} color="#1A1D26" />
+            <MaterialCommunityIcons name="close" size={24} color={text} />
           </Pressable>
-          <Text style={styles.emptyTitle}>{lessonName || 'Flashcards'}</Text>
+          <Text style={[styles.emptyTitle, { color: text }]}>{lessonName || 'Flashcards'}</Text>
           <View style={{ width: 32 }} />
         </View>
         <View style={styles.center}>
-          <Text style={styles.emptyText}>Hôm nay bạn không có thẻ nào cần ôn.</Text>
+          <Text style={[styles.emptyText, { color: mutedText }]}>Hôm nay bạn không có thẻ nào cần ôn.</Text>
           <View style={styles.emptyActions}>
             <Pressable
               style={styles.reloadBtn}
@@ -164,18 +167,18 @@ export default function FlashcardScreen({ route, navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: background }]}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
-          <MaterialCommunityIcons name="close" size={24} color="#1A1D26" />
+          <MaterialCommunityIcons name="close" size={24} color={text} />
         </Pressable>
         <View style={styles.progressContainer}>
-          <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarBg, { backgroundColor: border }]}>
             <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
           </View>
         </View>
-        <Text style={styles.progressText}>
+        <Text style={[styles.progressText, { color: mutedText }]}>
           {currentIndex + 1}/{cards.length}
         </Text>
       </View>
@@ -184,10 +187,10 @@ export default function FlashcardScreen({ route, navigation }: any) {
       <View style={styles.cardContainer}>
         <Pressable style={styles.cardWrapper} onPress={handleFlip}>
           {/* Front Card */}
-          <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
+          <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle, { backgroundColor: surface }]}>
             <Text style={styles.cardLabel}>TỪ VỰNG</Text>
-            <Text style={styles.term}>{currentCard.term.toUpperCase()}</Text>
-            <Text style={styles.pronunciation}>{currentCard.pronunciation || '---'}</Text>
+            <Text style={[styles.term, { color: text }]}>{currentCard.term.toUpperCase()}</Text>
+            <Text style={[styles.pronunciation, { color: mutedText }]}>{currentCard.pronunciation || '---'}</Text>
             
             <View style={styles.hintContainer}>
               <MaterialCommunityIcons name="gesture-tap" size={20} color="#A0A7BA" />
@@ -196,12 +199,12 @@ export default function FlashcardScreen({ route, navigation }: any) {
           </Animated.View>
 
           {/* Back Card */}
-          <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
+          <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle, { backgroundColor: surface }]}>
             <Text style={styles.cardLabel}>NGHĨA</Text>
             <Text style={styles.meaning}>{currentCard.vi}</Text>
-            <Text style={styles.type}>Loại từ: {currentCard.type || '---'}</Text>
+            <Text style={[styles.type, { color: mutedText }]}>Loại từ: {currentCard.type || '---'}</Text>
             {currentCard.example ? (
-              <Text style={styles.example}>Ví dụ: {currentCard.example}</Text>
+              <Text style={[styles.example, { color: text }]}>Ví dụ: {currentCard.example}</Text>
             ) : null}
           </Animated.View>
         </Pressable>

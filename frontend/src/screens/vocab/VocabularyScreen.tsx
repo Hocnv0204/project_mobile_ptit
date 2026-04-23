@@ -6,10 +6,12 @@ import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { LessonVocab } from '../../api/types';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
+import { useAppColors } from '../../theme/useAppColors';
 
 export default function VocabularyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
   
   const [loadingSystem, setLoadingSystem] = useState(true);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
@@ -127,22 +129,22 @@ export default function VocabularyScreen({ navigation }: any) {
 
   const renderItem = ({ item }: { item: LessonVocab }) => (
     <Pressable 
-      style={styles.card}
+      style={[styles.card, { backgroundColor: surface }]}
       onPress={() => navigation.navigate(Routes.LESSON_DETAIL, { lesson: item, isPersonal: activeTab === 'personal' })}
     >
-      <View style={styles.cardIcon}>
-        <MaterialCommunityIcons name="book-open-page-variant" size={24} color="#0066FF" />
+      <View style={[styles.cardIcon, { backgroundColor: primary + '1A' }]}>
+        <MaterialCommunityIcons name="book-open-page-variant" size={24} color={primary} />
       </View>
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.cardSubtitle}>
+        <Text style={[styles.cardTitle, { color: text }]}>{item.name}</Text>
+        <Text style={[styles.cardSubtitle, { color: mutedText }]}>
           {new Date(item.createdAt).toLocaleDateString('vi-VN')}
         </Text>
       </View>
       {activeTab === 'personal' ? (
         <View style={styles.rowActions}>
           <Pressable
-            style={styles.editBtn}
+            style={[styles.editBtn, { borderColor: border }]}
             onPress={(e) => {
               // @ts-ignore - RN press events support stopPropagation in runtime
               e?.stopPropagation?.();
@@ -156,7 +158,7 @@ export default function VocabularyScreen({ navigation }: any) {
           </Pressable>
 
           <Pressable
-            style={styles.deleteBtn}
+            style={[styles.deleteBtn, { borderColor: border }]}
             onPress={(e) => {
               // @ts-ignore - RN press events support stopPropagation in runtime
               e?.stopPropagation?.();
@@ -174,29 +176,29 @@ export default function VocabularyScreen({ navigation }: any) {
           </Pressable>
         </View>
       ) : (
-        <MaterialCommunityIcons name="chevron-right" size={24} color="#C4C8D4" />
+        <MaterialCommunityIcons name="chevron-right" size={24} color={mutedText} />
       )}
     </Pressable>
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Từ vựng</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: background }]}>
+      <View style={[styles.header, { backgroundColor: surface }]}>
+        <Text style={[styles.headerTitle, { color: text }]}>Từ vựng</Text>
       </View>
 
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: surface, borderBottomColor: border }]}>
         <Pressable 
-          style={[styles.tab, activeTab === 'system' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'system' && { borderBottomColor: primary }]}
           onPress={() => handleTabChange('system')}
         >
-          <Text style={[styles.tabText, activeTab === 'system' && styles.tabTextActive]}>Hệ thống</Text>
+          <Text style={[styles.tabText, { color: activeTab === 'system' ? primary : mutedText }]}>Hệ thống</Text>
         </Pressable>
         <Pressable 
-          style={[styles.tab, activeTab === 'personal' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'personal' && { borderBottomColor: primary }]}
           onPress={() => handleTabChange('personal')}
         >
-          <Text style={[styles.tabText, activeTab === 'personal' && styles.tabTextActive]}>Cá nhân</Text>
+          <Text style={[styles.tabText, { color: activeTab === 'personal' ? primary : mutedText }]}>Cá nhân</Text>
         </Pressable>
       </View>
 
@@ -212,7 +214,7 @@ export default function VocabularyScreen({ navigation }: any) {
           renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyText, { color: mutedText }]}>
                 {activeTab === 'personal' ? 'Bạn chưa có bài học nào. Nhấn (+) để tạo mới!' : 'Chưa có bài học nào.'}
               </Text>
             </View>
@@ -232,13 +234,14 @@ export default function VocabularyScreen({ navigation }: any) {
       {/* Create Lesson Modal */}
       <Modal visible={isModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: surface }]}>
+            <Text style={[styles.modalTitle, { color: text }]}>
               {editingLesson ? 'Đổi tên bài học' : 'Tạo bài học mới'}
             </Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { borderColor: border, color: text }]}
               placeholder="Nhập tên bài học (VD: Động từ bất quy tắc)"
+              placeholderTextColor={mutedText}
               value={newLessonName}
               onChangeText={setNewLessonName}
               autoFocus
@@ -277,20 +280,17 @@ export default function VocabularyScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#FFF',
   },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1A1D26' },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
     paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEF0F6',
   },
   tab: {
     flex: 1,
@@ -300,13 +300,12 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: { borderBottomColor: '#0066FF' },
-  tabText: { fontSize: 16, fontWeight: '600', color: '#70778C' },
+  tabText: { fontSize: 16, fontWeight: '600' },
   tabTextActive: { color: '#0066FF' },
   listContent: { padding: 24, paddingBottom: 100 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
@@ -320,14 +319,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#F0F5FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   cardContent: { flex: 1 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#1A1D26', marginBottom: 4 },
-  cardSubtitle: { fontSize: 13, color: '#A0A7BA' },
+  cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  cardSubtitle: { fontSize: 13 },
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   editBtn: {
     width: 40,
@@ -350,7 +348,7 @@ const styles = StyleSheet.create({
     borderColor: '#FEE2E2',
   },
   emptyContainer: { alignItems: 'center', marginTop: 40 },
-  emptyText: { color: '#A0A7BA', fontSize: 16 },
+  emptyText: { fontSize: 16 },
   fab: {
     position: 'absolute',
     right: 24,
@@ -374,14 +372,12 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: '#FFF',
     borderRadius: 20,
     padding: 24,
   },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1D26', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,

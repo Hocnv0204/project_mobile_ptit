@@ -17,6 +17,7 @@ import { Colors } from "../../constants/colors";
 import { Routes } from "../../constants/routes";
 import { topicApi } from "../../api/topic/topicApi";
 import { TopicResponse } from "../../api/topic/types";
+import { useAppColors } from "../../theme/useAppColors";
 
 export default function WritingScreen() {
   const [topics, setTopics] = useState<TopicResponse[]>([]);
@@ -28,6 +29,7 @@ export default function WritingScreen() {
 
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
@@ -87,50 +89,50 @@ export default function WritingScreen() {
 
   const renderItem = ({ item }: { item: TopicResponse }) => (
     <TouchableOpacity
-      style={styles.topicCard}
+      style={[styles.topicCard, { backgroundColor: surface }]}
       activeOpacity={0.8}
       onPress={() => {
         navigation.navigate(Routes.SELECT_LESSON, { topicId: item.id });
       }}
     >
       <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="document-text" size={24} color="#6C63FF" />
+        <View style={[styles.iconContainer, { backgroundColor: primary + "1A" }]}>
+          <Ionicons name="document-text" size={24} color={primary} />
         </View>
         <View style={styles.cardContent}>
-          <Text style={styles.topicName} numberOfLines={1}>
+          <Text style={[styles.topicName, { color: text }]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.topicDesc} numberOfLines={2}>
+          <Text style={[styles.topicDesc, { color: mutedText }]} numberOfLines={2}>
             {item.description || "No description available for this topic."}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
+        <Ionicons name="chevron-forward" size={20} color={mutedText} />
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
+        <View style={[styles.container, { backgroundColor: background }]}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Writing Topics</Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={[styles.headerTitle, { color: text }]}>Writing Topics</Text>
+            <Text style={[styles.headerSubtitle, { color: mutedText }]}>
               Choose a topic to practice your writing skills
             </Text>
           </View>
 
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, { backgroundColor: surface, shadowOpacity: 0.0, elevation: 0 }]}>
             <Ionicons
               name="search"
               size={20}
-              color="#A0A0BC"
+              color={mutedText}
               style={styles.searchIcon}
             />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: text }]}
               placeholder="Search topics..."
-              placeholderTextColor="#5A5A7A"
+              placeholderTextColor={mutedText}
               value={searchTerm}
               onChangeText={setSearchTerm}
             />
@@ -163,9 +165,9 @@ export default function WritingScreen() {
             ListEmptyComponent={
               !loading ? (
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="book-outline" size={64} color="#252540" />
-                  <Text style={styles.emptyTitle}>No topics found</Text>
-                  <Text style={styles.emptySubtitle}>
+                  <Ionicons name="book-outline" size={64} color={mutedText} />
+                  <Text style={[styles.emptyTitle, { color: text }]}>No topics found</Text>
+                  <Text style={[styles.emptySubtitle, { color: mutedText }]}>
                     Try adjusting your search
                   </Text>
                 </View>
@@ -187,11 +189,9 @@ export default function WritingScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ccccccff", // Đổi màu xám đậm cũ thành màu bạn muốn
   },
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA", // Đảm bảo lớp bên trong cũng cùng màu
     paddingHorizontal: 20,
   },
   header: {
@@ -201,17 +201,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#1A1D26",
     marginBottom: 6,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: "#A0A0BC",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingHorizontal: 16,
     height: 56,
@@ -227,7 +224,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: "#1A1D26",
     fontSize: 16,
     height: "100%",
   },
@@ -238,7 +234,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   topicCard: {
-    backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 16, // Bo góc tròn cho card
     marginBottom: 12,
@@ -256,7 +251,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(108, 99, 255, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -267,12 +261,10 @@ const styles = StyleSheet.create({
   topicName: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1A1D26",
     marginBottom: 4,
   },
   topicDesc: {
     fontSize: 14,
-    color: "#A0A0BC",
     lineHeight: 20,
   },
   emptyContainer: {
@@ -283,13 +275,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#1A1D26",
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: "#A0A0BC",
   },
   footerLoader: {
     paddingVertical: 20,

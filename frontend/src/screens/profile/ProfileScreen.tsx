@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   Pressable,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { authApi } from '../../api/authApi';
 import { useNavigation } from '@react-navigation/native';
 import { Routes } from '../../constants/routes';
 import { useI18n } from '../../i18n/useI18n';
+import { useSettingsStore } from '../../store/settingsStore';
 
 // Reusable menu item component
 interface MenuItemProps {
@@ -46,6 +48,8 @@ export default function ProfileScreen() {
   const { signOut: googleSignOut } = useGoogleAuth();
   const { t, language, setLanguage } = useI18n();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
 
   const handleLogout = async () => {
     try {
@@ -116,6 +120,21 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>{t('profile.sections.settings')}</Text>
         <View style={styles.sectionContainer}>
           <MenuItem icon="laptop" label={t('profile.items.deviceManagement')} />
+          <View style={[styles.menuItem, styles.menuItemBorder]}>
+            <MaterialCommunityIcons name="weather-night" size={24} color="#4A5568" style={styles.menuIcon} />
+            <View style={styles.darkModeRow}>
+              <Text style={styles.menuText}>{t('profile.items.darkMode')}</Text>
+              <View style={styles.darkModeRight}>
+                <Text style={styles.darkModeLabel}>
+                  {themeMode === 'dark' ? t('profile.darkMode.on') : t('profile.darkMode.off')}
+                </Text>
+                <Switch
+                  value={themeMode === 'dark'}
+                  onValueChange={async (v) => setThemeMode(v ? 'dark' : 'light')}
+                />
+              </View>
+            </View>
+          </View>
           <MenuItem icon="web" label={t('profile.items.language')} onPress={() => setLanguageModalVisible(true)} />
           <MenuItem icon="file-document-outline" label={t('profile.items.terms')} />
           <MenuItem icon="certificate-outline" label={t('profile.items.privacy')} />
@@ -254,6 +273,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1A1D26',
   },
+  darkModeRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  darkModeRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  darkModeLabel: { fontSize: 14, fontWeight: '700', color: '#70778C' },
 
   versionText: {
     fontSize: 14,

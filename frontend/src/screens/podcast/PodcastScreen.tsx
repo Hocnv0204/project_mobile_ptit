@@ -17,6 +17,7 @@ import { Audio } from 'expo-av';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { podcastApi, PodcastResponse, PodcastDetailResponse } from '../../services/podcastApi';
 import { API_BASE_URL } from '../../config/env';
+import { useAppColors } from '../../theme/useAppColors';
 
 // Helper: convert relative audioUrl to full HTTP URL
 function resolveAudioUrl(audioUrl: string): string {
@@ -29,23 +30,17 @@ function resolveAudioUrl(audioUrl: string): string {
   return `${API_BASE_URL}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`;
 }
 
-const COLORS = {
-  primary: '#4F46E5',
-  primaryLight: '#EEF2FF',
-  background: '#F9FAFB',
-  surface: '#FFFFFF',
-  text: '#111827',
-  textSecondary: '#6B7280',
-  border: '#E5E7EB',
+const SPEAKER_COLORS = {
   speakerA: '#4F46E5',
   speakerB: '#059669',
   vocabGreen: '#059669',
-  progressBg: '#E5E7EB',
   progressFill: '#818CF8',
 };
 
 export default function PodcastScreen() {
   const insets = useSafeAreaInsets();
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
+  const primaryLight = primary + '1A';
 
   // Podcast list
   const [podcasts, setPodcasts] = useState<PodcastResponse[]>([]);
@@ -226,84 +221,84 @@ export default function PodcastScreen() {
 
   if (listLoading) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={{ marginTop: 12, color: COLORS.textSecondary }}>Loading podcasts...</Text>
+      <View style={[styles.center, { paddingTop: insets.top, backgroundColor: background }]}>
+        <ActivityIndicator size="large" color={primary} />
+        <Text style={{ marginTop: 12, color: mutedText }}>Loading podcasts...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: background }]}>
       {/* ── HEADER BAR ── */}
-      <View style={styles.headerBar}>
-        <Text style={styles.headerLogo}>🎧 EnglishPod</Text>
+      <View style={[styles.headerBar, { backgroundColor: surface }]}>
+        <Text style={[styles.headerLogo, { color: primary }]}>🎧 EnglishPod</Text>
         <TouchableOpacity onPress={() => setShowSidebar(true)} style={styles.menuBtn}>
-          <MaterialCommunityIcons name="menu" size={28} color={COLORS.primary} />
+          <MaterialCommunityIcons name="menu" size={28} color={primary} />
         </TouchableOpacity>
       </View>
 
       {/* ── BODY ── */}
       {detailLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={primary} />
         </View>
       ) : podcast ? (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Level badge + Title */}
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>Level {podcast.levelId}</Text>
+          <View style={[styles.levelBadge, { backgroundColor: primaryLight }]}>
+            <Text style={[styles.levelText, { color: primary }]}>Level {podcast.levelId}</Text>
           </View>
-          <Text style={styles.title}>{podcast.title}</Text>
+          <Text style={[styles.title, { color: text }]}>{podcast.title}</Text>
 
           {/* Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardHeaderTitle}>Transcript / Notes</Text>
+          <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+            <View style={[styles.cardHeader, { borderBottomColor: border }]}>
+              <Text style={[styles.cardHeaderTitle, { color: mutedText }]}>Transcript / Notes</Text>
               <TouchableOpacity
-                style={styles.toggleBtn}
+                style={[styles.toggleBtn, { borderColor: border }]}
                 onPress={() => setShowTranscript(!showTranscript)}
               >
                 <MaterialCommunityIcons
                   name={showTranscript ? 'eye-off-outline' : 'eye-outline'}
                   size={16}
-                  color={COLORS.textSecondary}
+                  color={mutedText}
                 />
-                <Text style={styles.toggleLabel}>{showTranscript ? ' Hide' : ' Show'}</Text>
+                <Text style={[styles.toggleLabel, { color: mutedText }]}>{showTranscript ? ' Hide' : ' Show'}</Text>
               </TouchableOpacity>
             </View>
 
             {showTranscript ? (
               <View style={styles.cardBody}>
                 {/* Dialogues */}
-                <Text style={styles.sectionTitle}>{podcast.title}</Text>
+                <Text style={[styles.sectionTitle, { color: text }]}>{podcast.title}</Text>
                 {podcast.dialogues?.length ? (
                   podcast.dialogues.map((d, i) => (
                     <View key={`d-${d.id ?? i}`} style={styles.dialogueRow}>
                       <Text
                         style={[
                           styles.speaker,
-                          { color: d.speaker === 'A' ? COLORS.speakerA : COLORS.speakerB },
+                          { color: d.speaker === 'A' ? SPEAKER_COLORS.speakerA : SPEAKER_COLORS.speakerB },
                         ]}
                       >
                         {d.speaker}
                       </Text>
-                      <Text style={styles.dialogueText}>{d.content}</Text>
+                      <Text style={[styles.dialogueText, { color: text }]}>{d.content}</Text>
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.empty}>No transcript available.</Text>
+                  <Text style={[styles.empty, { color: mutedText }]}>No transcript available.</Text>
                 )}
 
                 {/* Vocab */}
                 {podcast.vocab?.length > 0 && (
-                  <View style={styles.vocabSection}>
-                    <Text style={styles.vocabHeading}>Key Vocabulary</Text>
+                  <View style={[styles.vocabSection, { borderTopColor: border }]}>
+                    <Text style={[styles.vocabHeading, { color: text }]}>Key Vocabulary</Text>
                     {podcast.vocab.map((v, i) => (
                       <View key={`v-${v.id ?? i}`} style={styles.vocabItem}>
-                        <Text style={styles.vocabTerm}>{v.term}</Text>
-                        {v.wordType ? <Text style={styles.vocabType}>{v.wordType}</Text> : null}
-                        <Text style={styles.vocabDef}>{v.definition}</Text>
+                        <Text style={[styles.vocabTerm, { color: SPEAKER_COLORS.vocabGreen }]}>{v.term}</Text>
+                        {v.wordType ? <Text style={[styles.vocabType, { color: mutedText }]}>{v.wordType}</Text> : null}
+                        <Text style={[styles.vocabDef, { color: text }]}>{v.definition}</Text>
                       </View>
                     ))}
                   </View>
@@ -311,7 +306,7 @@ export default function PodcastScreen() {
               </View>
             ) : (
               <View style={styles.cardBodyEmpty}>
-                <Text style={styles.empty}>
+                <Text style={[styles.empty, { color: mutedText }]}>
                   Click "Show" to view the transcript and vocabulary notes.
                 </Text>
               </View>
@@ -323,15 +318,15 @@ export default function PodcastScreen() {
         </ScrollView>
       ) : (
         <View style={styles.center}>
-          <Text style={styles.empty}>No podcast selected</Text>
+          <Text style={[styles.empty, { color: mutedText }]}>No podcast selected</Text>
         </View>
       )}
 
       {/* ── STICKY PLAYER ── */}
-      <View style={[styles.player, { paddingBottom: insets.bottom + 8 }]}>  
+      <View style={[styles.player, { paddingBottom: insets.bottom + 8, backgroundColor: surface, borderTopColor: border }]}>  
         {/* Progress bar */}
         <View style={styles.progressWrap}>
-          <View style={styles.progressBg}>
+          <View style={[styles.progressBg, { backgroundColor: border }]}>
             <View
               style={[
                 styles.progressFill,
@@ -344,12 +339,12 @@ export default function PodcastScreen() {
         {/* Controls */}
         <View style={styles.controls}>
           <TouchableOpacity onPress={() => seek(-10000)}>
-            <MaterialCommunityIcons name="rewind-10" size={22} color={COLORS.textSecondary} />
+            <MaterialCommunityIcons name="rewind-10" size={22} color={mutedText} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => seek(-5000)}>
-            <MaterialCommunityIcons name="skip-previous" size={28} color={COLORS.textSecondary} />
+            <MaterialCommunityIcons name="skip-previous" size={28} color={mutedText} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={togglePlayPause} style={styles.playBtn}>
+          <TouchableOpacity onPress={togglePlayPause} style={[styles.playBtn, { backgroundColor: primary, shadowColor: primary }]}>
             <MaterialCommunityIcons
               name={isPlaying ? 'pause' : 'play'}
               size={32}
@@ -357,10 +352,10 @@ export default function PodcastScreen() {
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => seek(5000)}>
-            <MaterialCommunityIcons name="skip-next" size={28} color={COLORS.textSecondary} />
+            <MaterialCommunityIcons name="skip-next" size={28} color={mutedText} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => seek(10000)}>
-            <MaterialCommunityIcons name="fast-forward-10" size={22} color={COLORS.textSecondary} />
+            <MaterialCommunityIcons name="fast-forward-10" size={22} color={mutedText} />
           </TouchableOpacity>
         </View>
 
@@ -370,21 +365,21 @@ export default function PodcastScreen() {
             <MaterialCommunityIcons
               name="repeat"
               size={18}
-              color={isLooping ? COLORS.primary : COLORS.textSecondary}
+              color={isLooping ? primary : mutedText}
             />
           </TouchableOpacity>
           <TouchableOpacity>
-            <MaterialCommunityIcons name="arrow-right-circle-outline" size={18} color={COLORS.primary} />
+            <MaterialCommunityIcons name="arrow-right-circle-outline" size={18} color={primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={changeSpeed} style={styles.speedBadge}>
-            <Text style={styles.speedText}>{playbackSpeed}x</Text>
+          <TouchableOpacity onPress={changeSpeed} style={[styles.speedBadge, { borderColor: border }]}>
+            <Text style={[styles.speedText, { color: mutedText }]}>{playbackSpeed}x</Text>
           </TouchableOpacity>
         </View>
 
         {/* Time */}
         <View style={styles.timeRow}>
-          <Text style={styles.time}>{formatTime(position)}</Text>
-          <Text style={styles.time}>{formatTime(duration)}</Text>
+          <Text style={[styles.time, { color: mutedText }]}>{formatTime(position)}</Text>
+          <Text style={[styles.time, { color: mutedText }]}>{formatTime(duration)}</Text>
         </View>
       </View>
 
@@ -392,30 +387,30 @@ export default function PodcastScreen() {
       <Modal visible={showSidebar} animationType="slide" transparent onRequestClose={() => setShowSidebar(false)}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalDismiss} onPress={() => setShowSidebar(false)} />
-          <View style={[styles.sidebar, { paddingTop: insets.top }]}>
+          <View style={[styles.sidebar, { paddingTop: insets.top, backgroundColor: background }]}>
             {/* Sidebar Header */}
-            <View style={styles.sidebarHeader}>
+            <View style={[styles.sidebarHeader, { borderBottomColor: border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialCommunityIcons name="headphones" size={24} color={COLORS.primary} />
-                <Text style={styles.sidebarTitle}> EnglishPod</Text>
+                <MaterialCommunityIcons name="headphones" size={24} color={primary} />
+                <Text style={[styles.sidebarTitle, { color: primary }]}> EnglishPod</Text>
               </View>
               <TouchableOpacity onPress={() => setShowSidebar(false)}>
-                <MaterialCommunityIcons name="close" size={24} color={COLORS.textSecondary} />
+                <MaterialCommunityIcons name="close" size={24} color={mutedText} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.sidebarSubtitle}>
+            <Text style={[styles.sidebarSubtitle, { color: mutedText }]}>
               Learn English through 300+ conversations at various levels.
             </Text>
 
             {/* Search */}
-            <View style={styles.searchWrap}>
-              <MaterialCommunityIcons name="magnify" size={18} color={COLORS.textSecondary} />
+            <View style={[styles.searchWrap, { borderColor: border, backgroundColor: surface }]}>
+              <MaterialCommunityIcons name="magnify" size={18} color={mutedText} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: text }]}
                 placeholder="Search episodes..."
                 value={searchQuery}
                 onChangeText={handleSearch}
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={mutedText}
               />
             </View>
 
@@ -428,23 +423,27 @@ export default function PodcastScreen() {
                 const active = item.id === selectedId;
                 return (
                   <TouchableOpacity
-                    style={[styles.listItem, active && styles.listItemActive]}
+                    style={[
+                      styles.listItem,
+                      { borderBottomColor: border, backgroundColor: surface },
+                      active && [styles.listItemActive, { backgroundColor: primaryLight, borderLeftColor: primary }],
+                    ]}
                     onPress={() => selectPodcast(item.id)}
                   >
                     <View style={styles.listIcon}>
                       {active ? (
-                        <MaterialCommunityIcons name="play-circle" size={32} color={COLORS.primary} />
+                        <MaterialCommunityIcons name="play-circle" size={32} color={primary} />
                       ) : (
-                        <View style={styles.numCircle}>
-                          <Text style={styles.numText}>{index + 1}</Text>
+                        <View style={[styles.numCircle, { backgroundColor: border }]}>
+                          <Text style={[styles.numText, { color: mutedText }]}>{index + 1}</Text>
                         </View>
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.listTitle, active && { color: COLORS.primary, fontWeight: 'bold' }]} numberOfLines={1}>
+                      <Text style={[styles.listTitle, { color: text }, active && { color: primary, fontWeight: 'bold' }]} numberOfLines={1}>
                         {item.title}
                       </Text>
-                      <Text style={styles.listSub}>Level {item.levelId}</Text>
+                      <Text style={[styles.listSub, { color: mutedText }]}>Level {item.levelId}</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -460,8 +459,8 @@ export default function PodcastScreen() {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
+  root: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   /* ── Header Bar ── */
   headerBar: {
@@ -470,30 +469,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: COLORS.primaryLight,
   },
-  headerLogo: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary },
+  headerLogo: { fontSize: 18, fontWeight: 'bold' },
   menuBtn: { padding: 4 },
 
   /* ── Scroll body ── */
   scrollContent: { padding: 16 },
   levelBadge: {
-    backgroundColor: '#E0E7FF',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 16,
     alignSelf: 'flex-start',
     marginBottom: 8,
   },
-  levelText: { color: COLORS.primary, fontSize: 12, fontWeight: '600' },
-  title: { fontSize: 24, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
+  levelText: { fontSize: 12, fontWeight: '600' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
 
   /* ── Card ── */
   card: {
-    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: 'hidden',
     elevation: 2,
     shadowColor: '#000',
@@ -507,36 +502,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
-  cardHeaderTitle: { fontSize: 16, fontWeight: '500', color: COLORS.textSecondary },
+  cardHeaderTitle: { fontSize: 16, fontWeight: '500' },
   toggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  toggleLabel: { fontSize: 14, color: COLORS.textSecondary },
+  toggleLabel: { fontSize: 14 },
   cardBody: { padding: 16 },
   cardBodyEmpty: { padding: 24, alignItems: 'center' },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
 
   /* ── Dialogue ── */
   dialogueRow: { marginBottom: 14 },
   speaker: { fontSize: 16, fontWeight: 'bold', marginBottom: 2 },
-  dialogueText: { fontSize: 16, color: COLORS.text, lineHeight: 24 },
-  empty: { color: COLORS.textSecondary, fontStyle: 'italic', textAlign: 'center' },
+  dialogueText: { fontSize: 16, lineHeight: 24 },
+  empty: { fontStyle: 'italic', textAlign: 'center' },
 
   /* ── Vocab ── */
-  vocabSection: { marginTop: 24, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 24 },
-  vocabHeading: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
+  vocabSection: { marginTop: 24, borderTopWidth: 1, paddingTop: 24 },
+  vocabHeading: { fontSize: 22, fontWeight: 'bold', marginBottom: 16 },
   vocabItem: { marginBottom: 18 },
-  vocabTerm: { fontSize: 18, fontWeight: 'bold', color: COLORS.vocabGreen, marginBottom: 2 },
-  vocabType: { fontSize: 14, color: COLORS.textSecondary, fontStyle: 'italic', marginBottom: 2 },
-  vocabDef: { fontSize: 16, color: COLORS.text, lineHeight: 24 },
+  vocabTerm: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+  vocabType: { fontSize: 14, fontStyle: 'italic', marginBottom: 2 },
+  vocabDef: { fontSize: 16, lineHeight: 24 },
 
   /* ── Player ── */
   player: {
@@ -544,11 +537,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
@@ -556,8 +547,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   progressWrap: { marginBottom: 10 },
-  progressBg: { height: 4, backgroundColor: COLORS.progressBg, borderRadius: 2 },
-  progressFill: { height: 4, backgroundColor: COLORS.progressFill, borderRadius: 2 },
+  progressBg: { height: 4, borderRadius: 2 },
+  progressFill: { height: 4, backgroundColor: SPEAKER_COLORS.progressFill, borderRadius: 2 },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -569,10 +560,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -587,21 +576,19 @@ const styles = StyleSheet.create({
   },
   speedBadge: {
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 1,
   },
-  speedText: { fontSize: 12, fontWeight: 'bold', color: COLORS.textSecondary },
+  speedText: { fontSize: 12, fontWeight: 'bold' },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 4 },
-  time: { fontSize: 12, color: COLORS.textSecondary },
+  time: { fontSize: 12 },
 
   /* ── Sidebar Modal ── */
   modalOverlay: { flex: 1, flexDirection: 'row' },
   modalDismiss: { width: SCREEN_WIDTH * 0.15, backgroundColor: 'rgba(0,0,0,0.4)' },
   sidebar: {
     flex: 1,
-    backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
   },
   sidebarHeader: {
@@ -610,12 +597,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
-  sidebarTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.primary },
+  sidebarTitle: { fontSize: 20, fontWeight: 'bold' },
   sidebarSubtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     lineHeight: 20,
     marginVertical: 10,
   },
@@ -623,24 +608,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 8,
-    backgroundColor: '#F9FAFB',
   },
-  searchInput: { flex: 1, height: 40, marginLeft: 8, color: COLORS.text },
+  searchInput: { flex: 1, height: 40, marginLeft: 8 },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   listItemActive: {
-    backgroundColor: COLORS.primaryLight,
     borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
     borderRadius: 4,
     paddingLeft: 10,
   },
@@ -649,11 +629,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E5E7EB',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  numText: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
-  listTitle: { fontSize: 16, fontWeight: '500', color: COLORS.text, marginBottom: 2 },
-  listSub: { fontSize: 12, color: COLORS.textSecondary },
+  numText: { fontSize: 14, fontWeight: '600' },
+  listTitle: { fontSize: 16, fontWeight: '500', marginBottom: 2 },
+  listSub: { fontSize: 12 },
 });

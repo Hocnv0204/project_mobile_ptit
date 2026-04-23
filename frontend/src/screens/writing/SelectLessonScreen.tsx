@@ -18,6 +18,7 @@ import { Routes } from "../../constants/routes";
 import { writingApi } from "../../api/writing/writingApi";
 import { LessonSummaryResponse } from "../../api/writing/types";
 import { useAuthStore } from "../../store/authStore";
+import { useAppColors } from "../../theme/useAppColors";
 
 type RouteParams = {
   params: {
@@ -41,6 +42,7 @@ export default function SelectLessonScreen() {
 
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
@@ -102,7 +104,7 @@ export default function SelectLessonScreen() {
 
   const renderItem = ({ item }: { item: LessonSummaryResponse }) => (
     <TouchableOpacity
-      style={styles.lessonCard}
+      style={[styles.lessonCard, { backgroundColor: surface }]}
       activeOpacity={0.8}
       onPress={() => {
         navigation.navigate(Routes.LESSON_PRACTICE, {
@@ -112,47 +114,47 @@ export default function SelectLessonScreen() {
       }}
     >
       <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, { backgroundColor: primary + "1A" }]}>
           <Ionicons name="create" size={24} color="#4ECDC4" />
         </View>
         <View style={styles.cardContent}>
-          <Text style={styles.lessonName} numberOfLines={1}>
+          <Text style={[styles.lessonName, { color: text }]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.lessonDesc} numberOfLines={2}>
+          <Text style={[styles.lessonDesc, { color: mutedText }]} numberOfLines={2}>
             {item.description || "No description available for this lesson."}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
+        <Ionicons name="chevron-forward" size={20} color={mutedText} />
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={styles.headerBar}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
+        <View style={[styles.headerBar, { backgroundColor: surface, borderBottomColor: border }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color="#1A1D26" />
+            <Ionicons name="arrow-back" size={24} color={text} />
           </TouchableOpacity>
-          <Text style={styles.headerBarTitle}>Select Lesson</Text>
+          <Text style={[styles.headerBarTitle, { color: text }]}>Select Lesson</Text>
           <View style={{ width: 40 }} />
         </View>
 
-        <View style={styles.container}>
-          <View style={styles.searchContainer}>
+        <View style={[styles.container, { backgroundColor: background }]}>
+          <View style={[styles.searchContainer, { backgroundColor: surface }]}>
             <Ionicons
               name="search"
               size={20}
-              color="#A0A0BC"
+              color={mutedText}
               style={styles.searchIcon}
             />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: text }]}
               placeholder="Search lessons..."
-              placeholderTextColor="#5A5A7A"
+              placeholderTextColor={mutedText}
               value={searchTerm}
               onChangeText={setSearchTerm}
             />
@@ -185,9 +187,9 @@ export default function SelectLessonScreen() {
             ListEmptyComponent={
               !loading ? (
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="reader-outline" size={64} color="#252540" />
-                  <Text style={styles.emptyTitle}>No lessons found</Text>
-                  <Text style={styles.emptySubtitle}>
+                  <Ionicons name="reader-outline" size={64} color={mutedText} />
+                  <Text style={[styles.emptyTitle, { color: text }]}>No lessons found</Text>
+                  <Text style={[styles.emptySubtitle, { color: mutedText }]}>
                     Try adjusting your search
                   </Text>
                 </View>
@@ -209,7 +211,6 @@ export default function SelectLessonScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ccccccff", // Đổi màu xám đậm cũ thành màu bạn muốn
   },
   headerBar: {
     flexDirection: "row",
@@ -225,18 +226,15 @@ const styles = StyleSheet.create({
   headerBarTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#1A1D26",
   },
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    backgroundColor: "#F8F9FA",
     paddingTop: 10,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingHorizontal: 16,
     height: 56,
@@ -252,7 +250,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: "#1A1D26",
     fontSize: 16,
     height: "100%",
   },
@@ -263,7 +260,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   lessonCard: {
-    backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 16, // Bo góc tròn cho card
     marginBottom: 12,
@@ -281,7 +277,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(78, 205, 196, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -292,7 +287,6 @@ const styles = StyleSheet.create({
   lessonName: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1A1D26",
     marginBottom: 4,
   },
   lessonDesc: {

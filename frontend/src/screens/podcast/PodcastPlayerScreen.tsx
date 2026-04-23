@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { podcastApi, PodcastDetailResponse, DialogueItem, VocabItem } from '../../services/podcastApi';
+import { useAppColors } from '../../theme/useAppColors';
 
 const COLORS = {
   primary: '#4F46E5', // Indigo
@@ -18,6 +19,7 @@ const COLORS = {
 
 export default function PodcastPlayerScreen({ route, navigation }: any) {
   const { podcastId } = route.params || {};
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
   const [podcast, setPodcast] = useState<PodcastDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -149,35 +151,35 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: background }]}>
+        <ActivityIndicator size="large" color={primary} />
       </View>
     );
   }
 
   if (!podcast) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Select a podcast from the menu</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: background }]}>
+        <Text style={{ color: mutedText }}>Select a podcast from the menu</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header Section */}
         <View style={styles.header}>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>Level {podcast.levelId}</Text>
+          <View style={[styles.levelBadge, { backgroundColor: primary + '1A' }]}>
+            <Text style={[styles.levelText, { color: primary }]}>Level {podcast.levelId}</Text>
           </View>
-          <Text style={styles.title}>{podcast.title}</Text>
+          <Text style={[styles.title, { color: text }]}>{podcast.title}</Text>
         </View>
 
         {/* Content Box */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Transcript / Notes</Text>
+            <Text style={[styles.cardTitle, { color: text }]}>Transcript / Notes</Text>
             <TouchableOpacity 
               style={styles.toggleButton} 
               onPress={() => setShowTranscript(!showTranscript)}
@@ -185,9 +187,9 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
               <MaterialCommunityIcons 
                 name={showTranscript ? "eye-off-outline" : "eye-outline"} 
                 size={16} 
-                color={COLORS.textSecondary} 
+                color={mutedText} 
               />
-              <Text style={styles.toggleText}>{showTranscript ? 'Hide' : 'Show'}</Text>
+              <Text style={[styles.toggleText, { color: mutedText }]}>{showTranscript ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
           </View>
 

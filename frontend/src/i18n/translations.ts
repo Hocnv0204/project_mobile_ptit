@@ -22,6 +22,9 @@ export type TranslationKey =
   | 'profile.items.privacy'
   | 'profile.items.support'
   | 'profile.items.logout'
+  | 'profile.items.darkMode'
+  | 'profile.darkMode.on'
+  | 'profile.darkMode.off'
   | 'profile.level.value'
   | 'profile.level.notSelected'
   | 'profile.language.modalTitle'
@@ -55,6 +58,9 @@ export const translations: Record<'vi' | 'en', Record<TranslationKey, string>> =
     'profile.items.privacy': 'Chính sách bảo mật',
     'profile.items.support': 'Liên hệ/ Hỗ trợ',
     'profile.items.logout': 'Đăng xuất',
+    'profile.items.darkMode': 'Chế độ tối',
+    'profile.darkMode.on': 'Bật',
+    'profile.darkMode.off': 'Tắt',
 
     'profile.level.value': 'Level {{id}}',
     'profile.level.notSelected': 'Chưa chọn',
@@ -89,6 +95,9 @@ export const translations: Record<'vi' | 'en', Record<TranslationKey, string>> =
     'profile.items.privacy': 'Privacy policy',
     'profile.items.support': 'Support',
     'profile.items.logout': 'Logout',
+    'profile.items.darkMode': 'Dark mode',
+    'profile.darkMode.on': 'On',
+    'profile.darkMode.off': 'Off',
 
     'profile.level.value': 'Level {{id}}',
     'profile.level.notSelected': 'Not selected',

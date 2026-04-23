@@ -15,6 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { Routes } from '../../constants/routes';
+import { useAppColors } from '../../theme/useAppColors';
+import { useSettingsStore } from '../../store/settingsStore';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +35,8 @@ const MOCK_USER: UserData = {
 
 export default function HomeScreen({ navigation }: any) {
   const [currentUser, setCurrentUser] = useState(MOCK_USER);
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
+  const themeMode = useSettingsStore((s) => s.themeMode);
 
   useEffect(() => {
     authApi.me()
@@ -52,9 +56,13 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]}>
       <LinearGradient
-        colors={['#EBF3FF', '#FFFFFF', '#FFFFFF']}
+        colors={
+          themeMode === 'dark'
+            ? [background, background, background]
+            : ['#EBF3FF', '#FFFFFF', '#FFFFFF']
+        }
         locations={[0, 0.3, 1]}
         style={styles.backgroundGradient}
       />
@@ -69,58 +77,58 @@ export default function HomeScreen({ navigation }: any) {
               <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatarImage} />
             </TouchableOpacity>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.greetingText}>Xin chào, {currentUser.name}</Text>
-              <Text style={styles.subGreetingText}>Bạn đang học {currentUser.level}</Text>
+              <Text style={[styles.greetingText, { color: text }]}>Xin chào, {currentUser.name}</Text>
+              <Text style={[styles.subGreetingText, { color: mutedText }]}>Bạn đang học {currentUser.level}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.headerRight}>
-            <MaterialCommunityIcons name="menu-down" size={28} color="#1A1D26" />
+            <MaterialCommunityIcons name="menu-down" size={28} color={text} />
           </TouchableOpacity>
         </View>
 
         {/* 2. Dành cho bạn */}
-        <Text style={styles.sectionTitle}>Dành cho bạn</Text>
+        <Text style={[styles.sectionTitle, { color: text }]}>Dành cho bạn</Text>
         <View style={styles.gridContainer}>
-          <TouchableOpacity style={styles.featureCard} onPress={() => onPressAction(Routes.WRITING)}>
-            <View style={[styles.iconHex, { backgroundColor: '#0066FF' }]}>
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: surface }]} onPress={() => onPressAction(Routes.WRITING)}>
+            <View style={[styles.iconHex, { backgroundColor: primary }]}>
               <MaterialCommunityIcons name="pencil" size={24} color="#FFF" />
             </View>
-            <Text style={styles.featureText}>Writing</Text>
+            <Text style={[styles.featureText, { color: text }]}>Writing</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.featureCard} onPress={() => onPressAction(Routes.DICTATION)}>
-            <View style={[styles.iconHex, { backgroundColor: '#0066FF' }]}>
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: surface }]} onPress={() => onPressAction(Routes.DICTATION)}>
+            <View style={[styles.iconHex, { backgroundColor: primary }]}>
               <MaterialCommunityIcons name="headphones" size={24} color="#FFF" />
             </View>
-            <Text style={styles.featureText}>Dictation</Text>
+            <Text style={[styles.featureText, { color: text }]}>Dictation</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.featureCard} onPress={() => onPressAction(Routes.PODCAST)}>
-            <View style={[styles.iconHex, { backgroundColor: '#0066FF' }]}>
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: surface }]} onPress={() => onPressAction(Routes.PODCAST)}>
+            <View style={[styles.iconHex, { backgroundColor: primary }]}>
               <MaterialCommunityIcons name="podcast" size={24} color="#FFF" />
             </View>
-            <Text style={styles.featureText}>Podcast</Text>
+            <Text style={[styles.featureText, { color: text }]}>Podcast</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.featureCard} onPress={() => onPressAction(Routes.VOCABULARY)}>
-            <View style={[styles.iconHex, { backgroundColor: '#EBF3FF' }]}>
-              <MaterialCommunityIcons name="book-open-variant" size={24} color="#0066FF" />
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: surface }]} onPress={() => onPressAction(Routes.VOCABULARY)}>
+            <View style={[styles.iconHex, { backgroundColor: primary + '1A' }]}>
+              <MaterialCommunityIcons name="book-open-variant" size={24} color={primary} />
             </View>
-            <Text style={styles.featureText}>Vocabulary</Text>
+            <Text style={[styles.featureText, { color: text }]}>Vocabulary</Text>
           </TouchableOpacity>
         </View>
 
         {/* 3. Learning Profile */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Learning Profile</Text>
+          <Text style={[styles.sectionTitle, { color: text }]}>Learning Profile</Text>
           <TouchableOpacity>
-            <Text style={styles.seeAllText}>Xem tất cả</Text>
+            <Text style={[styles.seeAllText, { color: primary }]}>Xem tất cả</Text>
           </TouchableOpacity>
         </View>
 
         {/* Trình độ TOEIC Card */}
-        <View style={styles.toeicCard}>
-          <Text style={styles.toeicTitle}>Trình độ {currentUser.level} của bạn</Text>
+        <View style={[styles.toeicCard, { backgroundColor: surface }]}>
+          <Text style={[styles.toeicTitle, { color: text }]}>Trình độ {currentUser.level} của bạn</Text>
           <View style={styles.stairsImagePlaceholder}>
             <MaterialCommunityIcons name="stairs-up" size={48} color="#EBF3FF" style={{ alignSelf: 'flex-end', opacity: 0.5 }} />
           </View>
@@ -128,69 +136,69 @@ export default function HomeScreen({ navigation }: any) {
           <View style={styles.toeicProgressRow}>
             {/* Step 1 */}
             <View style={styles.toeicStep}>
-              <View style={styles.stepDotOuter}>
+              <View style={[styles.stepDotOuter, { borderColor: primary, backgroundColor: surface }]}>
                 <View style={styles.stepDotInner} />
               </View>
-              <Text style={styles.stepLabel}>Đầu vào</Text>
-              <Text style={styles.stepValue}>-</Text>
+              <Text style={[styles.stepLabel, { color: mutedText }]}>Đầu vào</Text>
+              <Text style={[styles.stepValue, { color: text }]}>-</Text>
             </View>
             
-            <View style={styles.stepLine} />
+            <View style={[styles.stepLine, { borderColor: border }]} />
 
             {/* Step 2 */}
             <View style={styles.toeicStep}>
-              <View style={styles.stepDotOuter}>
+              <View style={[styles.stepDotOuter, { borderColor: primary, backgroundColor: surface }]}>
                 <View style={styles.stepDotInner} />
               </View>
-              <Text style={styles.stepLabel}>Dự đoán</Text>
-              <Text style={styles.stepValue}>-</Text>
+              <Text style={[styles.stepLabel, { color: mutedText }]}>Dự đoán</Text>
+              <Text style={[styles.stepValue, { color: text }]}>-</Text>
             </View>
 
-            <View style={styles.stepLine} />
+            <View style={[styles.stepLine, { borderColor: border }]} />
 
             {/* Step 3 */}
             <View style={styles.toeicStep}>
-              <View style={styles.stepDotOuterActive}>
-                <MaterialCommunityIcons name="bullseye-arrow" size={16} color="#0066FF" />
+              <View style={[styles.stepDotOuterActive, { backgroundColor: primary + '1A' }]}>
+                <MaterialCommunityIcons name="bullseye-arrow" size={16} color={primary} />
               </View>
-              <Text style={styles.stepLabel}>Mục tiêu</Text>
-              <Text style={styles.stepValue}>-</Text>
+              <Text style={[styles.stepLabel, { color: mutedText }]}>Mục tiêu</Text>
+              <Text style={[styles.stepValue, { color: text }]}>-</Text>
             </View>
           </View>
         </View>
 
         {/* 4 Stats Cards */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: surface, borderColor: border }]}>
             <View style={styles.statHeader}>
-              <MaterialCommunityIcons name="clock-outline" size={16} color="#70778C" />
-              <Text style={styles.statLabel}>Tổng thời lượng</Text>
+              <MaterialCommunityIcons name="clock-outline" size={16} color={mutedText} />
+              <Text style={[styles.statLabel, { color: mutedText }]}>Tổng thời lượng</Text>
               <MaterialCommunityIcons name="information" size={14} color="#A0A7BA" style={styles.infoIcon} />
             </View>
             <Text style={[styles.statValue, { color: '#0066FF' }]}>0 phút</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: surface, borderColor: border }]}>
             <View style={styles.statHeader}>
               <MaterialCommunityIcons name="trophy" size={16} color="#FFB84C" />
-              <Text style={styles.statLabel}>Tổng số cúp</Text>
+              <Text style={[styles.statLabel, { color: mutedText }]}>Tổng số cúp</Text>
               <MaterialCommunityIcons name="information" size={14} color="#A0A7BA" style={styles.infoIcon} />
             </View>
             <Text style={[styles.statValue, { color: '#FFB84C' }]}>0</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: surface, borderColor: border }]}>
             <View style={styles.statHeader}>
               <MaterialCommunityIcons name="file-document-edit-outline" size={16} color="#E91E63" />
-              <Text style={styles.statLabel}>Số bài test đã làm</Text>
+              <Text style={[styles.statLabel, { color: mutedText }]}>Số bài test đã làm</Text>
             </View>
             <Text style={[styles.statValue, { color: '#E91E63' }]}>0</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: surface, borderColor: border }]}>
             <View style={styles.statHeader}>
               <MaterialCommunityIcons name="play-box-outline" size={16} color="#4CAF50" />
-              <Text style={styles.statLabel}>Số bài đã học</Text>
+              <Text style={[styles.statLabel, { color: mutedText }]}>Số bài đã học</Text>
             </View>
             <Text style={[styles.statValue, { color: '#4CAF50' }]}>0</Text>
           </View>
@@ -206,7 +214,6 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   backgroundGradient: {
@@ -285,7 +292,6 @@ const styles = StyleSheet.create({
   },
   featureCard: {
     width: (width - 40 - 16) / 2, // 2 columns, 16px gap
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -308,13 +314,11 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1A1D26',
     flex: 1,
   },
 
   // 3. TOEIC Card
   toeicCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -328,7 +332,6 @@ const styles = StyleSheet.create({
   toeicTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1A1D26',
     marginBottom: 24,
     zIndex: 1,
   },
@@ -357,7 +360,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
-    backgroundColor: '#FFFFFF',
   },
   stepDotInner: {
     width: 6,
@@ -385,13 +387,11 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontSize: 12,
-    color: '#70778C',
     marginBottom: 4,
   },
   stepValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1A1D26',
   },
 
   // 4. Stats Grid
@@ -402,7 +402,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - 40 - 16) / 2,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -421,7 +420,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#4A5568',
     marginLeft: 6,
     flex: 1,
   },

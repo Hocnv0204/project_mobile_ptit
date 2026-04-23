@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Activity
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { podcastApi, PodcastResponse } from '../../services/podcastApi';
+import { useAppColors } from '../../theme/useAppColors';
 
 const COLORS = {
   primary: '#4F46E5',
@@ -14,6 +15,7 @@ const COLORS = {
 };
 
 export default function PodcastDrawerContent(props: any) {
+  const { background, surface, text, mutedText, border, primary } = useAppColors();
   const [podcasts, setPodcasts] = useState<PodcastResponse[]>([]);
   const [filteredPodcasts, setFilteredPodcasts] = useState<PodcastResponse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,53 +69,57 @@ export default function PodcastDrawerContent(props: any) {
     const isActive = item.id === activePodcastId;
     return (
       <TouchableOpacity 
-        style={[styles.itemContainer, isActive && styles.activeItemContainer]} 
+        style={[
+          styles.itemContainer,
+          { borderBottomColor: border, backgroundColor: surface },
+          isActive && { backgroundColor: primary + '1A' },
+        ]} 
         onPress={() => onSelectPodcast(item.id)}
       >
         <View style={styles.iconContainer}>
           {isActive ? (
-            <MaterialCommunityIcons name="play-circle" size={32} color={COLORS.primary} />
+            <MaterialCommunityIcons name="play-circle" size={32} color={primary} />
           ) : (
             <View style={styles.numberCircle}>
-              <Text style={styles.numberText}>{index + 1}</Text>
+              <Text style={[styles.numberText, { color: mutedText }]}>{index + 1}</Text>
             </View>
           )}
         </View>
         <View style={styles.textContainer}>
-          <Text style={[styles.itemTitle, isActive && styles.activeText]} numberOfLines={1}>
+          <Text style={[styles.itemTitle, { color: isActive ? primary : text }]} numberOfLines={1}>
             {item.title}
           </Text>
-          <Text style={styles.itemSubtitle}>Level {item.levelId}</Text>
+          <Text style={[styles.itemSubtitle, { color: mutedText }]}>Level {item.levelId}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: background }]}>
+      <View style={[styles.header, { borderBottomColor: border }]}>
         <View style={styles.headerTitleRow}>
-          <MaterialCommunityIcons name="headphones" size={24} color={COLORS.primary} />
-          <Text style={styles.headerTitle}>EnglishPod</Text>
+          <MaterialCommunityIcons name="headphones" size={24} color={primary} />
+          <Text style={[styles.headerTitle, { color: primary }]}>EnglishPod</Text>
         </View>
-        <Text style={styles.headerSubtitle}>
+        <Text style={[styles.headerSubtitle, { color: mutedText }]}>
           Learn English through 300+ conversations at various levels.
         </Text>
       </View>
 
-      <View style={styles.searchContainer}>
-        <MaterialCommunityIcons name="magnify" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { borderColor: border, backgroundColor: surface }]}>
+        <MaterialCommunityIcons name="magnify" size={20} color={mutedText} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: text }]}
           placeholder="Search episodes..."
           value={searchQuery}
           onChangeText={handleSearch}
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={mutedText}
         />
       </View>
 
       {loading ? (
-        <ActivityIndicator size="small" color={COLORS.primary} style={{ marginTop: 20 }} />
+        <ActivityIndicator size="small" color={primary} style={{ marginTop: 20 }} />
       ) : (
         <FlatList
           data={filteredPodcasts}
@@ -130,7 +136,6 @@ export default function PodcastDrawerContent(props: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
     padding: 16,
@@ -146,12 +151,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.primary,
     marginLeft: 8,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     lineHeight: 20,
   },
   searchContainer: {
@@ -160,9 +163,8 @@ const styles = StyleSheet.create({
     margin: 16,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E5E7EB',
     borderRadius: 8,
-    backgroundColor: '#F9FAFB',
   },
   searchIcon: {
     marginRight: 8,
@@ -170,7 +172,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    color: COLORS.text,
   },
   listContent: {
     paddingBottom: 20,

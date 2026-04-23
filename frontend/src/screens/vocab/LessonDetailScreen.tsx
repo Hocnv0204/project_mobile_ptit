@@ -21,11 +21,13 @@ import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { vocabApi } from '../../api/vocabApi';
 import { VocabularyWithStatus, VocabularyStatus } from '../../api/types';
 import { Routes } from '../../constants/routes';
+import { useAppColors } from '../../theme/useAppColors';
 
 export default function LessonDetailScreen({ route, navigation }: any) {
   const { lesson, isPersonal } = route.params;
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const { background, surface, text, mutedText } = useAppColors();
 
   const [loading, setLoading] = useState(true);
   const [vocabularies, setVocabularies] = useState<VocabularyWithStatus[]>([]);
@@ -135,15 +137,15 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   };
 
   const renderItem = ({ item }: { item: VocabularyWithStatus }) => (
-    <View style={styles.vocabCard}>
+    <View style={[styles.vocabCard, { backgroundColor: surface }]}>
       <View style={styles.vocabContent}>
         <View style={styles.vocabRow}>
-          <Text style={styles.vocabTerm}>{item.term.toUpperCase()}</Text>
+          <Text style={[styles.vocabTerm, { color: text }]}>{item.term.toUpperCase()}</Text>
           <View style={[styles.statusBadge, badgeStyle(item.status)]}>
             <Text style={styles.statusText}>{nextReviewLabel(item.daysUntilReview)}</Text>
           </View>
         </View>
-        <Text style={styles.vocabVi}>{item.vi}</Text>
+        <Text style={[styles.vocabVi, { color: mutedText }]}>{item.vi}</Text>
       </View>
       <Pressable
         onPress={() => handlePlayAudioByItem(item)}
@@ -164,12 +166,12 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: background }]}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1D26" />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={text} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>{lesson.name}</Text>
+        <Text style={[styles.headerTitle, { color: text }]} numberOfLines={1}>{lesson.name}</Text>
         {isPersonal ? (
           <Pressable onPress={() => setAddOptionsVisible(true)} style={styles.addBtn}>
             <MaterialCommunityIcons name="plus" size={24} color="#0066FF" />
@@ -213,7 +215,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
         </Pressable>
       </View>
 
-      <Text style={styles.vocabCount}>{vocabularies.length} từ vựng</Text>
+      <Text style={[styles.vocabCount, { color: mutedText }]}>{vocabularies.length} từ vựng</Text>
 
       {loading ? (
         <View style={styles.center}>
@@ -399,7 +401,7 @@ const filterVocabularies = (list: VocabularyWithStatus[], filter: 'TODAY' | 'OVE
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',

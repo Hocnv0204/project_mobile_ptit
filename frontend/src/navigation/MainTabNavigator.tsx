@@ -11,6 +11,7 @@ import DictationScreen from '../screens/dictation/DictationScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PodcastNavigator from './PodcastNavigator';
 import { useI18n } from '../i18n/useI18n';
+import { useSettingsStore } from '../store/settingsStore';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,16 +23,20 @@ const COLORS = {
 
 export default function MainTabNavigator() {
   const { t } = useI18n();
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const tabBg = themeMode === 'dark' ? '#0F0F1A' : COLORS.background;
+  const tabBorder = themeMode === 'dark' ? '#2A2A45' : '#EEF0F6';
+  const inactive = themeMode === 'dark' ? '#A0A0BC' : COLORS.inactive;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.inactive,
+        tabBarInactiveTintColor: inactive,
         tabBarStyle: {
-          backgroundColor: COLORS.background,
+          backgroundColor: tabBg,
           borderTopWidth: 1,
-          borderTopColor: '#EEF0F6',
+          borderTopColor: tabBorder,
           paddingBottom: 8,
           paddingTop: 8,
           height: 64,
