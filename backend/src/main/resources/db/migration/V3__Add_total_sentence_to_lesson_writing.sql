@@ -1,0 +1,1 @@
+ALTER TABLE lesson_writing ADD COLUMN total_sentences INT;

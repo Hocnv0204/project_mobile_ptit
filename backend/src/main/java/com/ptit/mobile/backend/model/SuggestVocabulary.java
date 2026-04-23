@@ -31,9 +31,6 @@ public class SuggestVocabulary {
     @Column(columnDefinition = "TEXT")
     private String example;
 
-    @Column(name = "delete_flag")
-    private Boolean deleteFlag;
-
-    @Column(name = "lesson_writing_id")
-    private Integer lessonWritingId;
+    @Column(name = "lesson_sentence_id")
+    private Integer lessonSentenceId;
 }

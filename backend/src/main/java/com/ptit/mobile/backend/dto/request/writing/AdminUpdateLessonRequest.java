@@ -9,7 +9,5 @@ import lombok.Setter;
 public class AdminUpdateLessonRequest {
 
     private String name;
-    private String paragraph;
-    private String note;
     private String description;
 }

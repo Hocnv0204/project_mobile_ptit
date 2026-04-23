@@ -15,8 +15,7 @@ import java.util.List;
 public class LessonResponse {
     private int id;
     private String name;
-    private String paragraph;
     private String description;
-    private List<SuggestVocabularyResponse> suggestVocabularies;
-
+    private int totalSentences;
+    private List<LessonSentenceResponse> sentences;
 } 

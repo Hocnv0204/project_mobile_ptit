@@ -12,8 +12,6 @@ import java.util.List;
 public class AdminLessonDetailResponse {
     private Integer id;
     private String name;
-    private String paragraph;
-    private String note;
     private String description;
     private Boolean deleteFlag;
     private LocalDateTime createdAt;

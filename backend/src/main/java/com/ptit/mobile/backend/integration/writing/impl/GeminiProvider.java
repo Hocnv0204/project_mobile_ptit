@@ -45,9 +45,9 @@ public class GeminiProvider implements AIProvider {
     }
     
     @Override
-    public GradingResponse gradeAnswer(String question, String answer, String apiUrl, String apiKey) {
+    public GradingResponse gradeAnswer(String question, String answer, String suggestVocab, String apiUrl, String apiKey) {
         try {
-            String prompt = loadAndFormatGradingPrompt(question, answer);
+            String prompt = loadAndFormatGradingPrompt(question, answer, suggestVocab);
             String jsonResponse = callGeminiApi(prompt, apiUrl, apiKey);
             return objectMapper.readValue(jsonResponse, GradingResponse.class);
         } catch (Exception e) {
@@ -79,8 +79,8 @@ public class GeminiProvider implements AIProvider {
         }
     }
     
-    private String loadAndFormatGradingPrompt(String question, String answer) throws Exception {
-        String promptFileName = "prompt/user_submit_prompt";
+    private String loadAndFormatGradingPrompt(String question, String answer, String suggestVocab) throws Exception {
+        String promptFileName = "prompt/user_submit_prompt_v2.txt";
         log.info("Loading grading prompt from: {}", promptFileName);
         
         var resource = resourceLoader.getResource("classpath:" + promptFileName);
@@ -92,7 +92,8 @@ public class GeminiProvider implements AIProvider {
             String template = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             return template
                     .replace("{question}", question)
-                    .replace("{answer}", answer);
+                    .replace("{answer}", answer)
+                    .replace("suggest_vocabulary", suggestVocab);
         }
     }
 

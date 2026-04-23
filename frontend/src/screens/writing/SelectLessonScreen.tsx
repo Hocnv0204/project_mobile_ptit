@@ -12,14 +12,27 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { Colors } from "../../constants/colors";
 import { Routes } from "../../constants/routes";
-import { topicApi } from "../../api/topic/topicApi";
-import { TopicResponse } from "../../api/topic/types";
+import { writingApi } from "../../api/writing/writingApi";
+import { LessonSummaryResponse } from "../../api/writing/types";
+import { useAuthStore } from "../../store/authStore";
 
-export default function WritingScreen() {
-  const [topics, setTopics] = useState<TopicResponse[]>([]);
+type RouteParams = {
+  params: {
+    topicId: number;
+  };
+};
+
+export default function SelectLessonScreen() {
+  const route = useRoute<RouteProp<RouteParams, "params">>();
+  const navigation = useNavigation<any>();
+  const topicId = route.params?.topicId;
+  const user = useAuthStore((state) => state.user);
+  const levelId = user?.levelId;
+
+  const [lessons, setLessons] = useState<LessonSummaryResponse[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -34,30 +47,32 @@ export default function WritingScreen() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchTopics = async (
+  const fetchLessons = async (
     pageNumber: number,
     search: string,
     isRefresh = false,
   ) => {
     try {
       if (!isRefresh) setLoading(true);
-      const data = await topicApi.getTopics({
+      const data = await writingApi.getLessons({
         page: pageNumber,
         size: 10,
+        topicId: topicId,
+        levelId: levelId ?? undefined,
         searchTerm: search || undefined,
         sortBy: "createdAt",
         sortDir: "DESC",
       });
 
       if (isRefresh || pageNumber === 0) {
-        setTopics(data.content);
+        setLessons(data.content);
       } else {
-        setTopics((prev) => [...prev, ...data.content]);
+        setLessons((prev) => [...prev, ...data.content]);
       }
 
       setHasMore(!data.last);
     } catch (error) {
-      console.error("Failed to fetch topics:", error);
+      console.error("Failed to fetch lessons:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -65,44 +80,47 @@ export default function WritingScreen() {
   };
 
   useEffect(() => {
-    setPage(0);
-    fetchTopics(0, debouncedSearch);
-  }, [debouncedSearch]);
+    if (topicId) {
+      setPage(0);
+      fetchLessons(0, debouncedSearch);
+    }
+  }, [debouncedSearch, topicId, levelId]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     setPage(0);
-    fetchTopics(0, debouncedSearch, true);
-  }, [debouncedSearch]);
+    fetchLessons(0, debouncedSearch, true);
+  }, [debouncedSearch, topicId, levelId]);
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchTopics(nextPage, debouncedSearch);
+      fetchLessons(nextPage, debouncedSearch);
     }
   };
 
-  const navigation = useNavigation<any>();
-
-  const renderItem = ({ item }: { item: TopicResponse }) => (
+  const renderItem = ({ item }: { item: LessonSummaryResponse }) => (
     <TouchableOpacity
-      style={styles.topicCard}
+      style={styles.lessonCard}
       activeOpacity={0.8}
       onPress={() => {
-        navigation.navigate(Routes.SELECT_LESSON, { topicId: item.id });
+        navigation.navigate(Routes.LESSON_PRACTICE, {
+          lessonId: item.id,
+          lessonName: item.name,
+        });
       }}
     >
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
-          <Ionicons name="document-text" size={24} color="#6C63FF" />
+          <Ionicons name="create" size={24} color="#4ECDC4" />
         </View>
         <View style={styles.cardContent}>
-          <Text style={styles.topicName} numberOfLines={1}>
+          <Text style={styles.lessonName} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.topicDesc} numberOfLines={2}>
-            {item.description || "No description available for this topic."}
+          <Text style={styles.lessonDesc} numberOfLines={2}>
+            {item.description || "No description available for this lesson."}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
@@ -112,14 +130,18 @@ export default function WritingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Writing Topics</Text>
-            <Text style={styles.headerSubtitle}>
-              Choose a topic to practice your writing skills
-            </Text>
-          </View>
+        <View style={styles.headerBar}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#1A1D26" />
+          </TouchableOpacity>
+          <Text style={styles.headerBarTitle}>Select Lesson</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
+        <View style={styles.container}>
           <View style={styles.searchContainer}>
             <Ionicons
               name="search"
@@ -129,7 +151,7 @@ export default function WritingScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search topics..."
+              placeholder="Search lessons..."
               placeholderTextColor="#5A5A7A"
               value={searchTerm}
               onChangeText={setSearchTerm}
@@ -145,7 +167,7 @@ export default function WritingScreen() {
           </View>
 
           <FlatList
-            data={topics}
+            data={lessons}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             contentContainerStyle={styles.listContainer}
@@ -163,8 +185,8 @@ export default function WritingScreen() {
             ListEmptyComponent={
               !loading ? (
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="book-outline" size={64} color="#252540" />
-                  <Text style={styles.emptyTitle}>No topics found</Text>
+                  <Ionicons name="reader-outline" size={64} color="#252540" />
+                  <Text style={styles.emptyTitle}>No lessons found</Text>
                   <Text style={styles.emptySubtitle}>
                     Try adjusting your search
                   </Text>
@@ -189,24 +211,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ccccccff", // Đổi màu xám đậm cũ thành màu bạn muốn
   },
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA", // Đảm bảo lớp bên trong cũng cùng màu
-    paddingHorizontal: 20,
+  headerBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    height: 56,
   },
-  header: {
-    marginTop: 10,
-    marginBottom: 20,
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
   },
-  headerTitle: {
-    fontSize: 28,
+  headerBarTitle: {
+    fontSize: 18,
     fontWeight: "bold",
     color: "#1A1D26",
-    marginBottom: 6,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: "#A0A0BC",
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    backgroundColor: "#F8F9FA",
+    paddingTop: 10,
   },
   searchContainer: {
     flexDirection: "row",
@@ -216,11 +241,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
     marginBottom: 24,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 2, // Dành riêng cho Android
   },
   searchIcon: {
     marginRight: 10,
@@ -237,7 +262,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 20,
   },
-  topicCard: {
+  lessonCard: {
     backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 16, // Bo góc tròn cho card
@@ -256,7 +281,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(108, 99, 255, 0.1)",
+    backgroundColor: "rgba(78, 205, 196, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -264,13 +289,13 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
   },
-  topicName: {
+  lessonName: {
     fontSize: 18,
     fontWeight: "600",
     color: "#1A1D26",
     marginBottom: 4,
   },
-  topicDesc: {
+  lessonDesc: {
     fontSize: 14,
     color: "#A0A0BC",
     lineHeight: 20,

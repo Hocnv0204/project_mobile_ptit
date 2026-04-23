@@ -14,17 +14,12 @@ import java.util.List;
 @Repository
 public interface SuggestVocabularyRepository extends JpaRepository<SuggestVocabulary, Integer> {
 
-    @Query("SELECT sv FROM SuggestVocabulary sv " +
-            "WHERE sv.deleteFlag = false " +
-            "AND sv.lessonWritingId = :lessonId")
-    Page<SuggestVocabulary> findSuggestVocabulariesByLessonId(@Param("lessonId") Integer lessonId, Pageable pageable);
-
-    List<SuggestVocabulary> findAllByLessonWritingIdAndDeleteFlagFalse(Integer lessonWritingId);
+    List<SuggestVocabulary> findByLessonSentenceIdIn(List<Integer> lessonSentenceIds);
 
     /**
-     * Delete all SuggestVocabulary entries for a specific lesson.
+     * Delete all SuggestVocabulary entries for specific lesson sentences.
      */
     @Modifying
-    @Query("DELETE FROM SuggestVocabulary sv WHERE sv.lessonWritingId = :lessonId")
-    void deleteAllByLessonWritingId(@Param("lessonId") Integer lessonId);
+    @Query("DELETE FROM SuggestVocabulary sv WHERE sv.lessonSentenceId IN :lessonSentenceIds")
+    void deleteAllByLessonSentenceIdIn(@Param("lessonSentenceIds") List<Integer> lessonSentenceIds);
 }
