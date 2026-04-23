@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, theme, ConfigProvider } from 'antd';
+import React, { useState } from "react";
+import { Layout, Menu, Button, theme, ConfigProvider } from "antd";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -7,9 +7,9 @@ import {
   UserOutlined,
   LogoutOutlined,
   DashboardOutlined,
-} from '@ant-design/icons';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+} from "@ant-design/icons";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 const { Header, Sider, Content } = Layout;
 
@@ -26,32 +26,52 @@ const MainLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const menuItems = [
     {
-      key: '/',
+      key: "/",
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: "Dashboard",
     },
     {
-      key: '/vocab',
+      key: "/vocab",
       icon: <BookOutlined />,
-      label: 'Vocabulary',
+      label: "Vocabulary",
     },
     {
-      key: '/users',
+      key: "/level",
+      icon: <BookOutlined />,
+      label: "Levels",
+    },
+    {
+      key: "/lesson-vocab",
+      icon: <BookOutlined />,
+      label: "Lesson Variables",
+    },
+    {
+      key: "/users",
       icon: <UserOutlined />,
-      label: 'Users',
+      label: "Users",
     },
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: "100vh" }}>
       <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 20, fontWeight: 'bold' }}>
-          {collapsed ? 'CMS' : 'PTIT English CMS'}
+        <div
+          style={{
+            height: 64,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: 20,
+            fontWeight: "bold",
+          }}
+        >
+          {collapsed ? "CMS" : "PTIT English CMS"}
         </div>
         <Menu
           theme="dark"
@@ -62,28 +82,44 @@ const MainLayout: React.FC = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: 24 }}>
+        <Header
+          style={{
+            padding: 0,
+            background: colorBgContainer,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingRight: 24,
+          }}
+        >
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: '16px', width: 64, height: 64 }}
+            style={{ fontSize: "16px", width: 64, height: 64 }}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span>Welcome, <b>{user?.fullName || 'Admin'}</b></span>
-            <Button type="primary" danger icon={<LogoutOutlined />} onClick={handleLogout}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span>
+              Welcome, <b>{user?.fullName || "Admin"}</b>
+            </span>
+            <Button
+              type="primary"
+              danger
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+            >
               Logout
             </Button>
           </div>
         </Header>
         <Content
           style={{
-            margin: '24px 16px',
+            margin: "24px 16px",
             padding: 24,
             minHeight: 280,
             background: colorBgContainer,
             borderRadius: borderRadiusLG,
-            overflow: 'initial'
+            overflow: "initial",
           }}
         >
           <Outlet />
