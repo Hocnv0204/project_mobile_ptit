@@ -1,90 +1,113 @@
-import { useState, useEffect } from 'react';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import * as AuthSession from 'expo-auth-session';
+import { useState } from 'react';
+import { Platform, Alert } from 'react-native';
 import Constants from 'expo-constants';
-import { apiClient } from '../services/apiClient';
 import { useAuthStore } from '../store/authStore';
-import { Alert, Platform } from 'react-native';
 import { toApiError } from '../utils/apiErrors';
 import { API_BASE_URL } from '../config/env';
+import { http } from '../api/http';
 
-WebBrowser.maybeCompleteAuthSession();
+// Chỉ dùng native GoogleSignin khi là native build (không phải Expo Go, không phải web)
+const isWeb = Platform.OS === 'web';
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+export const canUseGoogleSignIn = !isWeb && !isExpoGo;
+
+let GoogleSignin: any = null;
+let statusCodes: any = {};
+
+if (canUseGoogleSignIn) {
+  try {
+    const pkg = require('@react-native-google-signin/google-signin');
+    GoogleSignin = pkg.GoogleSignin;
+    statusCodes = pkg.statusCodes;
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      offlineAccess: false,
+    });
+  } catch (e) {
+    console.warn('GoogleSignin native module not available:', e);
+  }
+}
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  // Ép sử dụng đường dẫn HTTPS đã khai báo trong .env
-  const redirectUri = process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI;
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    responseType: 'id_token',
-    nonce: 'linguaboost_nonce',
-    redirectUri,
-  });
-
-  useEffect(() => {
-    console.log('MANUAL Redirect URI:', redirectUri);
-    
-    if (response?.type === 'success') {
-      // Thử lấy từ authentication hoặc params (tùy cấu hình Google)
-      const idToken = response.authentication?.idToken || response.params?.id_token;
-      
-      if (idToken) {
-        handleBackendAuth(idToken);
-      } else {
-        console.error('Response details:', JSON.stringify(response, null, 2));
-        setError('Không nhận được mã xác thực từ Google');
-      }
-    } else if (response?.type === 'error') {
-      setError('Google Sign-In Error');
-      setLoading(false);
-    }
-  }, [response]);
-
-  const handleBackendAuth = async (idToken: string) => {
-    setLoading(true);
+  const sendToBackend = async (idToken: string) => {
     try {
-      console.log('Sending ID token to backend...', idToken);
-      const res = await apiClient.post('/api/auth/google', { idToken });
-      const authData = res.data.data;
-
+      const res = await http.post('/api/auth/google', { idToken });
+      const authData = (res.data as any).data;
       setAuth({
         accessToken: authData.accessToken,
         refreshToken: authData.refreshToken,
         user: authData.user,
       });
-      
-      console.log('Login success');
     } catch (err: any) {
-      console.error('Backend Auth Error:', err);
       const apiError = toApiError(err, API_BASE_URL);
-      setError(apiError.message);
-      Alert.alert('Lỗi', apiError.message);
+      const message = apiError.message || 'Xác thực với server thất bại';
+      setError(message);
+      Alert.alert('Lỗi', message);
     } finally {
       setLoading(false);
     }
   };
 
   const signInWithGoogle = async () => {
+    // Web hoặc Expo Go: không hỗ trợ Google Sign-In client-side
+    if (!canUseGoogleSignIn || !GoogleSignin) {
+      const env = isWeb ? 'trình duyệt web' : 'Expo Go';
+      Alert.alert(
+        'Không hỗ trợ',
+        `Đăng nhập Google không khả dụng trên ${env}.\nVui lòng sử dụng ứng dụng native (build từ source).`,
+        [{ text: 'Đã hiểu' }]
+      );
+      return;
+    }
+
     setError(null);
     setLoading(true);
+
     try {
-      await promptAsync();
-    } catch (err) {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+
+      if (!idToken) throw new Error('Không nhận được ID token từ Google');
+
+      await sendToBackend(idToken);
+    } catch (err: any) {
+      let message = 'Đăng nhập Google thất bại';
+
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // Người dùng tự thoát, không cần hiện lỗi
+        setLoading(false);
+        return;
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        message = 'Đăng nhập đang được xử lý...';
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        message = 'Google Play Services không khả dụng';
+      } else {
+        const apiError = toApiError(err, API_BASE_URL);
+        message = apiError.message || message;
+      }
+
+      console.error('Google Sign-In Error:', err);
+      setError(message);
+      Alert.alert('Lỗi', message);
       setLoading(false);
-      setError('Failed to open browser');
     }
   };
 
   const signOut = async () => {
-    // Với expo-auth-session, logout đơn giản là xóa token ở local
+    if (canUseGoogleSignIn && GoogleSignin) {
+      try {
+        await GoogleSignin.signOut();
+      } catch (err) {
+        console.error('Google Sign-Out Error:', err);
+      }
+    }
   };
 
-  return { signInWithGoogle, signOut, loading, error };
+  return { signInWithGoogle, signOut, loading, error, canUseGoogleSignIn };
 };

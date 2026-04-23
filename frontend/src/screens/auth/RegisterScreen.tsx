@@ -65,6 +65,7 @@ export default function RegisterScreen({ navigation }: any) {
         fullName: values.fullName.trim(),
       };
       const res = await authApi.register(body) as any;
+      toast.show('Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.', { type: 'success', durationMs: 3500 });
       navigation.navigate('EmailVerify', { email: body.email });
     } catch (e: any) {
       const apiError = toApiError(e);

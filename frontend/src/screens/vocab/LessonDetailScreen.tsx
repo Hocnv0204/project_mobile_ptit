@@ -19,7 +19,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { vocabApi } from '../../api/vocabApi';
-import { Vocabulary } from '../../api/types';
+import { VocabularyWithStatus, VocabularyStatus } from '../../api/types';
 import { Routes } from '../../constants/routes';
 
 export default function LessonDetailScreen({ route, navigation }: any) {
@@ -28,7 +28,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   const isFocused = useIsFocused();
 
   const [loading, setLoading] = useState(true);
-  const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
+  const [vocabularies, setVocabularies] = useState<VocabularyWithStatus[]>([]);
   const [activeTab, setActiveTab] = useState<'flashcard' | 'practice'>('flashcard');
   const [isAddOptionsVisible, setAddOptionsVisible] = useState(false);
   const [isManualModalVisible, setManualModalVisible] = useState(false);
@@ -74,7 +74,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
     // TODO: Implement Expo AV to play audio url
   };
 
-  const handlePlayAudioByItem = async (item: Vocabulary) => {
+  const handlePlayAudioByItem = async (item: VocabularyWithStatus) => {
     const url = item.audioUrl;
     if (!url) return;
     if (playingAudioForId === item.id) return;
@@ -133,10 +133,15 @@ export default function LessonDetailScreen({ route, navigation }: any) {
     }
   };
 
-  const renderItem = ({ item }: { item: Vocabulary }) => (
+  const renderItem = ({ item }: { item: VocabularyWithStatus }) => (
     <View style={styles.vocabCard}>
       <View style={styles.vocabContent}>
-        <Text style={styles.vocabTerm}>{item.term.toUpperCase()}</Text>
+        <View style={styles.vocabRow}>
+          <Text style={styles.vocabTerm}>{item.term.toUpperCase()}</Text>
+          <View style={[styles.statusBadge, badgeStyle(item.status)]}>
+            <Text style={styles.statusText}>{statusLabel(item.status)}</Text>
+          </View>
+        </View>
         <Text style={styles.vocabVi}>{item.vi}</Text>
       </View>
       <Pressable
@@ -179,7 +184,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
           onPress={() => {
             setActiveTab('flashcard');
             if (vocabularies.length > 0) {
-              navigation.navigate(Routes.FLASHCARD, { vocabularies });
+              navigation.navigate(Routes.FLASHCARD, { lessonVocabId: lesson.id, lessonName: lesson.name });
             } else {
               Alert.alert('Thông báo', 'Chưa có từ vựng nào để học Flashcard');
             }
@@ -322,6 +327,34 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   );
 }
 
+const statusLabel = (status?: VocabularyStatus) => {
+  switch (status) {
+    case 'OVERDUE':
+      return 'Quá hạn';
+    case 'DUE_TODAY':
+      return 'Hôm nay';
+    case 'NEW':
+      return 'Mới';
+    case 'UPCOMING':
+    default:
+      return 'Chưa tới';
+  }
+};
+
+const badgeStyle = (status?: VocabularyStatus) => {
+  switch (status) {
+    case 'OVERDUE':
+      return { backgroundColor: '#FEE2E2' };
+    case 'DUE_TODAY':
+      return { backgroundColor: '#DBEAFE' };
+    case 'NEW':
+      return { backgroundColor: '#DCFCE7' };
+    case 'UPCOMING':
+    default:
+      return { backgroundColor: '#F1F5F9' };
+  }
+};
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -373,8 +406,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   vocabContent: { flex: 1 },
+  vocabRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   vocabTerm: { fontSize: 16, fontWeight: '700', color: '#1A1D26', marginBottom: 4 },
   vocabVi: { fontSize: 14, color: '#70778C' },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  statusText: { fontSize: 12, fontWeight: '800', color: '#1A1D26' },
   audioBtn: { padding: 8 },
   emptyContainer: { alignItems: 'center', marginTop: 40 },
   emptyText: { color: '#A0A7BA', fontSize: 16 },

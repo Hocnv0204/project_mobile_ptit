@@ -41,8 +41,8 @@ http.interceptors.request.use(async (config) => {
 http.interceptors.response.use(
   (res) => {
     const data: any = res?.data;
-    // Backend BaseResponse có thể trả HTTP 200 nhưng code != 200 cho lỗi nghiệp vụ
-    if (data && typeof data === 'object' && typeof data.code === 'number' && data.code !== 200) {
+    // Backend BaseResponse có thể trả HTTP 200 nhưng code != 200 (hoặc 2xx) cho lỗi nghiệp vụ
+    if (data && typeof data === 'object' && typeof data.code === 'number' && (data.code < 200 || data.code >= 300)) {
       // Trả về lỗi "đã chuẩn hoá" để UI show đúng message backend
       return Promise.reject({ code: data.code, message: extractBackendMessage(data) || 'Đã có lỗi xảy ra' });
     }

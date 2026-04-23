@@ -7,8 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { HelperText, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
-import { useAppDispatch } from '../../store';
-import { setAuth, persistAuth } from '../../store/slices/authSlice';
+import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';
 
 
@@ -20,7 +19,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function EmailVerifyScreen({ route, navigation }: any) {
-  const dispatch = useAppDispatch();
+  const setAuth = useAuthStore((state) => state.setAuth);
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
@@ -53,24 +52,14 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
       const res = await authApi.verifyOtp({ email: values.email.trim(), otp: values.otp.trim() });
       const auth = res.data;
 
-      dispatch(setAuth({
+      setAuth({
         accessToken: auth.accessToken,
         refreshToken: auth.refreshToken,
-        tokenType: auth.tokenType,
-        accessTokenExpiresIn: auth.accessTokenExpiresIn,
-        user: auth.user,
-      }));
-
-      await persistAuth({
-        accessToken: auth.accessToken,
-        refreshToken: auth.refreshToken,
-        tokenType: auth.tokenType,
-        accessTokenExpiresIn: auth.accessTokenExpiresIn,
         user: auth.user,
       });
 
       toast.show('Xác thực OTP thành công', { type: 'success', durationMs: 3000 });
-      // Navigation will automatically update to MainTabNavigator due to Redux state change
+      // Navigation will automatically update due to Zustand state change in RootNavigator
     } catch (e: any) {
       toast.show(e?.message || 'Xác thực OTP thất bại', { type: 'error', durationMs: 4500 });
     } finally {
