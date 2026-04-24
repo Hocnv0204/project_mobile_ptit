@@ -20,6 +20,8 @@ import { streakApi, StreakResponse } from '../../api/streakApi';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { http } from '../../api/http';
 
 const { width } = Dimensions.get('window');
 
@@ -41,6 +43,7 @@ export default function HomeScreen({ navigation }: any) {
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
   const isFocused = useIsFocused();
+  const { expoPushToken } = usePushNotifications();
   const [streakData, setStreakData] = useState<StreakResponse | null>(null);
   const [vocabStatsLoading, setVocabStatsLoading] = useState(false);
   const [vocabStats, setVocabStats] = useState({
@@ -63,6 +66,24 @@ export default function HomeScreen({ navigation }: any) {
       })
       .catch(err => console.log('Fetch profile error:', err));
   }, []);
+
+  useEffect(() => {
+    const saveToken = async () => {
+      if (expoPushToken?.data && user?.id) {
+        try {
+          await http.post('/api/v1/tokens/save', {
+            token: expoPushToken.data,
+            userId: user.id.toString(),
+            deviceInfo: Platform.OS,
+          });
+          console.log('Push token saved to backend.');
+        } catch (error) {
+          console.error('Failed to save push token:', error);
+        }
+      }
+    };
+    saveToken();
+  }, [expoPushToken, user?.id]);
 
   useEffect(() => {
     const run = async () => {
