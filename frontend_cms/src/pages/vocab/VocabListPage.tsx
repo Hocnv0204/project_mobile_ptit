@@ -69,10 +69,10 @@ const VocabListPage: React.FC = () => {
     setLoading(true);
     try {
       const [lessonsRes, levelsRes] = await Promise.all<any>([
-        api.get("/api/lesson-vocab"),
+        api.get("/api/lesson-vocab/admin"),
         api.get("/api/levels"),
       ]);
-      setLessons(lessonsRes.data || []);
+      setLessons(lessonsRes.data.content || []);
       setLevels(levelsRes.data || []);
     } catch (error) {
       message.error("Failed to fetch data");
@@ -84,8 +84,8 @@ const VocabListPage: React.FC = () => {
   const fetchLessons = async () => {
     setLoading(true);
     try {
-      const response: any = await api.get("/api/lesson-vocab");
-      setLessons(response.data || []);
+      const response: any = await api.get("/api/lesson-vocab/admin");
+      setLessons(response.data.content || []);
     } catch (error) {
       message.error("Failed to fetch lessons");
     } finally {
@@ -208,7 +208,7 @@ const VocabListPage: React.FC = () => {
   };
 
   const lessonColumns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    { title: "STT", key: "stt", render: (_: any, __: any, index: number) => index + 1 },
     { title: "Name", dataIndex: "name", key: "name" },
     { title: "Description", dataIndex: "description", key: "description" },
     {

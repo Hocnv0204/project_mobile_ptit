@@ -11,7 +11,6 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-}
 
 const { Header, Sider, Content } = Layout;
 
@@ -53,7 +52,6 @@ const MainLayout: React.FC = () => {
       label: "Lesson Vocabularies",
     },
     {
-      key: "/users",
       key: '/podcasts',
       icon: <SoundOutlined />,
       label: 'Podcasts',
