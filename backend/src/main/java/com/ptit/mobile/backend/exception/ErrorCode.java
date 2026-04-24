@@ -40,6 +40,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(5007, "User not found"),
     USER_INACTIVE(5008, "User account is inactive"),
     USER_EMAIL_NOT_VERIFIED(5009, "Email has not been verified"),
+    OLD_PASSWORD_INCORRECT(5010, "Old password is incorrect"),
 
     // ── OTP (6xxx) ───────────────────────────────────────
     OTP_INVALID(6001, "Invalid OTP code"),

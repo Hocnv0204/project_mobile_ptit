@@ -5,6 +5,7 @@ import com.ptit.mobile.backend.dto.request.auth.RefreshTokenRequest;
 import com.ptit.mobile.backend.dto.request.auth.RegisterRequest;
 import com.ptit.mobile.backend.dto.request.auth.ResendOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.VerifyOtpRequest;
+import com.ptit.mobile.backend.dto.request.auth.ChangePasswordRequest;
 import com.ptit.mobile.backend.dto.response.auth.AuthResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
@@ -259,6 +260,28 @@ public class AuthServiceImpl implements AuthService {
     public void logoutAll(Long userId) {
         redisTokenRepository.deleteAllRefreshTokensByUserId(userId);
         log.info("User {} logged out from all devices", userId);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        if (request.getOldPassword() == null || request.getNewPassword() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        if (Objects.equals(request.getOldPassword(), request.getNewPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT.getCode(), "New password must be different from old password");
+        }
+
+        UserCredential credential = userCredentialRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), credential.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.OLD_PASSWORD_INCORRECT);
+        }
+
+        credential.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        credential.setUpdatedAt(LocalDateTime.now());
+        userCredentialRepository.save(credential);
     }
 
     

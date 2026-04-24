@@ -119,7 +119,12 @@ export default function ProfileScreen() {
             label={t('profile.items.currentLevel', { value: levelLabel })} 
             onPress={() => navigation.navigate(Routes.SELECT_LEVEL)} 
           />
-          <MenuItem icon="lock-outline" label={t('profile.items.changePassword')} isLast />
+          <MenuItem
+            icon="lock-outline"
+            label={t('profile.items.changePassword')}
+            onPress={() => navigation.navigate(Routes.CHANGE_PASSWORD)}
+            isLast
+          />
         </View>
 
         {/* Section: CÀI ĐẶT */}

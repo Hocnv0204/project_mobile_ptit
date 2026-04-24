@@ -5,6 +5,7 @@ import com.ptit.mobile.backend.dto.request.auth.RefreshTokenRequest;
 import com.ptit.mobile.backend.dto.request.auth.RegisterRequest;
 import com.ptit.mobile.backend.dto.request.auth.ResendOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.VerifyOtpRequest;
+import com.ptit.mobile.backend.dto.request.auth.ChangePasswordRequest;
 import com.ptit.mobile.backend.dto.response.auth.AuthResponse;
 
 public interface AuthService {
@@ -28,4 +29,6 @@ public interface AuthService {
     void logout(String refreshToken);
 
     void logoutAll(Long userId);
+
+    void changePassword(Long userId, ChangePasswordRequest request);
 }

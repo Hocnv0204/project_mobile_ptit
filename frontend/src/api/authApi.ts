@@ -30,6 +30,11 @@ export type RefreshBody = {
   refreshToken: string;
 };
 
+export type ChangePasswordBody = {
+  oldPassword: string;
+  newPassword: string;
+};
+
 export const authApi = {
   async register(body: RegisterBody) {
     const res = await http.post<ApiEnvelope<null>>('/api/auth/register', body);
@@ -57,6 +62,10 @@ export const authApi = {
   },
   async logout(body: RefreshBody) {
     const res = await http.post<ApiEnvelope<null>>('/api/auth/logout', body);
+    return res.data;
+  },
+  async changePassword(body: ChangePasswordBody) {
+    const res = await http.put<ApiEnvelope<null>>('/api/auth/change-password', body);
     return res.data;
   },
   async me() {

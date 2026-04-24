@@ -6,6 +6,7 @@ import com.ptit.mobile.backend.dto.request.auth.RegisterRequest;
 import com.ptit.mobile.backend.dto.request.auth.ResendOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.VerifyOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.GoogleAuthRequest;
+import com.ptit.mobile.backend.dto.request.auth.ChangePasswordRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.auth.AuthResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
@@ -136,6 +137,14 @@ public class AuthController {
         Long userId = getCurrentUserId();
         authService.logoutAll(userId);
         return BaseResponse.builder().code(200L).message("Logged out from all devices").build();
+    }
+
+    @Operation(summary = "Đổi mật khẩu", security = @SecurityRequirement(name = "bearerAuth"))
+    @PutMapping("/change-password")
+    public BaseResponse changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Long userId = getCurrentUserId();
+        authService.changePassword(userId, request);
+        return BaseResponse.builder().code(200L).message("Password changed successfully").build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
