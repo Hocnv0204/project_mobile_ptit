@@ -13,6 +13,8 @@ public class UserLessonProgressResponse {
     private Long id;
     private Long userId;
     private Integer lessonWritingId;
+    private String lessonName;
+    private String lessonDescription;
     private Integer currentOrderIndex;
     private Integer totalSentences;
     private String status;

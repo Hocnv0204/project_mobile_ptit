@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/lesson-writings")
 @RequiredArgsConstructor
@@ -39,6 +41,20 @@ public class LessonController {
                 .code(200L)
                 .message("Success")
                 .data(lessonPage)
+                .build();
+    }
+
+    @GetMapping("/my-lessons")
+    public BaseResponse getMyLessons(
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        List<UserLessonPr ogressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
+
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(myLessons)
                 .build();
     }
 

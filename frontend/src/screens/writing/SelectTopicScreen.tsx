@@ -12,27 +12,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { Colors } from "../../constants/colors";
 import { Routes } from "../../constants/routes";
-import { writingApi } from "../../api/writing/writingApi";
-import { LessonSummaryResponse } from "../../api/writing/types";
-import { useAuthStore } from "../../store/authStore";
+import { topicApi } from "../../api/topic/topicApi";
+import { TopicResponse } from "../../api/topic/types";
 
-type RouteParams = {
-  params: {
-    topicId: number;
-  };
-};
-
-export default function SelectLessonScreen() {
-  const route = useRoute<RouteProp<RouteParams, "params">>();
-  const navigation = useNavigation<any>();
-  const topicId = route.params?.topicId;
-  const user = useAuthStore((state) => state.user);
-  const levelId = user?.levelId;
-
-  const [lessons, setLessons] = useState<LessonSummaryResponse[]>([]);
+export default function SelectTopicScreen() {
+  const [topics, setTopics] = useState<TopicResponse[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -47,32 +34,30 @@ export default function SelectLessonScreen() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchLessons = async (
+  const fetchTopics = async (
     pageNumber: number,
     search: string,
     isRefresh = false,
   ) => {
     try {
       if (!isRefresh) setLoading(true);
-      const data = await writingApi.getLessons({
+      const data = await topicApi.getTopics({
         page: pageNumber,
         size: 10,
-        topicId: topicId,
-        levelId: levelId ?? undefined,
         searchTerm: search || undefined,
         sortBy: "createdAt",
         sortDir: "DESC",
       });
 
       if (isRefresh || pageNumber === 0) {
-        setLessons(data.content);
+        setTopics(data.content);
       } else {
-        setLessons((prev) => [...prev, ...data.content]);
+        setTopics((prev) => [...prev, ...data.content]);
       }
 
       setHasMore(!data.last);
     } catch (error) {
-      console.error("Failed to fetch lessons:", error);
+      console.error("Failed to fetch topics:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -80,47 +65,44 @@ export default function SelectLessonScreen() {
   };
 
   useEffect(() => {
-    if (topicId) {
-      setPage(0);
-      fetchLessons(0, debouncedSearch);
-    }
-  }, [debouncedSearch, topicId, levelId]);
+    setPage(0);
+    fetchTopics(0, debouncedSearch);
+  }, [debouncedSearch]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     setPage(0);
-    fetchLessons(0, debouncedSearch, true);
-  }, [debouncedSearch, topicId, levelId]);
+    fetchTopics(0, debouncedSearch, true);
+  }, [debouncedSearch]);
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchLessons(nextPage, debouncedSearch);
+      fetchTopics(nextPage, debouncedSearch);
     }
   };
 
-  const renderItem = ({ item }: { item: LessonSummaryResponse }) => (
+  const navigation = useNavigation<any>();
+
+  const renderItem = ({ item }: { item: TopicResponse }) => (
     <TouchableOpacity
-      style={styles.lessonCard}
+      style={styles.topicCard}
       activeOpacity={0.8}
       onPress={() => {
-        navigation.navigate(Routes.LESSON_PRACTICE, {
-          lessonId: item.id,
-          lessonName: item.name,
-        });
+        navigation.navigate(Routes.SELECT_LESSON, { topicId: item.id });
       }}
     >
       <View style={styles.cardHeader}>
         <View style={styles.iconContainer}>
-          <Ionicons name="create" size={24} color="#0066FF" />
+          <Ionicons name="document-text" size={24} color="#0066FF" />
         </View>
         <View style={styles.cardContent}>
-          <Text style={styles.lessonName} numberOfLines={1}>
+          <Text style={styles.topicName} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.lessonDesc} numberOfLines={2}>
-            {item.description || "No description available for this lesson."}
+          <Text style={styles.topicDesc} numberOfLines={2}>
+            {item.description || "No description available for this topic."}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
@@ -133,16 +115,16 @@ export default function SelectLessonScreen() {
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.topBar}>
-              <TouchableOpacity
+              <TouchableOpacity 
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
               >
                 <Ionicons name="arrow-back" size={24} color="#1A1D26" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Select Lesson</Text>
+              <Text style={styles.headerTitle}>Writing Topics</Text>
             </View>
             <Text style={styles.headerSubtitle}>
-              Choose a lesson to practice your writing skills
+              Choose a topic to practice your writing skills
             </Text>
           </View>
 
@@ -155,7 +137,7 @@ export default function SelectLessonScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search lessons..."
+              placeholder="Search topics..."
               placeholderTextColor="#5A5A7A"
               value={searchTerm}
               onChangeText={setSearchTerm}
@@ -171,7 +153,7 @@ export default function SelectLessonScreen() {
           </View>
 
           <FlatList
-            data={lessons}
+            data={topics}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             contentContainerStyle={styles.listContainer}
@@ -189,8 +171,8 @@ export default function SelectLessonScreen() {
             ListEmptyComponent={
               !loading ? (
                 <View style={styles.emptyContainer}>
-                  <Ionicons name="reader-outline" size={64} color="#252540" />
-                  <Text style={styles.emptyTitle}>No lessons found</Text>
+                  <Ionicons name="book-outline" size={64} color="#252540" />
+                  <Text style={styles.emptyTitle}>No topics found</Text>
                   <Text style={styles.emptySubtitle}>
                     Try adjusting your search
                   </Text>
@@ -213,12 +195,12 @@ export default function SelectLessonScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffffff",
+    backgroundColor: "#ffffffff", // Đổi màu xám đậm cũ thành màu bạn muốn
   },
   container: {
     flex: 1,
+    backgroundColor: "#F8F9FA", // Đảm bảo lớp bên trong cũng cùng màu
     paddingHorizontal: 20,
-    backgroundColor: "#F8F9FA",
   },
   header: {
     marginTop: 10,
@@ -250,11 +232,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 2, // Dành riêng cho Android
+    elevation: 3,
   },
   searchIcon: {
     marginRight: 10,
@@ -271,7 +253,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 20,
   },
-  lessonCard: {
+  topicCard: {
     backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 16, // Bo góc tròn cho card
@@ -290,7 +272,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(0, 102, 255, 0.1)",
+    backgroundColor: "rgba(108, 99, 255, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -298,13 +280,13 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
   },
-  lessonName: {
+  topicName: {
     fontSize: 18,
     fontWeight: "600",
     color: "#1A1D26",
     marginBottom: 4,
   },
-  lessonDesc: {
+  topicDesc: {
     fontSize: 14,
     color: "#A0A0BC",
     lineHeight: 20,

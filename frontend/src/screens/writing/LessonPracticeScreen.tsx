@@ -27,6 +27,8 @@ import {
   GradingResponse,
 } from "../../api/writing/types";
 import FeedbackModal from "../../components/writing/FeedbackModal";
+import RedoLessonModal from "../../components/writing/RedoLessonModal";
+import { Routes } from "../../constants/routes";
 
 type RouteParams = {
   params: {
@@ -56,6 +58,7 @@ export default function LessonPracticeScreen() {
     data: GradingResponse;
   } | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showRedoModal, setShowRedoModal] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
   const paragraphScrollRef = useRef<ScrollView>(null);
@@ -175,13 +178,29 @@ export default function LessonPracticeScreen() {
       await writingApi.updateLessonProgress(lessonId, newOrderIndex);
       setShowResultModal(false);
       setUserInput("");
-      if (progress && lesson && progress.currentOrderIndex < lesson.totalSentences) {
+      if (progress && lesson) {
         setProgress({ ...progress, currentOrderIndex: newOrderIndex });
       }
     } catch (e) {
       console.error("Failed to update lesson progress:", e);
     }
   };
+
+  const handleRedo = async () => {
+    try {
+      await writingApi.updateLessonProgress(lessonId, 1);
+      setShowRedoModal(false);
+      setProgress(prev => prev ? { ...prev, currentOrderIndex: 1 } : null);
+      setUserInput("");
+    } catch (e) {
+      console.error("Failed to redo lesson:", e);
+    }
+  };
+
+  const handleCancelRedo = () => {
+     setShowRedoModal(false);
+     navigation.goBack();
+   };
 
   // ── derived values ──────────────────────────────────────────────────────────
   const currentOrderIndex = progress?.currentOrderIndex ?? 1;
@@ -193,6 +212,12 @@ export default function LessonPracticeScreen() {
   );
 
   const currentVocab: SuggestVocabularyResponse[] = currentSentence?.suggestVocabularies ?? [];
+
+  useEffect(() => {
+    if (lesson && progress && progress.currentOrderIndex > lesson.totalSentences) {
+      setShowRedoModal(true);
+    }
+  }, [lesson, progress]);
 
   // ── loading / error ─────────────────────────────────────────────────────────
   if (loading) {
@@ -445,6 +470,12 @@ export default function LessonPracticeScreen() {
         onNext={handleNext}
         feedbackData={gradingResult}
       />
+
+      <RedoLessonModal
+        visible={showRedoModal}
+        onRedo={handleRedo}
+        onCancel={handleCancelRedo}
+      />
     </SafeAreaView>
   );
 }
@@ -452,7 +483,7 @@ export default function LessonPracticeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#6b6b6bff",
+    backgroundColor: "#ffffffff",
   },
   container: {
     flex: 1,
@@ -713,9 +744,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     marginRight: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E0EAFF",
+    backgroundColor: "#F8FAFF",
   },
   vocabToggleActive: {
     backgroundColor: "#0066FF",
+    borderColor: "#0066FF",
   },
   submitButton: {
     width: 52,

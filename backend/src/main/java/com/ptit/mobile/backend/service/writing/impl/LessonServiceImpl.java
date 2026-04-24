@@ -187,4 +187,41 @@ public class LessonServiceImpl implements LessonService {
             }
         }
     }
+
+    @Override
+    public List<UserLessonProgressResponse> getMyLessonsProgress(Long userId) {
+        List<UserLessonProgress> progressList = userLessonProgressRepository.findAllByUserIdOrderByUpdatedAtDesc(userId);
+        if (progressList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Integer> lessonIds = progressList.stream()
+                .map(UserLessonProgress::getLessonWritingId)
+                .toList();
+
+        List<LessonWriting> lessons = lessonWritingRepository.findAllById(lessonIds);
+        java.util.Map<Integer, LessonWriting> lessonMap = lessons.stream()
+                .collect(java.util.stream.Collectors.toMap(LessonWriting::getId, l -> l));
+
+        return progressList.stream().map(progress -> {
+            UserLessonProgressResponse response = UserLessonProgressResponse.builder()
+                    .id(progress.getId())
+                    .userId(progress.getUserId())
+                    .lessonWritingId(progress.getLessonWritingId())
+                    .currentOrderIndex(progress.getCurrentOrderIndex())
+                    .totalSentences(progress.getTotalSentences())
+                    .status(progress.getStatus())
+                    .createdAt(progress.getCreatedAt())
+                    .updatedAt(progress.getUpdatedAt())
+                    .build();
+
+            LessonWriting lesson = lessonMap.get(progress.getLessonWritingId());
+            if (lesson != null) {
+                response.setLessonName(lesson.getName());
+                response.setLessonDescription(lesson.getDescription());
+            }
+
+            return response;
+        }).toList();
+    }
 }
