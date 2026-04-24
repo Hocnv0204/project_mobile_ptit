@@ -6,4 +6,10 @@ export const userApi = {
     const res = await http.put<ApiEnvelope<string>>('/api/users/me/level', { levelId });
     return res.data;
   },
+
+  getCurrentLevel: async () => {
+    // Backend có thể trả levelId (number) hoặc level label (string)
+    const res = await http.get<ApiEnvelope<number | string | null>>('/api/users/me/level');
+    return res.data;
+  },
 };

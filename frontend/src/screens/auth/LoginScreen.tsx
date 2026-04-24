@@ -10,6 +10,7 @@ import { authApi } from '../../api/authApi';
 import { useAuthStore } from '../../store/authStore';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { useToast } from '../../components/ToastProvider';
+import { Routes } from '../../constants/routes';
 import { toApiError, extractBackendMessage } from '../../utils/apiErrors';
 
 const schema = z.object({
@@ -160,6 +161,12 @@ export default function LoginScreen({ navigation }: any) {
             )}
           />
 
+          <View style={styles.forgotRow}>
+            <TouchableOpacity onPress={() => navigation.navigate(Routes.FORGOT_PASSWORD_REQUEST)} activeOpacity={0.8}>
+              <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity 
             style={[styles.btnPrimary, submitting && styles.btnPrimaryDisabled]} 
             onPress={onSubmit}
@@ -250,6 +257,16 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 4,
+  },
+  forgotRow: {
+    alignItems: 'flex-end',
+    marginTop: -2,
+    marginBottom: 10,
+  },
+  forgotText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0066FF',
   },
   btnPrimary: {
     backgroundColor: '#0066FF',

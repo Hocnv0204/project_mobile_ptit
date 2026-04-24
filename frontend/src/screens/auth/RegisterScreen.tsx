@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { useToast } from '../../components/ToastProvider';
 import { toApiError } from '../../utils/apiErrors';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const registerSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -19,6 +20,11 @@ const registerSchema = z.object({
   confirmPassword: z.string(),
   fullName: z.string().min(1, 'Vui lòng nhập họ và tên'),
   username: z.string().min(1, 'Vui lòng nhập username'),
+  phoneNumber: z.string().optional().or(z.literal('')).refine(
+    (v) => !v || /^\d+$/.test(v),
+    { message: 'Số điện thoại chỉ được chứa chữ số' },
+  ),
+  dateOfBirth: z.string().optional().or(z.literal('')),
   agreedToTerms: z.literal(true, {
     errorMap: () => ({ message: 'Vui lòng đồng ý với điều khoản' }),
   }),
@@ -34,6 +40,8 @@ export default function RegisterScreen({ navigation }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDobPicker, setShowDobPicker] = useState(false);
+  const [tempDob, setTempDob] = useState<Date>(new Date(2000, 0, 1));
 
   const { control, handleSubmit, watch } = useForm<FormValues>({
     resolver: zodResolver(registerSchema),
@@ -43,6 +51,8 @@ export default function RegisterScreen({ navigation }: any) {
       confirmPassword: '',
       fullName: '',
       username: '',
+      phoneNumber: '',
+      dateOfBirth: '',
       agreedToTerms: false,
     },
     mode: 'onChange',
@@ -63,6 +73,8 @@ export default function RegisterScreen({ navigation }: any) {
         password: values.password,
         username: values.username.trim(),
         fullName: values.fullName.trim(),
+        phoneNumber: values.phoneNumber?.trim() ? values.phoneNumber.trim() : undefined,
+        dateOfBirth: values.dateOfBirth?.trim() ? values.dateOfBirth.trim() : undefined,
       };
       const res = await authApi.register(body) as any;
       toast.show('Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.', { type: 'success', durationMs: 3500 });
@@ -123,6 +135,121 @@ export default function RegisterScreen({ navigation }: any) {
                 <HelperText type="error" visible={!!error} style={styles.errorText}>
                   {error?.message}
                 </HelperText>
+              </View>
+            )}
+          />
+
+          <Text style={styles.label}>Số điện thoại</Text>
+          <Controller
+            control={control}
+            name="phoneNumber"
+            render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
+              <View style={styles.field}>
+                <TextInput
+                  mode="outlined"
+                  placeholder="Nhập số điện thoại"
+                  value={value}
+                  onChangeText={(t) => onChange(t.replace(/[^\d]/g, ''))}
+                  onBlur={onBlur}
+                  keyboardType="phone-pad"
+                  outlineColor="#E0E5ED"
+                  activeOutlineColor="#0066FF"
+                  style={styles.input}
+                  theme={{ colors: { background: '#FFFFFF' } }}
+                  textColor="#1A1D26"
+                />
+                <HelperText type="error" visible={!!error} style={styles.errorText}>
+                  {error?.message}
+                </HelperText>
+              </View>
+            )}
+          />
+
+          <Text style={styles.label}>Ngày sinh</Text>
+          <Controller
+            control={control}
+            name="dateOfBirth"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
+              <View style={styles.field}>
+                <Pressable
+                  onPress={() => {
+                    const d = value ? new Date(value) : new Date(2000, 0, 1);
+                    setTempDob(d);
+                    setShowDobPicker(true);
+                  }}
+                >
+                  <View pointerEvents="none">
+                    <TextInput
+                      mode="outlined"
+                      placeholder="Chọn ngày sinh"
+                      value={value ? value.split('-').reverse().join('/') : ''}
+                      editable={false}
+                      outlineColor="#E0E5ED"
+                      activeOutlineColor="#0066FF"
+                      style={styles.input}
+                      theme={{ colors: { background: '#FFFFFF' } }}
+                      textColor="#1A1D26"
+                      right={<TextInput.Icon icon="calendar" />}
+                    />
+                  </View>
+                </Pressable>
+                <HelperText type="error" visible={!!error} style={styles.errorText}>
+                  {error?.message}
+                </HelperText>
+
+                {/* Android: show inline picker. iOS: show modal picker to avoid layout jump */}
+                {showDobPicker && Platform.OS !== 'ios' && (
+                  <DateTimePicker
+                    value={tempDob}
+                    mode="date"
+                    display="default"
+                    maximumDate={new Date()}
+                    onChange={(_, selected) => {
+                      setShowDobPicker(false);
+                      if (!selected) return;
+                      const yyyy = selected.getFullYear();
+                      const mm = String(selected.getMonth() + 1).padStart(2, '0');
+                      const dd = String(selected.getDate()).padStart(2, '0');
+                      onChange(`${yyyy}-${mm}-${dd}`);
+                    }}
+                  />
+                )}
+
+                {showDobPicker && Platform.OS === 'ios' && (
+                  <Modal transparent animationType="fade" visible={showDobPicker}>
+                    <View style={styles.dobOverlay}>
+                      <View style={styles.dobSheet}>
+                        <View style={styles.dobHeader}>
+                          <Text style={styles.dobTitle}>Chọn ngày sinh</Text>
+                          <Pressable
+                            onPress={() => {
+                              const yyyy = tempDob.getFullYear();
+                              const mm = String(tempDob.getMonth() + 1).padStart(2, '0');
+                              const dd = String(tempDob.getDate()).padStart(2, '0');
+                              onChange(`${yyyy}-${mm}-${dd}`);
+                              setShowDobPicker(false);
+                            }}
+                            style={styles.dobDoneBtn}
+                          >
+                            <Text style={styles.dobDoneText}>Xong</Text>
+                          </Pressable>
+                        </View>
+
+                        <DateTimePicker
+                          value={tempDob}
+                          mode="date"
+                          display="spinner"
+                          themeVariant="light"
+                          style={{ height: 216, width: '100%' }}
+                          maximumDate={new Date()}
+                          onChange={(_, selected) => {
+                            if (selected) setTempDob(selected);
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </Modal>
+                )}
               </View>
             )}
           />
@@ -354,6 +481,42 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#FFFFFF',
     fontSize: 15,
+  },
+  dobOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  dobSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingBottom: 16,
+    paddingTop: 4,
+  },
+  dobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF0F6',
+  },
+  dobTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1D26',
+  },
+  dobDoneBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: '#0066FF',
+  },
+  dobDoneText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   errorText: {
     marginTop: -4,

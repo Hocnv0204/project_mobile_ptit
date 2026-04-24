@@ -142,10 +142,8 @@ public class LessonVocabController {
 
     @Operation(summary = "Danh sách lesson vocab hệ thống theo username và levelId", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/system")
-    public BaseResponse getSystemLessons(
-            @RequestParam("username") String username,
-            @RequestParam(value = "levelId", required = false) Long levelId) {
-        return lessonVocabService.getByUsernameAndLevel(username, levelId);
+    public BaseResponse getSystemLessons(){
+        return lessonVocabService.getByUsernameAndLevel();
     }
 
     @GetMapping("/admin")

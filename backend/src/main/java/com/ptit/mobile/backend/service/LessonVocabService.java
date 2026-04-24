@@ -21,7 +21,7 @@ public interface LessonVocabService {
 
     BaseResponse getByUserId(Long userId);
 
-    BaseResponse getByUsernameAndLevel(String username, Long levelId);
+    BaseResponse getByUsernameAndLevel();
 
     BaseResponse getLessonVocabCms(Pageable pageable);
 }

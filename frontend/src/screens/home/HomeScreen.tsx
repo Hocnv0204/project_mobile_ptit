@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   Platform,
   StatusBar,
   Dimensions
@@ -13,28 +12,27 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useIsFocused } from '@react-navigation/native';
 import { authApi } from '../../api/authApi';
 import { vocabApi } from '../../api/vocabApi';
 import { streakApi, StreakResponse } from '../../api/streakApi';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';
+
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { http } from '../../api/http';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
 const { width } = Dimensions.get('window');
 
 // --- TYPES ---
 export interface UserData {
   name: string;
-  avatarUrl: string;
   level: string;
 }
 
 const MOCK_USER: UserData = {
   name: "Nguyễn Văn Học",
-  avatarUrl: "https://picsum.photos/100",
   level: "TOEIC",
 };
 
@@ -54,17 +52,19 @@ export default function HomeScreen({ navigation }: any) {
     total: 0,
   });
 
-  useEffect(() => {
-    authApi.me()
-      .then(res => {
-        if (res && res.data) {
-          setCurrentUser(prev => ({
-            ...prev,
-            name: res.data.fullName || res.data.username || prev.name,
-          }));
-        }
-      })
-      .catch(err => console.log('Fetch profile error:', err));
+  useRefreshOnFocus(async ({ cancelled }) => {
+    try {
+      const res = await authApi.me();
+      if (cancelled()) return;
+      if (res && res.data) {
+        setCurrentUser((prev) => ({
+          ...prev,
+          name: res.data.fullName || res.data.username || prev.name,
+        }));
+      }
+    } catch (e) {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {
@@ -107,6 +107,26 @@ export default function HomeScreen({ navigation }: any) {
     };
     run();
   }, [user?.id, isFocused]);
+  useRefreshOnFocus(async ({ cancelled }) => {
+    if (!user?.id) return;
+    try {
+      setVocabStatsLoading(true);
+      const statsRes = await vocabApi.homeStats();
+      if (cancelled()) return;
+      const s = statsRes.data;
+      setVocabStats({
+        dueToday: s?.dueToday ?? 0,
+        overdue: s?.overdue ?? 0,
+        upcoming7d: s?.upcoming7d ?? 0,
+        newWords: s?.newWords ?? 0,
+        total: s?.total ?? 0,
+      });
+    } catch (e: any) {
+      toast.show(e?.message || 'Không thể tải thống kê học tập', { type: 'error', durationMs: 4500 });
+    } finally {
+      setVocabStatsLoading(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchStreak = async () => {
@@ -125,6 +145,11 @@ export default function HomeScreen({ navigation }: any) {
     navigation.navigate(route);
   };
 
+  const avatarLetter = useMemo(() => {
+    const s = (currentUser.name || '').trim();
+    return (s ? s[0] : 'P').toUpperCase();
+  }, [currentUser.name]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
@@ -140,7 +165,9 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.headerContainer}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => navigation.navigate(Routes.PROFILE)}>
-              <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatarImage} />
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarLetter}>{avatarLetter}</Text>
+              </View>
             </TouchableOpacity>
             <View style={styles.headerTextContainer}>
               <Text style={styles.greetingText}>Xin chào, {currentUser.name}</Text>
@@ -281,12 +308,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarImage: {
+  avatarCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
+  },
+  avatarLetter: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
   },
   headerTextContainer: {
     justifyContent: 'center',
