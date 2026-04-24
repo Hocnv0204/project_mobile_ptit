@@ -6,19 +6,15 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   Animated,
   Easing,
-  FlatList,
-  Modal,
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { Colors } from "../../constants/colors";
@@ -45,9 +41,7 @@ export default function LessonPracticeScreen() {
   const { lessonId, lessonName } = route.params;
 
   const [lesson, setLesson] = useState<LessonResponse | null>(null);
-  const [progress, setProgress] = useState<UserLessonProgressResponse | null>(
-    null,
-  );
+  const [progress, setProgress] = useState<UserLessonProgressResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,27 +59,22 @@ export default function LessonPracticeScreen() {
 
   const inputRef = useRef<TextInput>(null);
   const paragraphScrollRef = useRef<ScrollView>(null);
-  const highlightedSentenceRefs = useRef<{ [key: number]: number }>({});
+  const outerScrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const vocabHeightAnim = useRef(new Animated.Value(0)).current;
 
   const SCREEN_HEIGHT = Dimensions.get("window").height;
   const PARAGRAPH_HEIGHT = SCREEN_HEIGHT * 0.4;
 
-  const paragraphHeightAnim = useRef(new Animated.Value(PARAGRAPH_HEIGHT)).current;
-
   // ── keyboard listeners ──────────────────────────────────────────────────────
   useEffect(() => {
-    const showEvent =
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent =
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
-    const showSub = Keyboard.addListener(showEvent, (e) => {
+    const showSub = Keyboard.addListener(showEvent, () => {
       setIsKeyboardVisible(true);
     });
-
-    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+    const hideSub = Keyboard.addListener(hideEvent, () => {
       setIsKeyboardVisible(false);
     });
 
@@ -103,6 +92,16 @@ export default function LessonPracticeScreen() {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
+  }, [showVocab]);
+
+  // ── scroll outer down when vocab opens so it doesn't get hidden ─────────────
+  useEffect(() => {
+    if (showVocab) {
+      // Small delay to let animation start before scrolling
+      setTimeout(() => {
+        outerScrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
   }, [showVocab]);
 
   // ── fade-in on mount ────────────────────────────────────────────────────────
@@ -125,9 +124,7 @@ export default function LessonPracticeScreen() {
       ]);
       const sorted = {
         ...lessonData,
-        sentences: [...lessonData.sentences].sort(
-          (a, b) => a.orderIndex - b.orderIndex,
-        ),
+        sentences: [...lessonData.sentences].sort((a, b) => a.orderIndex - b.orderIndex),
       };
       setLesson(sorted);
       setProgress(progressData);
@@ -143,7 +140,7 @@ export default function LessonPracticeScreen() {
     loadData();
   }, [loadData]);
 
-  // ── handle submit ──────────────────────────────────────────────────────────
+  // ── handle submit ───────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!userInput.trim() || !currentSentence) return;
 
@@ -167,7 +164,6 @@ export default function LessonPracticeScreen() {
       setShowResultModal(true);
     } catch (e) {
       console.error("Failed to grade answer:", e);
-      // You might want to show an error toast here
     } finally {
       setIsGrading(false);
     }
@@ -179,33 +175,24 @@ export default function LessonPracticeScreen() {
       await writingApi.updateLessonProgress(lessonId, newOrderIndex);
       setShowResultModal(false);
       setUserInput("");
-      if (
-        progress &&
-        lesson &&
-        progress.currentOrderIndex < lesson.totalSentences
-      ) {
-        setProgress({
-          ...progress,
-          currentOrderIndex: newOrderIndex,
-        });
+      if (progress && lesson && progress.currentOrderIndex < lesson.totalSentences) {
+        setProgress({ ...progress, currentOrderIndex: newOrderIndex });
       }
     } catch (e) {
       console.error("Failed to update lesson progress:", e);
-      // You might want to show an error toast here
     }
   };
 
   // ── derived values ──────────────────────────────────────────────────────────
   const currentOrderIndex = progress?.currentOrderIndex ?? 1;
   const totalSentences = lesson?.totalSentences ?? 0;
-  const progressPercent =
-    totalSentences > 0 ? (currentOrderIndex - 1) / totalSentences : 0;
+  const progressPercent = totalSentences > 0 ? (currentOrderIndex - 1) / totalSentences : 0;
 
-  const currentSentence: LessonSentenceResponse | undefined =
-    lesson?.sentences.find((s) => s.orderIndex === currentOrderIndex);
+  const currentSentence: LessonSentenceResponse | undefined = lesson?.sentences.find(
+    (s) => s.orderIndex === currentOrderIndex,
+  );
 
-  const currentVocab: SuggestVocabularyResponse[] =
-    currentSentence?.suggestVocabularies ?? [];
+  const currentVocab: SuggestVocabularyResponse[] = currentSentence?.suggestVocabularies ?? [];
 
   // ── loading / error ─────────────────────────────────────────────────────────
   if (loading) {
@@ -223,14 +210,8 @@ export default function LessonPracticeScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerContainer}>
-          <Ionicons
-            name="alert-circle-outline"
-            size={64}
-            color={Colors.error}
-          />
-          <Text style={styles.errorText}>
-            {error ?? "Something went wrong"}
-          </Text>
+          <Ionicons name="alert-circle-outline" size={64} color={Colors.error} />
+          <Text style={styles.errorText}>{error ?? "Something went wrong"}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadData}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
@@ -246,219 +227,218 @@ export default function LessonPracticeScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
-            {/* ── Header ──────────────────────────────────────────────────────── */}
-            <View style={styles.header}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Ionicons name="chevron-back" size={20} color="#0066FF" />
-              </TouchableOpacity>
+        <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
 
-              <View style={styles.headerCenter}>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                  {lesson.name}
-                </Text>
-              </View>
+          {/* ── Header ──────────────────────────────────────────────────────── */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="chevron-back" size={20} color="#0066FF" />
+            </TouchableOpacity>
 
-              <View style={{ width: 40 }} />
-            </View>
-
-            {/* ── Progress bar (below header) ──────────────────────────────────── */}
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${progressPercent * 100}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.progressLabel}>
-                {currentOrderIndex - 1}/{totalSentences}
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {lesson.name}
               </Text>
             </View>
 
-            {/* ── Scrollable content area (paragraph + vocab) ──────────────────── */}
-            <ScrollView
-              style={styles.scrollableContent}
-              contentContainerStyle={styles.scrollableContentContainer}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* ── Paragraph with animated height ─────────────────────────────── */}
-              <Animated.View
-                style={[
-                  styles.paragraphWrapper,
-                  {
-                    height: paragraphHeightAnim,
-                  },
-                ]}
-              >
-                <ScrollView
-                  ref={paragraphScrollRef}
-                  style={styles.paragraphScroll}
-                  showsVerticalScrollIndicator={false}
-                >
-                  <View style={styles.paragraphContent}>
-                    <Text style={styles.paragraphText}>
-                      {lesson.sentences.map((sentence, idx) => {
-                      const isHighlighted =
-                        sentence.orderIndex === currentOrderIndex;
-                      const cleanedSentence = sentence.sentenceVi.replace(
-                        /\.\s*$/,
-                        "",
-                      );
-                      return (
-                        <Text key={sentence.id}>
-                          <Text
-                            style={[
-                              styles.sentenceText,
-                              isHighlighted && styles.sentenceHighlighted,
-                            ]}
-                          >
-                            {cleanedSentence}
-                          </Text>
-                          {idx < lesson.sentences.length - 1 ? (
-                            <Text style={styles.sentenceDot}>. </Text>
-                          ) : (
-                            <Text style={styles.sentenceDot}>.</Text>
-                          )}
-                        </Text>
-                      );
-                    })}
-                  </Text>
-                </View>
-              </ScrollView>
-            </Animated.View>
+            <View style={{ width: 40 }} />
+          </View>
 
-              <Animated.View
+          {/* ── Progress bar ─────────────────────────────────────────────────── */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
                 style={[
-                  styles.vocabPanel,
-                  {
-                    maxHeight: vocabHeightAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 2000], // Increased range to ensure it's enough
-                    }),
-                    opacity: vocabHeightAnim,
-                    borderWidth: vocabHeightAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 1],
-                      extrapolate: "clamp",
-                    }),
-                    marginBottom: vocabHeightAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 8],
-                      extrapolate: "clamp",
-                    }),
-                  },
+                  styles.progressFill,
+                  { width: `${progressPercent * 100}%` },
                 ]}
+              />
+            </View>
+            <Text style={styles.progressLabel}>
+              {currentOrderIndex - 1}/{totalSentences}
+            </Text>
+          </View>
+
+          {/* ── Outer ScrollView: scroll paragraph + vocab as one unit ──────── */}
+          {/*
+            KEY FIXES:
+            1. nestedScrollEnabled={true}  → allows Android to disambiguate inner vs outer scroll
+            2. keyboardShouldPersistTaps="handled" → taps inside don't dismiss keyboard unless unhandled
+            3. NO TouchableWithoutFeedback wrapper → was consuming touch events and breaking scroll gesture
+          */}
+          <ScrollView
+            ref={outerScrollRef}
+            style={styles.outerScroll}
+            contentContainerStyle={styles.outerScrollContent}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
+          >
+            {/* ── Paragraph: fixed height, inner scroll ─────────────────────── */}
+            {/*
+              height is fixed to PARAGRAPH_HEIGHT — inner ScrollView handles overflow.
+              nestedScrollEnabled={true} tells Android this inner scroll is independent.
+              On iOS, nested scrolls work by default via the responder system.
+            */}
+            <View style={[styles.paragraphWrapper, { height: PARAGRAPH_HEIGHT }]}>
+              <ScrollView
+                ref={paragraphScrollRef}
+                style={styles.paragraphScroll}
+                contentContainerStyle={styles.paragraphContent}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+                // Prevent outer scroll from stealing the gesture while user is
+                // actively scrolling inside the paragraph box
+                scrollEventThrottle={16}
               >
-                <Text style={styles.vocabPanelTitle}>💡 Gợi ý từ vựng</Text>
-                {currentVocab.length > 0 ? (
-                  <View style={styles.vocabList}>
-                    {currentVocab.map((item) => (
-                      <View key={item.id} style={styles.vocabItem}>
-                        <View style={styles.vocabItemHeader}>
-                          <Text style={styles.vocabTerm}>{item.term}</Text>
-                          {item.type ? (
-                            <View style={styles.vocabTypeBadge}>
-                              <Text style={styles.vocabTypeText}>
-                                {item.type}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                        {item.pronunciation ? (
-                          <Text style={styles.vocabPronunciation}>
-                            /{item.pronunciation}/
-                          </Text>
-                        ) : null}
-                        <Text style={styles.vocabVietnamese}>
-                          {item.vietnamese}
+                <Text style={styles.paragraphText}>
+                  {lesson.sentences.map((sentence, idx) => {
+                    const isHighlighted = sentence.orderIndex === currentOrderIndex;
+                    const cleanedSentence = sentence.sentenceVi.replace(/\.\s*$/, "");
+                    return (
+                      <Text key={sentence.id}>
+                        <Text
+                          style={[
+                            styles.sentenceText,
+                            isHighlighted && styles.sentenceHighlighted,
+                          ]}
+                        >
+                          {cleanedSentence}
                         </Text>
-                        {item.example ? (
-                          <Text style={styles.vocabExample} numberOfLines={2}>
-                            {item.example}
-                          </Text>
+                        {idx < lesson.sentences.length - 1 ? (
+                          <Text style={styles.sentenceDot}>. </Text>
+                        ) : (
+                          <Text style={styles.sentenceDot}>.</Text>
+                        )}
+                      </Text>
+                    );
+                  })}
+                </Text>
+              </ScrollView>
+            </View>
+
+            {/* ── Vocab panel: animated height, no scroll needed (outer handles it) */}
+            <Animated.View
+              style={[
+                styles.vocabPanel,
+                {
+                  maxHeight: vocabHeightAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 2000],
+                  }),
+                  opacity: vocabHeightAnim,
+                  borderWidth: vocabHeightAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 1],
+                    extrapolate: "clamp",
+                  }),
+                  marginBottom: vocabHeightAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 8],
+                    extrapolate: "clamp",
+                  }),
+                },
+              ]}
+            >
+              <Text style={styles.vocabPanelTitle}>💡 Gợi ý từ vựng</Text>
+              {currentVocab.length > 0 ? (
+                <View style={styles.vocabList}>
+                  {currentVocab.map((item) => (
+                    <View key={item.id} style={styles.vocabItem}>
+                      <View style={styles.vocabItemHeader}>
+                        <Text style={styles.vocabTerm}>{item.term}</Text>
+                        {item.type ? (
+                          <View style={styles.vocabTypeBadge}>
+                            <Text style={styles.vocabTypeText}>{item.type}</Text>
+                          </View>
                         ) : null}
                       </View>
-                    ))}
-                  </View>
-                ) : (
-                  <View style={styles.emptyVocabContainer}>
-                    <Text style={styles.emptyVocabText}>
-                      Hiện tại không có gợi ý từ vựng cho câu này
-                    </Text>
-                  </View>
-                )}
-              </Animated.View>
-            </ScrollView>
+                      {item.pronunciation ? (
+                        <Text style={styles.vocabPronunciation}>
+                          /{item.pronunciation}/
+                        </Text>
+                      ) : null}
+                      <Text style={styles.vocabVietnamese}>{item.vietnamese}</Text>
+                      {item.example ? (
+                        <Text style={styles.vocabExample} numberOfLines={2}>
+                          {item.example}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyVocabContainer}>
+                  <Text style={styles.emptyVocabText}>
+                    Hiện tại không có gợi ý từ vựng cho câu này
+                  </Text>
+                </View>
+              )}
+            </Animated.View>
+          </ScrollView>
 
-            {/* ── Bottom toolbar ─────────────────────────────────────────────────── */}
-            <View style={styles.bottomBarWrapper}>
-              <View style={styles.bottomBar}>
-                <View style={styles.bottomRow}>
-                  <View style={styles.inputRow}>
-                      <TextInput
-                        ref={inputRef}
-                        style={styles.textInput}
-                        placeholder="Nhập câu dịch của bạn..."
-                        placeholderTextColor="#5A5A7A"
-                        value={userInput}
-                        onChangeText={setUserInput}
-                        multiline
-                        returnKeyType="done"
-                        textAlignVertical="center"
-                      />
-                    <TouchableOpacity
-                      style={[
-                        styles.vocabToggleButton,
-                        showVocab && styles.vocabToggleActive,
-                      ]}
-                      onPress={() => {
-                        setShowVocab((prev) => !prev);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons
-                        name={showVocab ? "book" : "book-outline"}
-                        size={18}
-                        color={showVocab ? "#FFFFFF" : "#0066FF"}
-                      />
-                    </TouchableOpacity>
-                  </View>
-
+          {/* ── Bottom toolbar ─────────────────────────────────────────────────── */}
+          <View style={styles.bottomBarWrapper}>
+            <View style={styles.bottomBar}>
+              <View style={styles.bottomRow}>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    ref={inputRef}
+                    style={styles.textInput}
+                    placeholder="Nhập câu dịch của bạn..."
+                    placeholderTextColor="#5A5A7A"
+                    value={userInput}
+                    onChangeText={setUserInput}
+                    multiline
+                    returnKeyType="done"
+                    textAlignVertical="center"
+                  />
                   <TouchableOpacity
                     style={[
-                      styles.submitButton,
-                      userInput.trim().length > 0 && !isGrading
-                        ? styles.submitButtonActive
-                        : styles.submitButtonDisabled,
+                      styles.vocabToggleButton,
+                      showVocab && styles.vocabToggleActive,
                     ]}
-                    onPress={handleSubmit}
-                    disabled={userInput.trim().length === 0 || isGrading}
+                    onPress={() => setShowVocab((prev) => !prev)}
                     activeOpacity={0.8}
                   >
-                    {isGrading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Ionicons
-                        name="arrow-forward"
-                        size={20}
-                        color="#FFFFFF"
-                      />
-                    )}
+                    <Ionicons
+                      name={showVocab ? "book" : "book-outline"}
+                      size={18}
+                      color={showVocab ? "#FFFFFF" : "#0066FF"}
+                    />
                   </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    userInput.trim().length > 0 && !isGrading
+                      ? styles.submitButtonActive
+                      : styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={userInput.trim().length === 0 || isGrading}
+                  activeOpacity={0.8}
+                >
+                  {isGrading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
-          </Animated.View>
-        </TouchableWithoutFeedback>
+          </View>
+
+        </Animated.View>
       </KeyboardAvoidingView>
 
-      {/* ── Grading Result Modal ────────────────────────────────────────── */}
+      {/* ── Grading Result Modal ─────────────────────────────────────────────── */}
       <FeedbackModal
         visible={showResultModal}
         onClose={() => setShowResultModal(false)}
@@ -472,7 +452,7 @@ export default function LessonPracticeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#6b6b6bff",
   },
   container: {
     flex: 1,
@@ -535,7 +515,7 @@ const styles = StyleSheet.create({
     color: "#1A1D26",
   },
 
-  // ── Progress bar (standalone below header) ────────────────────────────────
+  // ── Progress bar ──────────────────────────────────────────────────────────
   progressContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -563,15 +543,15 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
-  // ── Scrollable content area ───────────────────────────────────────────────
-  scrollableContent: {
+  // ── Outer scroll ──────────────────────────────────────────────────────────
+  outerScroll: {
     flex: 1,
   },
-  scrollableContentContainer: {
-    paddingBottom: 32,
+  outerScrollContent: {
+    paddingBottom: 16,
   },
 
-  // ── Paragraph (animated height) ──────────────────────────────────────────
+  // ── Paragraph ─────────────────────────────────────────────────────────────
   paragraphWrapper: {
     marginHorizontal: 16,
     marginBottom: 8,
@@ -580,6 +560,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0EAFF",
     overflow: "hidden",
+    // height is set inline from PARAGRAPH_HEIGHT
   },
   paragraphScroll: {
     flex: 1,
@@ -693,10 +674,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#E0EAFF",
-  },
-  bottomBarCentered: {
-    flex: 1,
-    justifyContent: "center",
   },
   bottomBar: {
     paddingHorizontal: 16,

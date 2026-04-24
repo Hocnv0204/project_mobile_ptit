@@ -52,11 +52,10 @@ export const writingApi = {
   },
 
   updateLessonProgress: async (lessonId: number, currentOrderIndex: number) => {
-    const res = await http.put<ApiEnvelope<UserLessonProgressResponse>>(
-      `/api/lesson-writings/progress/${lessonId}`,
-      { currentOrderIndex },
+    await http.put<ApiEnvelope<void>>(
+      "/api/lesson-writings/progress",
+      { lessonWritingId: lessonId, currentOrderIndex },
     );
-    return res.data.data;
   },
 
   gradeAnswer: async (request: GradingRequest) => {
