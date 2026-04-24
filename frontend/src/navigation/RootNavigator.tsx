@@ -7,6 +7,8 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import EmailVerifyScreen from '../screens/auth/EmailVerifyScreen';
 import SelectLevelScreen from '../screens/auth/SelectLevelScreen';
 import ChangePasswordScreen from '../screens/auth/ChangePasswordScreen';
+import ForgotPasswordRequestScreen from '../screens/auth/ForgotPasswordRequestScreen';
+import ForgotPasswordResetScreen from '../screens/auth/ForgotPasswordResetScreen';
 import MainTabNavigator from './MainTabNavigator';
 import LessonDetailScreen from '../screens/vocab/LessonDetailScreen';
 import AddVocabAiScreen from '../screens/vocab/AddVocabAiScreen';
@@ -83,6 +85,8 @@ export default function RootNavigator() {
             <Stack.Screen name={Routes.LOGIN} component={LoginScreen} />
             <Stack.Screen name={Routes.REGISTER} component={RegisterScreen} />
             <Stack.Screen name={Routes.EMAIL_VERIFY} component={EmailVerifyScreen} />
+            <Stack.Screen name={Routes.FORGOT_PASSWORD_REQUEST} component={ForgotPasswordRequestScreen} />
+            <Stack.Screen name={Routes.FORGOT_PASSWORD_RESET} component={ForgotPasswordResetScreen} />
           </>
         )}
       </Stack.Navigator>

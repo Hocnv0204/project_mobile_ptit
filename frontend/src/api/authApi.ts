@@ -35,6 +35,16 @@ export type ChangePasswordBody = {
   newPassword: string;
 };
 
+export type ForgotPasswordRequestOtpBody = {
+  email: string;
+};
+
+export type ForgotPasswordResetBody = {
+  email: string;
+  otp: string;
+  newPassword: string;
+};
+
 export const authApi = {
   async register(body: RegisterBody) {
     const res = await http.post<ApiEnvelope<null>>('/api/auth/register', body);
@@ -66,6 +76,14 @@ export const authApi = {
   },
   async changePassword(body: ChangePasswordBody) {
     const res = await http.put<ApiEnvelope<null>>('/api/auth/change-password', body);
+    return res.data;
+  },
+  async forgotPasswordRequestOtp(body: ForgotPasswordRequestOtpBody) {
+    const res = await http.post<ApiEnvelope<null>>('/api/auth/forgot-password/request-otp', body);
+    return res.data;
+  },
+  async forgotPasswordReset(body: ForgotPasswordResetBody) {
+    const res = await http.put<ApiEnvelope<null>>('/api/auth/forgot-password/reset', body);
     return res.data;
   },
   async me() {

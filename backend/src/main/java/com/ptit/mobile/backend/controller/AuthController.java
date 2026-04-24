@@ -7,6 +7,8 @@ import com.ptit.mobile.backend.dto.request.auth.ResendOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.VerifyOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.GoogleAuthRequest;
 import com.ptit.mobile.backend.dto.request.auth.ChangePasswordRequest;
+import com.ptit.mobile.backend.dto.request.auth.ForgotPasswordRequest;
+import com.ptit.mobile.backend.dto.request.auth.ResetPasswordRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.auth.AuthResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
@@ -145,6 +147,20 @@ public class AuthController {
         Long userId = getCurrentUserId();
         authService.changePassword(userId, request);
         return BaseResponse.builder().code(200L).message("Password changed successfully").build();
+    }
+
+    @Operation(summary = "Quên mật khẩu — gửi OTP về email")
+    @PostMapping("/forgot-password/request-otp")
+    public BaseResponse forgotPasswordRequestOtp(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPasswordSendOtp(request);
+        return BaseResponse.builder().code(200L).message("A reset OTP has been sent to your email.").build();
+    }
+
+    @Operation(summary = "Quên mật khẩu — xác thực OTP và đặt mật khẩu mới")
+    @PutMapping("/forgot-password/reset")
+    public BaseResponse forgotPasswordReset(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return BaseResponse.builder().code(200L).message("Password reset successfully").build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

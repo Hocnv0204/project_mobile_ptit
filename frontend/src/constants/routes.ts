@@ -8,6 +8,8 @@ export const Routes = {
   EMAIL_VERIFY: 'EmailVerify',
   SELECT_LEVEL: 'SelectLevel',
   CHANGE_PASSWORD: 'ChangePassword',
+  FORGOT_PASSWORD_REQUEST: 'ForgotPasswordRequest',
+  FORGOT_PASSWORD_RESET: 'ForgotPasswordReset',
 
   // User Bottom Tabs
   HOME: 'Home',
