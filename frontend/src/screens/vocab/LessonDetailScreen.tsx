@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { vocabApi } from '../../api/vocabApi';
 import { VocabularyWithStatus, VocabularyStatus } from '../../api/types';
@@ -37,7 +37,8 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   const [manualVi, setManualVi] = useState('');
   const [isSavingManual, setIsSavingManual] = useState(false);
   const [playingAudioForId, setPlayingAudioForId] = useState<number | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const player = useAudioPlayer();
+  const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
     if (isFocused) {
@@ -46,14 +47,10 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   }, [isFocused]);
 
   useEffect(() => {
-    // cleanup sound on unmount
-    return () => {
-      if (sound) {
-        // fire-and-forget cleanup
-        sound.unloadAsync().catch(() => undefined);
-      }
-    };
-  }, [sound]);
+    if (status.didJustFinish) {
+      setPlayingAudioForId(null);
+    }
+  }, [status.didJustFinish]);
 
   const fetchVocabularies = async () => {
     try {
@@ -82,24 +79,8 @@ export default function LessonDetailScreen({ route, navigation }: any) {
 
     try {
       setPlayingAudioForId(item.id);
-
-      // Stop/unload previous sound
-      if (sound) {
-        await sound.unloadAsync().catch(() => undefined);
-      }
-
-      const { sound: nextSound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: true },
-      );
-
-      setSound(nextSound);
-      nextSound.setOnPlaybackStatusUpdate((status) => {
-        if (!status.isLoaded) return;
-        if (status.didJustFinish) {
-          setPlayingAudioForId(null);
-        }
-      });
+      player.replace(url);
+      player.play();
     } catch (e: any) {
       setPlayingAudioForId(null);
       Alert.alert('Lỗi', e?.message || 'Không thể phát audio');

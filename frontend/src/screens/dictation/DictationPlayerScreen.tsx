@@ -35,6 +35,7 @@ function buildPlayerHtml(videoId: string): string {
 <div id="player"></div>
 <script>
   var player;
+  var playTimer;
 
   // Receive commands from React Native
   function onCmd(e) {
@@ -42,34 +43,66 @@ function buildPlayerHtml(videoId: string): string {
       var cmd = JSON.parse(e.data);
       if (!player || typeof player.seekTo !== 'function') return;
       if (cmd.action === 'seekTo') {
+        if (playTimer) clearInterval(playTimer);
         player.seekTo(cmd.time, true);
         player.playVideo();
       } else if (cmd.action === 'pause') {
+        if (playTimer) clearInterval(playTimer);
         player.pauseVideo();
       } else if (cmd.action === 'play') {
+        if (playTimer) clearInterval(playTimer);
         player.playVideo();
+      } else if (cmd.action === 'playSegment') {
+        if (playTimer) clearInterval(playTimer);
+        player.seekTo(cmd.start, true);
+        player.playVideo();
+        playTimer = setInterval(function() {
+          if (player.getCurrentTime() >= cmd.end) {
+            player.pauseVideo();
+            clearInterval(playTimer);
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'segmentEnd' }));
+          }
+        }, 100);
+      } else if (cmd.action === 'setRate') {
+        player.setPlaybackRate(cmd.rate);
       }
     } catch(err) {}
   }
   document.addEventListener('message', onCmd);
   window.addEventListener('message', onCmd);
 
+  var progressTimer;
   function onYouTubeIframeAPIReady() {
     player = new YT.Player('player', {
       videoId: '${videoId}',
       playerVars: {
         autoplay: 0,
-        controls: 1,
+        controls: 0,
         rel: 0,
         modestbranding: 1,
-        playsinline: 1
+        playsinline: 1,
+        disablekb: 1,
+        fs: 0,
+        origin: 'https://dictation-ptit.app'
       },
       events: {
         onReady: function() {
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' }));
+          progressTimer = setInterval(function() {
+            if (player && player.getCurrentTime) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({ 
+                type: 'progress', 
+                time: player.getCurrentTime(),
+                duration: player.getDuration()
+              }));
+            }
+          }, 500);
         },
         onStateChange: function(e) {
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'state', state: e.data }));
+        },
+        onError: function(e) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', code: e.data }));
         }
       }
     });
@@ -93,6 +126,12 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
   const [submitting, setSubmitting] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
+  
+  // Custom Player States
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [speed, setSpeed] = useState(1);
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const videoId = extractVideoId(dictation?.mediaUrl ?? '');
@@ -123,18 +162,18 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
     })();
   }, [dictation.id]);
 
-  // ── Seek YouTube player to segment start time ──
-  const seekTo = useCallback((seg: DictationSegment | undefined) => {
+  // ── Play YouTube segment ──
+  const playSegment = useCallback((seg: DictationSegment | undefined) => {
     if (!seg || !playerReady || !webRef.current) return;
     webRef.current.postMessage(
-      JSON.stringify({ action: 'seekTo', time: seg.startTime })
+      JSON.stringify({ action: 'playSegment', start: seg.startTime, end: seg.endTime })
     );
   }, [playerReady]);
 
   // Auto-seek when active segment changes
   useEffect(() => {
     if (playerReady && segments[activeIdx]) {
-      seekTo(segments[activeIdx]);
+      playSegment(segments[activeIdx]);
     }
   }, [activeIdx, playerReady]);
 
@@ -142,9 +181,44 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
   const onMessage = useCallback((e: any) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
-      if (msg.type === 'ready') setPlayerReady(true);
+      if (msg.type === 'ready') {
+        setPlayerReady(true);
+      } else if (msg.type === 'state') {
+        setIsPlaying(msg.state === 1);
+      } else if (msg.type === 'progress') {
+        setCurrentTime(msg.time);
+        setDuration(msg.duration);
+      } else if (msg.type === 'error') {
+        console.warn(`Lỗi YouTube (Mã: ${msg.code})`);
+      } else if (msg.type === 'segmentEnd') {
+        // Automatically focus first input when segment finishes playing
+        const firstInput = inputRefs.current.find(r => r != null);
+        if (firstInput) {
+           firstInput.focus();
+        }
+      }
     } catch { /* ignore */ }
   }, []);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor((seconds || 0) / 60);
+    const s = Math.floor((seconds || 0) % 60);
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const togglePlay = () => {
+    if (!playerReady || !webRef.current) return;
+    if (isPlaying) {
+      webRef.current.postMessage(JSON.stringify({ action: 'pause' }));
+    } else {
+      webRef.current.postMessage(JSON.stringify({ action: 'play' }));
+    }
+  };
+
+  const changeSpeed = (rate: number) => {
+    setSpeed(rate);
+    webRef.current?.postMessage(JSON.stringify({ action: 'setRate', rate }));
+  };
 
   // ── Input ──
   const handleInput = (text: string, i: number) =>
@@ -211,7 +285,7 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
     setSegmentStates(ns);
     setUserInputs(new Array(segments[activeIdx]?.answerKeys?.length ?? 0).fill(''));
     setShowAnswer(false);
-    seekTo(segments[activeIdx]);
+    playSegment(segments[activeIdx]);
   };
 
   // ── Guards ──
@@ -254,25 +328,54 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
 
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
-          {/* ── YouTube video ── */}
+          {/* ── YouTube video & Custom Controls ── */}
           {videoId ? (
-            <View style={{ height: VIDEO_HEIGHT, backgroundColor: '#000' }}>
-              <WebView
-                ref={webRef}
-                style={{ flex: 1 }}
-                source={{ html: buildPlayerHtml(videoId) }}
-                onMessage={onMessage}
-                javaScriptEnabled
-                allowsInlineMediaPlayback
-                mediaPlaybackRequiresUserAction={false}
-                originWhitelist={['*']}
-                scrollEnabled={false}
-              />
-              {/* "Nghe câu này" overlay button */}
-              <Pressable style={s.listenBtn} onPress={() => seekTo(activeSeg)}>
-                <MaterialCommunityIcons name="skip-backward" size={15} color="#FFF" />
-                <Text style={s.listenBtnText}>Nghe câu này</Text>
-              </Pressable>
+            <View style={s.playerContainer}>
+              <View style={{ height: VIDEO_HEIGHT, backgroundColor: '#000' }}>
+                <WebView
+                  ref={webRef}
+                  style={{ flex: 1 }}
+                  source={{ html: buildPlayerHtml(videoId), baseUrl: 'https://dictation-ptit.app' }}
+                  onMessage={onMessage}
+                  javaScriptEnabled
+                  allowsInlineMediaPlayback
+                  mediaPlaybackRequiresUserAction={false}
+                  originWhitelist={['*']}
+                  scrollEnabled={false}
+                />
+              </View>
+              {/* Custom Control Bar */}
+              <View style={s.controlBar}>
+                <View style={s.videoProgressBg}>
+                  <View style={[s.videoProgressFill, { width: duration > 0 ? `${(currentTime/duration)*100}%` : '0%' as any }]} />
+                </View>
+                <View style={s.controlsRow}>
+                  <Text style={s.timeTxt}>{formatTime(currentTime)} / {formatTime(duration)}</Text>
+                  
+                  <View style={s.centerControls}>
+                    <Pressable onPress={() => setActiveIdx(Math.max(0, activeIdx - 1))}>
+                      <MaterialCommunityIcons name="skip-previous" size={22} color="#FFF" />
+                    </Pressable>
+                    <Pressable onPress={() => playSegment(segments[activeIdx])}>
+                      <MaterialCommunityIcons name="replay" size={20} color="#FFF" />
+                    </Pressable>
+                    <Pressable style={s.playBtn} onPress={togglePlay}>
+                      <MaterialCommunityIcons name={isPlaying ? "pause" : "play"} size={26} color="#000" />
+                    </Pressable>
+                    <Pressable onPress={() => setActiveIdx(Math.min(segments.length - 1, activeIdx + 1))}>
+                      <MaterialCommunityIcons name="skip-next" size={22} color="#FFF" />
+                    </Pressable>
+                  </View>
+
+                  <View style={s.speedControls}>
+                    {[0.5, 0.75, 1, 1.25, 1.5].map(r => (
+                      <Pressable key={r} onPress={() => changeSpeed(r)} style={[s.speedBtn, speed === r && s.speedBtnActive]}>
+                        <Text style={[s.speedTxt, speed === r && s.speedTxtActive]}>{r}x</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              </View>
             </View>
           ) : (
             <View style={[{ height: VIDEO_HEIGHT, backgroundColor: '#111' }, s.center]}>
@@ -345,7 +448,7 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
             <View style={s.actions}>
               {segmentStates[activeIdx] === 'active' && (
                 <>
-                  <Pressable style={s.btnSecondary} onPress={() => seekTo(activeSeg)}>
+                  <Pressable style={s.btnSecondary} onPress={() => playSegment(activeSeg)}>
                     <MaterialCommunityIcons name="volume-high" size={18} color="#0066FF" />
                     <Text style={s.btnSecondaryTxt}>Nghe lại</Text>
                   </Pressable>
@@ -425,14 +528,20 @@ const s = StyleSheet.create({
 
   scroll: { paddingBottom: 16 },
 
-  // Listen overlay
-  listenBtn: {
-    position: 'absolute', bottom: 12, right: 12,
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(0,102,255,0.88)',
-    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20,
-  },
-  listenBtnText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
+  // Player & Controls
+  playerContainer: { backgroundColor: '#1A1A1A' },
+  controlBar: { paddingBottom: 8, backgroundColor: '#1A1A1A' },
+  videoProgressBg: { height: 3, backgroundColor: '#333', width: '100%', marginBottom: 10 },
+  videoProgressFill: { height: '100%', backgroundColor: '#E50914' },
+  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 },
+  timeTxt: { color: '#AAA', fontSize: 11, width: 70 },
+  centerControls: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  playBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center' },
+  speedControls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  speedBtn: { paddingVertical: 4, paddingHorizontal: 6, borderRadius: 4 },
+  speedBtnActive: { backgroundColor: '#333' },
+  speedTxt: { color: '#888', fontSize: 10, fontWeight: '600' },
+  speedTxtActive: { color: '#FFF' },
 
   // Dictation card
   card: {
