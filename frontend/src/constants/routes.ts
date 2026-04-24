@@ -16,6 +16,9 @@ export const Routes = {
   PROFILE: 'Profile',
   PODCAST: 'Podcast',
 
+  // Streak
+  STREAK_DETAILS: 'StreakDetails',
+
   // Vocab Stack
   LESSON_DETAIL: 'LessonDetail',
   ADD_VOCAB_AI: 'AddVocabAi',

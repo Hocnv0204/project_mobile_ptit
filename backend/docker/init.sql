@@ -227,14 +227,14 @@ CREATE TABLE IF NOT EXISTS notification (
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS streak_activities (
-    id             BIGINT PRIMARY KEY,
+    id             BIGSERIAL PRIMARY KEY,
     user_id        BIGINT REFERENCES users(id),
     activity_type  VARCHAR(50),
     created_at     TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS user_streaks (
-    id                  BIGINT PRIMARY KEY,
+    id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT UNIQUE REFERENCES users(id),
 
     current_streak      INT DEFAULT 0,

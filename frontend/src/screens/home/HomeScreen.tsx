@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { authApi } from '../../api/authApi';
 import { vocabApi } from '../../api/vocabApi';
+import { streakApi, StreakResponse } from '../../api/streakApi';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';
@@ -40,6 +41,7 @@ export default function HomeScreen({ navigation }: any) {
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
   const isFocused = useIsFocused();
+  const [streakData, setStreakData] = useState<StreakResponse | null>(null);
   const [vocabStatsLoading, setVocabStatsLoading] = useState(false);
   const [vocabStats, setVocabStats] = useState({
     dueToday: 0,
@@ -85,6 +87,19 @@ export default function HomeScreen({ navigation }: any) {
     run();
   }, [user?.id, isFocused]);
 
+  useEffect(() => {
+    const fetchStreak = async () => {
+      if (!user?.id || !isFocused) return;
+      try {
+        const res = await streakApi.getStreak();
+        if (res.data) setStreakData(res.data);
+      } catch (e: any) {
+        console.log('Fetch streak error:', e);
+      }
+    };
+    fetchStreak();
+  }, [user?.id, isFocused]);
+
   const onPressAction = (route: string) => {
     navigation.navigate(route);
   };
@@ -113,6 +128,26 @@ export default function HomeScreen({ navigation }: any) {
           </View>
           <TouchableOpacity style={styles.headerRight}>
             <MaterialCommunityIcons name="menu-down" size={28} color="#1A1D26" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Streak Section */}
+        <View style={styles.streakContainer}>
+          <View style={styles.streakLeft}>
+            <View style={styles.fireIconContainer}>
+              <MaterialCommunityIcons name="fire" size={28} color="#FF6B00" />
+            </View>
+            <View>
+              <Text style={styles.streakNumber}>{streakData?.currentStreak || 0} ngày</Text>
+              <Text style={styles.streakLabel}>Chuỗi học tập</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.streakDetailBtn}
+            onPress={() => onPressAction(Routes.STREAK_DETAILS)}
+          >
+            <Text style={styles.streakDetailBtnText}>Chi tiết</Text>
+            <MaterialCommunityIcons name="chevron-right" size={16} color="#0066FF" />
           </TouchableOpacity>
         </View>
 
@@ -267,6 +302,62 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#0066FF',
     marginBottom: 16,
+  },
+
+  // Streak Section
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+  },
+  streakLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fireIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFBEB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  streakNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  streakLabel: {
+    fontSize: 13,
+    color: '#70778C',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  streakDetailBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBF3FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  streakDetailBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0066FF',
+    marginRight: 4,
   },
 
   // 2. Grid Container
