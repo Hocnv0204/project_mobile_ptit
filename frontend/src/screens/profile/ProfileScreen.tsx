@@ -50,6 +50,7 @@ export default function ProfileScreen() {
   const { signOut: googleSignOut } = useGoogleAuth();
   const { t, language, setLanguage } = useI18n();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [currentLevelValue, setCurrentLevelValue] = useState<number | string | null>(user?.levelId ?? null);
 
   useEffect(() => {
@@ -118,7 +119,6 @@ export default function ProfileScreen() {
         {/* Section: TÀI KHOẢN */}
         <Text style={styles.sectionTitle}>{t('profile.sections.account')}</Text>
         <View style={styles.sectionContainer}>
-          <MenuItem icon="account-outline" label={t('profile.items.profile')} />
           <MenuItem 
             icon="star-outline" 
             label={t('profile.items.currentLevel', { value: levelLabel })} 
@@ -127,27 +127,15 @@ export default function ProfileScreen() {
           <MenuItem icon="lock-outline" label={t('profile.items.changePassword')} isLast />
         </View>
 
-        {/* Section: THANH TOÁN */}
-        <Text style={styles.sectionTitle}>{t('profile.sections.payment')}</Text>
-        <View style={styles.sectionContainer}>
-          <MenuItem icon="file-document-outline" label={t('profile.items.orderHistory')} isLast />
-        </View>
-
-        {/* Section: CÔNG CỤ */}
-        <Text style={styles.sectionTitle}>{t('profile.sections.tools')}</Text>
-        <View style={styles.sectionContainer}>
-          <MenuItem icon="ticket-percent-outline" label={t('profile.items.activationCode')} />
-          <MenuItem icon="home-outline" label={t('profile.items.familyManagement')} isLast />
-        </View>
-
         {/* Section: CÀI ĐẶT */}
         <Text style={styles.sectionTitle}>{t('profile.sections.settings')}</Text>
         <View style={styles.sectionContainer}>
-          <MenuItem icon="laptop" label={t('profile.items.deviceManagement')} />
           <MenuItem icon="web" label={t('profile.items.language')} onPress={() => setLanguageModalVisible(true)} />
-          <MenuItem icon="file-document-outline" label={t('profile.items.terms')} />
-          <MenuItem icon="certificate-outline" label={t('profile.items.privacy')} />
-          <MenuItem icon="headphones" label={t('profile.items.support')} />
+          <MenuItem
+            icon="headphones"
+            label={t('profile.items.support')}
+            onPress={() => setSupportModalVisible(true)}
+          />
           <MenuItem icon="logout" label={t('profile.items.logout')} onPress={handleLogout} isLast />
         </View>
 
@@ -185,6 +173,20 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         </Pressable>
+      </Modal>
+
+      <Modal visible={supportModalVisible} transparent animationType="fade">
+        <View style={styles.supportOverlay}>
+          <View style={styles.supportBox}>
+            <Text style={styles.supportTitle}>Liên hệ / Hỗ trợ</Text>
+            <Text style={styles.supportText}>
+              Vui lòng liên hệ email admin@ptit.edu.vn để được hỗ trợ.
+            </Text>
+            <Pressable style={styles.supportBtn} onPress={() => setSupportModalVisible(false)}>
+              <Text style={styles.supportBtnText}>Đóng</Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -301,6 +303,44 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     gap: 10,
+  },
+
+  supportOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  supportBox: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+  },
+  supportTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1D26',
+    marginBottom: 8,
+  },
+  supportText: {
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  supportBtn: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#0066FF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  supportBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   modalTitle: { fontSize: 16, fontWeight: '800', color: '#1A1D26', marginBottom: 4 },
   langOption: {
