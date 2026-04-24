@@ -49,7 +49,7 @@ public class LessonController {
             Authentication authentication
     ) {
         Long userId = (Long) authentication.getDetails();
-        List<UserLessonPr ogressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
+        List<UserLessonProgressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
 
         return BaseResponse.builder()
                 .code(200L)
