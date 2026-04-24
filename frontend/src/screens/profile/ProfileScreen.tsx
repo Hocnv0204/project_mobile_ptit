@@ -16,11 +16,12 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { authApi } from '../../api/authApi';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { Routes } from '../../constants/routes';
 import { useI18n } from '../../i18n/useI18n';
 import { userApi } from '../../api/userApi';
 import { useToast } from '../../components/ToastProvider';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
 // Reusable menu item component
 interface MenuItemProps {
@@ -46,31 +47,22 @@ export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { refreshToken, user, logout } = useAuthStore();
   const toast = useToast();
-  const isFocused = useIsFocused();
   const { signOut: googleSignOut } = useGoogleAuth();
   const { t, language, setLanguage } = useI18n();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [currentLevelValue, setCurrentLevelValue] = useState<number | string | null>(user?.levelId ?? null);
 
-  useEffect(() => {
-    if (!isFocused) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await userApi.getCurrentLevel();
-        if (cancelled) return;
-        // Ưu tiên data; nếu backend trả message là label thì dùng message
-        const val = (res.data ?? (res as any)?.message ?? null) as number | string | null;
-        setCurrentLevelValue(val);
-      } catch (e: any) {
-        toast.show(e?.message || 'Không thể tải trình độ hiện tại', { type: 'error', durationMs: 4500 });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isFocused]);
+  useRefreshOnFocus(async ({ cancelled }) => {
+    try {
+      const res = await userApi.getCurrentLevel();
+      if (cancelled()) return;
+      const val = (res.data ?? (res as any)?.message ?? null) as number | string | null;
+      setCurrentLevelValue(val);
+    } catch (e: any) {
+      toast.show(e?.message || 'Không thể tải trình độ hiện tại', { type: 'error', durationMs: 4500 });
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
