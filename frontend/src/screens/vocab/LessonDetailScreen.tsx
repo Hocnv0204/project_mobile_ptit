@@ -30,6 +30,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [vocabularies, setVocabularies] = useState<VocabularyWithStatus[]>([]);
   const [activeTab, setActiveTab] = useState<'flashcard' | 'practice'>('flashcard');
+  const [statusFilter, setStatusFilter] = useState<'TODAY' | 'OVERDUE' | 'NEW' | 'ALL'>('ALL');
   const [isAddOptionsVisible, setAddOptionsVisible] = useState(false);
   const [isManualModalVisible, setManualModalVisible] = useState(false);
   const [manualTerm, setManualTerm] = useState('');
@@ -139,7 +140,7 @@ export default function LessonDetailScreen({ route, navigation }: any) {
         <View style={styles.vocabRow}>
           <Text style={styles.vocabTerm}>{item.term.toUpperCase()}</Text>
           <View style={[styles.statusBadge, badgeStyle(item.status)]}>
-            <Text style={styles.statusText}>{statusLabel(item.status)}</Text>
+            <Text style={styles.statusText}>{nextReviewLabel(item.daysUntilReview)}</Text>
           </View>
         </View>
         <Text style={styles.vocabVi}>{item.vi}</Text>
@@ -220,13 +221,49 @@ export default function LessonDetailScreen({ route, navigation }: any) {
         </View>
       ) : (
         <FlatList
-          data={vocabularies}
+          data={filterVocabularies(vocabularies, statusFilter)}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Chưa có từ vựng nào.</Text>
+            </View>
+          }
+          ListHeaderComponent={
+            <View style={styles.filterRow}>
+              <Pressable
+                style={[styles.filterChip, statusFilter === 'TODAY' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('TODAY')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'TODAY' && styles.filterChipTextActive]}>
+                  Hôm nay
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.filterChip, statusFilter === 'OVERDUE' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('OVERDUE')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'OVERDUE' && styles.filterChipTextActive]}>
+                  Quá hạn
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.filterChip, statusFilter === 'NEW' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('NEW')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'NEW' && styles.filterChipTextActive]}>
+                  Mới
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.filterChip, statusFilter === 'ALL' && styles.filterChipActive]}
+                onPress={() => setStatusFilter('ALL')}
+              >
+                <Text style={[styles.filterChipText, statusFilter === 'ALL' && styles.filterChipTextActive]}>
+                  Tất cả
+                </Text>
+              </Pressable>
             </View>
           }
         />
@@ -327,18 +364,10 @@ export default function LessonDetailScreen({ route, navigation }: any) {
   );
 }
 
-const statusLabel = (status?: VocabularyStatus) => {
-  switch (status) {
-    case 'OVERDUE':
-      return 'Quá hạn';
-    case 'DUE_TODAY':
-      return 'Hôm nay';
-    case 'NEW':
-      return 'Mới';
-    case 'UPCOMING':
-    default:
-      return 'Chưa tới';
-  }
+const nextReviewLabel = (daysUntilReview?: number) => {
+  const d = typeof daysUntilReview === 'number' ? daysUntilReview : 0;
+  if (d <= 0) return 'Hôm nay';
+  return `${d} ngày`;
 };
 
 const badgeStyle = (status?: VocabularyStatus) => {
@@ -352,6 +381,20 @@ const badgeStyle = (status?: VocabularyStatus) => {
     case 'UPCOMING':
     default:
       return { backgroundColor: '#F1F5F9' };
+  }
+};
+
+const filterVocabularies = (list: VocabularyWithStatus[], filter: 'TODAY' | 'OVERDUE' | 'NEW' | 'ALL') => {
+  switch (filter) {
+    case 'TODAY':
+      return list.filter((v) => v.status === 'DUE_TODAY');
+    case 'OVERDUE':
+      return list.filter((v) => v.status === 'OVERDUE');
+    case 'NEW':
+      return list.filter((v) => v.status === 'NEW');
+    case 'ALL':
+    default:
+      return list;
   }
 };
 
@@ -397,6 +440,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   listContent: { paddingHorizontal: 24, paddingBottom: 40 },
+  filterRow: { flexDirection: 'row', gap: 10, paddingBottom: 12, paddingHorizontal: 0 },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#F1F5F9',
+  },
+  filterChipActive: { backgroundColor: '#1A1D26' },
+  filterChipText: { fontSize: 13, fontWeight: '800', color: '#1A1D26' },
+  filterChipTextActive: { color: '#FFFFFF' },
   vocabCard: {
     flexDirection: 'row',
     alignItems: 'center',

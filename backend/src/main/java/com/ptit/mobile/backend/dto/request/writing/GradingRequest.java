@@ -13,6 +13,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GradingRequest {
+
+    private Integer sentenceId;
     
     @NotBlank(message = "Câu hỏi không được để trống")
     private String question; // Câu tiếng Việt

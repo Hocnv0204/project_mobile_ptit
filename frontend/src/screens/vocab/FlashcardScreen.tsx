@@ -13,6 +13,7 @@ export default function FlashcardScreen({ route, navigation }: any) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sessionMode, setSessionMode] = useState<'DUE' | 'ALL'>('DUE');
 
   const flipAnim = useRef(new Animated.Value(0)).current;
 
@@ -21,12 +22,13 @@ export default function FlashcardScreen({ route, navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonVocabId]);
 
-  const fetchSession = async () => {
+  const fetchSession = async (mode: 'DUE' | 'ALL' = 'DUE') => {
     try {
       setLoading(true);
-      const res = await flashcardApi.getSession(lessonVocabId);
+      const res = await flashcardApi.getSession(lessonVocabId, mode);
       setCards(res.data?.dueCards || []);
       setCurrentIndex(0);
+      setSessionMode(mode);
       resetFlip();
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể tải phiên flashcard');
@@ -85,7 +87,20 @@ export default function FlashcardScreen({ route, navigation }: any) {
     try {
       setSubmitting(true);
       await flashcardApi.submitReview({ vocabularyId: currentCard.vocabularyId, quality });
-      await fetchSession();
+      // Sau khi chấm: chuyển sang thẻ tiếp theo ngay, tránh bị "reset session" liên tục
+      if (sessionMode === 'DUE') {
+        // Thẻ vừa ôn sẽ không còn "due" nữa, nên bỏ khỏi list
+        setCards((prev) => prev.filter((_, idx) => idx !== currentIndex));
+        setCurrentIndex((prevIdx) => {
+          const nextLen = cards.length - 1;
+          if (nextLen <= 0) return 0;
+          return Math.min(prevIdx, nextLen - 1);
+        });
+        resetFlip();
+      } else {
+        // ALL: giữ list và chuyển thẻ (vẫn cập nhật SM-2)
+        handleNext();
+      }
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể lưu kết quả ôn thẻ');
     } finally {
@@ -123,9 +138,26 @@ export default function FlashcardScreen({ route, navigation }: any) {
         </View>
         <View style={styles.center}>
           <Text style={styles.emptyText}>Hôm nay bạn không có thẻ nào cần ôn.</Text>
-          <Pressable style={styles.reloadBtn} onPress={fetchSession}>
-            <Text style={styles.reloadBtnText}>Tải lại</Text>
-          </Pressable>
+          <View style={styles.emptyActions}>
+            <Pressable
+              style={styles.reloadBtn}
+              onPress={async () => {
+                // "Theo lịch" = lấy thẻ due
+                await fetchSession('DUE');
+              }}
+            >
+              <Text style={styles.reloadBtnText}>Theo lịch</Text>
+            </Pressable>
+            <Pressable
+              style={styles.reviewAllBtn}
+              onPress={async () => {
+                // "Học lại" = session mới với ALL thẻ trong lesson
+                await fetchSession('ALL');
+              }}
+            >
+              <Text style={styles.reviewAllBtnText}>Học lại</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     );
@@ -253,8 +285,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: '#1A1D26' },
   emptyText: { fontSize: 16, fontWeight: '700', color: '#70778C', textAlign: 'center', marginBottom: 16 },
+  emptyActions: { flexDirection: 'row', gap: 10 },
   reloadBtn: { backgroundColor: '#0066FF', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
   reloadBtnText: { color: '#FFF', fontWeight: '800' },
+  reviewAllBtn: { backgroundColor: '#1A1D26', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  reviewAllBtnText: { color: '#FFF', fontWeight: '800' },
   cardContainer: {
     flex: 1,
     padding: 24,
