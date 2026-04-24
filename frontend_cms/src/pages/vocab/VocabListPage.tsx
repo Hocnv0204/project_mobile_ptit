@@ -61,6 +61,13 @@ const VocabListPage: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<LessonVocab | null>(null);
   const [lessonForm] = Form.useForm();
 
+  // AI Bulk Add states
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkInput, setBulkInput] = useState("");
+  const [formattedVocabs, setFormattedVocabs] = useState<Vocabulary[]>([]);
+  const [isFormatting, setIsFormatting] = useState(false);
+  const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -207,6 +214,60 @@ const VocabListPage: React.FC = () => {
     }
   };
 
+  const handleFormatAI = async () => {
+    if (!bulkInput.trim()) {
+      message.warning("Please enter some terms");
+      return;
+    }
+    setIsFormatting(true);
+    try {
+      const response: any = await api.post("/api/ai/terms/format", {
+        input: bulkInput,
+      });
+      setFormattedVocabs(response.data || []);
+      message.success("Formatted successfully!");
+    } catch (error: any) {
+      message.error("Failed to format with AI");
+    } finally {
+      setIsFormatting(false);
+    }
+  };
+
+  const handleBulkSubmit = async () => {
+    if (formattedVocabs.length === 0) {
+      message.warning("No vocabularies to create");
+      return;
+    }
+    setIsSubmittingBulk(true);
+    try {
+      await api.post(`/api/vocab/${selectedLesson?.id}`, {
+        listVocabRequest: formattedVocabs.map(({ term, vi, type, pronunciation, example }) => ({
+          term,
+          vi,
+          type,
+          pronunciation,
+          example,
+        })),
+      });
+      message.success("Bulk vocabularies created successfully!");
+      fetchVocabularies(selectedLesson!.id);
+      setIsBulkModalOpen(false);
+      setBulkInput("");
+      setFormattedVocabs([]);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || "Bulk creation failed";
+      message.error(errorMsg);
+    } finally {
+      setIsSubmittingBulk(false);
+    }
+  };
+
+  const handleRemoveFormattedVocab = (index: number) => {
+    const newList = [...formattedVocabs];
+    newList.splice(index, 1);
+    setFormattedVocabs(newList);
+  };
+
   const lessonColumns = [
     { title: "STT", key: "stt", render: (_: any, __: any, index: number) => index + 1 },
     { title: "Name", dataIndex: "name", key: "name" },
@@ -337,9 +398,9 @@ const VocabListPage: React.FC = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={handleAddVocab}
+              onClick={() => setIsBulkModalOpen(true)}
             >
-              Add Vocabulary
+              Tạo danh sách từ với AI
             </Button>
           }
         >
@@ -420,6 +481,77 @@ const VocabListPage: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Tạo danh sách từ vựng với AI"
+        open={isBulkModalOpen}
+        onCancel={() => {
+          setIsBulkModalOpen(false);
+          setFormattedVocabs([]);
+        }}
+        footer={
+          formattedVocabs.length > 0
+            ? [
+                <Button
+                  key="submit"
+                  type="primary"
+                  loading={isSubmittingBulk}
+                  onClick={handleBulkSubmit}
+                  style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+                  block
+                >
+                  Tạo danh sách từ vựng ({formattedVocabs.length})
+                </Button>,
+              ]
+            : null
+        }
+        width={900}
+      >
+        <Space direction="vertical" style={{ width: "100%" }} size="middle">
+          <p>Nhập danh sách các từ tiếng Anh hoặc tiếng Việt (phân tách bằng dấu phẩy hoặc xuống dòng):</p>
+          <Input.TextArea
+            rows={4}
+            value={bulkInput}
+            onChange={(e) => setBulkInput(e.target.value)}
+            placeholder="Ví dụ: xin chào, tạm biệt, apple, orange"
+          />
+          <Button
+            type="primary"
+            onClick={handleFormatAI}
+            loading={isFormatting}
+            block
+          >
+            Định dạng với AI
+          </Button>
+
+          {formattedVocabs.length > 0 && (
+            <Table
+              dataSource={formattedVocabs}
+              columns={[
+                { title: "Từ vựng", dataIndex: "term", key: "term" },
+                { title: "Nghĩa", dataIndex: "vi", key: "vi" },
+                { title: "Loại từ", dataIndex: "type", key: "type" },
+                { title: "Phiên âm", dataIndex: "pronunciation", key: "pronunciation" },
+                {
+                  title: "Thao tác",
+                  key: "action",
+                  render: (_: any, __: any, index: number) => (
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleRemoveFormattedVocab(index)}
+                    />
+                  ),
+                },
+              ]}
+              pagination={false}
+              size="small"
+              rowKey={(record, index) => index || record.term}
+              scroll={{ y: 400 }}
+            />
+          )}
+        </Space>
       </Modal>
     </div>
   );
