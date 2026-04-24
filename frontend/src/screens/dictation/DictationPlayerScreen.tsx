@@ -149,7 +149,8 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(1.0);
+  const [hasPlayedIntro, setHasPlayedIntro] = useState(false);
 
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const videoId = extractVideoId(dictation?.mediaUrl ?? '');
@@ -192,7 +193,17 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
   // Auto-seek when active segment changes
   useEffect(() => {
     if (playerReady && segments[activeIdx]) {
-      playSegment(segments[activeIdx]);
+      if (activeIdx === 0 && !hasPlayedIntro) {
+        // Special case: First time opening, play from 0s to the end of sentence 1
+        const seg = segments[0];
+        const end = seg.endTime ? seg.endTime : seg.startTime + 3;
+        webRef.current?.postMessage(
+          JSON.stringify({ action: 'playSegment', start: 0, end: end })
+        );
+        setHasPlayedIntro(true);
+      } else {
+        playSegment(segments[activeIdx]);
+      }
     }
   }, [activeIdx, playerReady]);
 
@@ -432,34 +443,53 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
 
             {/* Blank inputs row */}
             <View style={s.blankRow}>
-              {blankParts.map((part, i) => {
-                if (/^\*{2,}$/.test(part)) {
-                  const bi = blankIdx++;
-                  const isOk = segmentStates[activeIdx] === 'correct';
-                  const isErr = segmentStates[activeIdx] === 'wrong';
-                  return (
-                    <TextInput
-                      key={`b${i}`}
-                      ref={r => { inputRefs.current[bi] = r; }}
-                      style={[s.blankInput, isOk && s.inputOk, isErr && s.inputErr]}
-                      value={userInputs[bi] ?? ''}
-                      onChangeText={t => handleInput(t, bi)}
-                      placeholder="···"
-                      placeholderTextColor="#BEC2CC"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={segmentStates[activeIdx] === 'active'}
-                      returnKeyType={bi + 1 < (activeSeg?.answerKeys?.length ?? 0) ? 'next' : 'done'}
-                      onSubmitEditing={() => inputRefs.current[bi + 1]?.focus()}
-                    />
-                  );
-                }
-                return part ? <Text key={`t${i}`} style={s.blankTxt}>{part}</Text> : null;
-              })}
+              {segmentStates[activeIdx] === 'correct' ? (
+                // Correct State: Show full sentence with highlighted answers
+                <Text style={s.fullSentenceTxt}>
+                  {blankParts.map((part, i) => {
+                    if (/^\*{2,}$/.test(part)) {
+                      const bi = blankIdx++;
+                      // Get the original casing from the englishText if possible, or fallback to user input
+                      // Actually, answerKeys are lowercased, but it's okay to show them in green.
+                      return (
+                        <Text key={`b${i}`} style={s.highlightedAnswer}>
+                          {activeSeg.answerKeys?.[bi] || userInputs[bi]}
+                        </Text>
+                      );
+                    }
+                    return part ? <Text key={`t${i}`}>{part}</Text> : null;
+                  })}
+                </Text>
+              ) : (
+                // Active/Wrong State: Show TextInputs
+                blankParts.map((part, i) => {
+                  if (/^\*{2,}$/.test(part)) {
+                    const bi = blankIdx++;
+                    const isErr = segmentStates[activeIdx] === 'wrong';
+                    return (
+                      <TextInput
+                        key={`b${i}`}
+                        ref={r => { inputRefs.current[bi] = r; }}
+                        style={[s.blankInput, isErr && s.inputErr]}
+                        value={userInputs[bi] ?? ''}
+                        onChangeText={t => handleInput(t, bi)}
+                        placeholder="···"
+                        placeholderTextColor="#BEC2CC"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        editable={segmentStates[activeIdx] === 'active'}
+                        returnKeyType={bi + 1 < (activeSeg?.answerKeys?.length ?? 0) ? 'next' : 'done'}
+                        onSubmitEditing={() => inputRefs.current[bi + 1]?.focus()}
+                      />
+                    );
+                  }
+                  return part ? <Text key={`t${i}`} style={s.blankTxt}>{part}</Text> : null;
+                })
+              )}
             </View>
 
             {/* Answer reveal */}
-            {showAnswer && activeSeg?.englishText && (
+            {showAnswer && activeSeg?.englishText && segmentStates[activeIdx] !== 'correct' && (
               <View style={s.revealBox}>
                 <MaterialCommunityIcons name="lightbulb-on-outline" size={16} color="#E65100" />
                 <View style={{ flex: 1 }}>
@@ -523,7 +553,7 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
                 </View>
                 <Text style={[s.segTxt, st === 'locked' && s.segLocked]} numberOfLines={1}>
                   {st === 'correct'
-                    ? seg.blankText?.replace(/\*{2,}/g, '___') ?? `Câu ${idx + 1}`
+                    ? seg.englishText
                     : `Câu ${idx + 1}`}
                 </Text>
                 {isActive && <MaterialCommunityIcons name="chevron-right" size={16} color="#0066FF" />}
@@ -583,6 +613,8 @@ const s = StyleSheet.create({
 
   blankRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4, marginBottom: 16 },
   blankTxt: { fontSize: 16, color: '#1A1D26', lineHeight: 26 },
+  fullSentenceTxt: { fontSize: 16, color: '#1A1D26', lineHeight: 26 },
+  highlightedAnswer: { color: '#4CAF50', fontWeight: '700' },
   blankInput: {
     borderBottomWidth: 2, borderBottomColor: '#0066FF',
     minWidth: 70, paddingHorizontal: 6, paddingBottom: 2,
