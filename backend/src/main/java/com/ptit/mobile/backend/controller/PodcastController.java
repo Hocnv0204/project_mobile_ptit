@@ -6,6 +6,7 @@ import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
 import com.ptit.mobile.backend.service.PodcastService;
+import com.ptit.mobile.backend.service.StreakService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class PodcastController {
 
     private final PodcastService podcastService;
+    private final StreakService streakService;
 
     @Operation(summary = "Generate podcast từ AI", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping(value = "/generate", produces = "application/json")
@@ -56,6 +58,7 @@ public class PodcastController {
     @PostMapping("/history")
     public BaseResponse saveHistory(@RequestBody SaveHistoryRequest request) {
         Long userId = getCurrentUserId();
+        streakService.updateStreak(userId);
         return podcastService.saveHistory(userId, request);
     }
 

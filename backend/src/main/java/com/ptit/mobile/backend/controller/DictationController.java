@@ -4,11 +4,13 @@ import com.ptit.mobile.backend.dto.request.dictation.SubmitSegmentRequest;
 import com.ptit.mobile.backend.dto.request.dictation.SyncProgressRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.service.DictationService;
+import com.ptit.mobile.backend.service.StreakService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class DictationController {
 
     private final DictationService dictationService;
+    private final StreakService streakService;
 
     // ────────────────────────────────────────────────
     // 1. List all dictations (with user progress %)
@@ -68,7 +71,9 @@ public class DictationController {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @PostMapping("/api/user/progress/sync")
-    public BaseResponse syncProgress(@Valid @RequestBody SyncProgressRequest request) {
+    public BaseResponse syncProgress(@Valid @RequestBody SyncProgressRequest request, Authentication authentication) {
+        Long userId = (Long) authentication.getDetails();
+        streakService.updateStreak(userId);
         return dictationService.syncProgress(request);
     }
 
