@@ -8,6 +8,7 @@ import com.ptit.mobile.backend.model.Dictation;
 import com.ptit.mobile.backend.model.DictationSegment;
 import com.ptit.mobile.backend.repository.DictationRepository;
 import com.ptit.mobile.backend.repository.DictationSegmentRepository;
+import com.ptit.mobile.backend.repository.UserDictationProgressRepository;
 import com.ptit.mobile.backend.service.AdminDictationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class AdminDictationServiceImpl implements AdminDictationService {
 
     private final DictationRepository dictationRepository;
     private final DictationSegmentRepository segmentRepository;
+    private final UserDictationProgressRepository progressRepository;
 
     // ─────────────────────────────────────────────────
     // 1. GET all (admin view — no user-progress filter)
@@ -94,6 +96,7 @@ public class AdminDictationServiceImpl implements AdminDictationService {
     public BaseResponse delete(UUID id) {
         Dictation dictation = dictationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DICTATION_NOT_FOUND));
+        progressRepository.deleteByDictationId(id);
         segmentRepository.deleteByDictationId(id);
         dictationRepository.delete(dictation);
         return BaseResponse.success("Deleted successfully");

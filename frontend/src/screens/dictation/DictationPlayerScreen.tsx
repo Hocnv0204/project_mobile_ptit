@@ -52,12 +52,30 @@ function buildPlayerHtml(videoId: string): string {
       } else if (cmd.action === 'play') {
         if (playTimer) clearInterval(playTimer);
         player.playVideo();
+      } else if (cmd.action === 'resumeSegment') {
+        if (playTimer) clearInterval(playTimer);
+        player.playVideo();
+        playTimer = setInterval(function() {
+          var ct = player.getCurrentTime();
+          if (cmd.end && ct >= cmd.end) {
+            player.pauseVideo();
+            clearInterval(playTimer);
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'segmentEnd' }));
+          }
+        }, 100);
       } else if (cmd.action === 'playSegment') {
         if (playTimer) clearInterval(playTimer);
         player.seekTo(cmd.start, true);
         player.playVideo();
+        var checkCount = 0;
         playTimer = setInterval(function() {
-          if (player.getCurrentTime() >= cmd.end) {
+          checkCount++;
+          var ct = player.getCurrentTime();
+          // Log current time for debugging
+          if (checkCount % 5 === 0) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'log', msg: 'Time: ' + ct + ' End: ' + cmd.end }));
+          }
+          if (checkCount > 3 && cmd.end && ct >= cmd.end) {
             player.pauseVideo();
             clearInterval(playTimer);
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'segmentEnd' }));
@@ -165,8 +183,9 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
   // ── Play YouTube segment ──
   const playSegment = useCallback((seg: DictationSegment | undefined) => {
     if (!seg || !playerReady || !webRef.current) return;
+    const end = seg.endTime ? seg.endTime : seg.startTime + 3; // Fallback to 3s if endTime is missing in DB
     webRef.current.postMessage(
-      JSON.stringify({ action: 'playSegment', start: seg.startTime, end: seg.endTime })
+      JSON.stringify({ action: 'playSegment', start: seg.startTime, end: end })
     );
   }, [playerReady]);
 
@@ -190,6 +209,8 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
         setDuration(msg.duration);
       } else if (msg.type === 'error') {
         console.warn(`Lỗi YouTube (Mã: ${msg.code})`);
+      } else if (msg.type === 'log') {
+        console.log('[WebView Log]', msg.msg);
       } else if (msg.type === 'segmentEnd') {
         // Automatically focus first input when segment finishes playing
         const firstInput = inputRefs.current.find(r => r != null);
@@ -211,7 +232,13 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
     if (isPlaying) {
       webRef.current.postMessage(JSON.stringify({ action: 'pause' }));
     } else {
-      webRef.current.postMessage(JSON.stringify({ action: 'play' }));
+      const seg = segments[activeIdx];
+      if (seg) {
+        const end = seg.endTime ? seg.endTime : seg.startTime + 3;
+        webRef.current.postMessage(JSON.stringify({ action: 'resumeSegment', end }));
+      } else {
+        webRef.current.postMessage(JSON.stringify({ action: 'play' }));
+      }
     }
   };
 
@@ -368,7 +395,7 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
                   </View>
 
                   <View style={s.speedControls}>
-                    {[0.5, 0.75, 1, 1.25, 1.5].map(r => (
+                    {[0.5, 1, 1.5, 2].map(r => (
                       <Pressable key={r} onPress={() => changeSpeed(r)} style={[s.speedBtn, speed === r && s.speedBtnActive]}>
                         <Text style={[s.speedTxt, speed === r && s.speedTxtActive]}>{r}x</Text>
                       </Pressable>

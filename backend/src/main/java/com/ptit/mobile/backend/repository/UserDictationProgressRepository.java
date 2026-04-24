@@ -14,4 +14,6 @@ public interface UserDictationProgressRepository extends JpaRepository<UserDicta
     Optional<UserDictationProgress> findByUserIdAndDictationId(Long userId, UUID dictationId);
 
     List<UserDictationProgress> findByUserId(Long userId);
+
+    void deleteByDictationId(UUID dictationId);
 }
