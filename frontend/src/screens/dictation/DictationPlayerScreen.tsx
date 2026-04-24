@@ -465,12 +465,23 @@ export default function DictationPlayerScreen({ route, navigation }: any) {
                 blankParts.map((part, i) => {
                   if (/^\*{2,}$/.test(part)) {
                     const bi = blankIdx++;
-                    const isErr = segmentStates[activeIdx] === 'wrong';
+                    const isWrongState = segmentStates[activeIdx] === 'wrong';
+                    let isOk = false;
+                    let isErr = false;
+                    if (isWrongState) {
+                      const expected = activeSeg?.answerKeys?.[bi]?.trim().toLowerCase() ?? '';
+                      const actual = userInputs[bi]?.trim().toLowerCase() ?? '';
+                      if (expected === actual && actual.length > 0) {
+                        isOk = true;
+                      } else {
+                        isErr = true;
+                      }
+                    }
                     return (
                       <TextInput
                         key={`b${i}`}
                         ref={r => { inputRefs.current[bi] = r; }}
-                        style={[s.blankInput, isErr && s.inputErr]}
+                        style={[s.blankInput, isOk && s.inputOk, isErr && s.inputErr]}
                         value={userInputs[bi] ?? ''}
                         onChangeText={t => handleInput(t, bi)}
                         placeholder="···"
