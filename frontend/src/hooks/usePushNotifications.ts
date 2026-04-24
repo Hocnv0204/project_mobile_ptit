@@ -105,14 +105,12 @@ export const usePushNotifications = (): PushNotificationState => {
       }
     });
 
-    // Cleanup listeners
+    // Cleanup: expo-modules-core EventSubscription dùng .remove() (removeNotificationSubscription đã không còn trên API expo-notifications).
     return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
+      notificationListener.current = null;
+      responseListener.current = null;
     };
   }, [navigation]);
 

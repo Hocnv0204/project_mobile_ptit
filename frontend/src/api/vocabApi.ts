@@ -47,4 +47,15 @@ export const vocabApi = {
     const res = await http.get<ApiEnvelope<VocabHomeStats>>('/api/vocab/home-stats');
     return res.data;
   },
+
+  /**
+   * Số từ cần học/ôn hôm nay. userId phải trùng user đăng nhập (backend kiểm tra).
+   * `data` trong envelope là số (long).
+   */
+  getDueTodayCount: async (userId: number, lessonVocabId: number) => {
+    const res = await http.get<ApiEnvelope<number>>('/api/vocab/due-today-count', {
+      params: { userId, lessonVocabId },
+    });
+    return res.data;
+  },
 };

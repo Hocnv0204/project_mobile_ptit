@@ -43,5 +43,29 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
                                        OR cr.id IS NOT NULL;
             """, nativeQuery = true)
     VocabHomeStatsProjection getHomeStatsForUser(@Param("userId") Long userId, @Param("today") LocalDate today, @Param("todayPlus7") LocalDate todayPlus7);
+
+    /**
+     * Đếm từ cần học/ôn hôm nay trong một bài lesson_vocab: không có thẻ UPCOMING
+     * (đã ôn ít nhất một lần và next_review_date &gt; hôm nay).
+     * Khớp logic flashcard session mode DUE (NEW + OVERDUE + DUE_TODAY).
+     */
+    @Query("""
+            SELECT COUNT(DISTINCT v.id) FROM Vocabulary v
+            JOIN LessonVocab lv ON lv.id = v.lessonVocabId
+            WHERE (lv.deleteFlag IS NULL OR lv.deleteFlag = false)
+              AND v.lessonVocabId = :lessonVocabId
+              AND NOT EXISTS (
+                  SELECT 1 FROM CardReview cr
+                  WHERE cr.vocabularyId = v.id
+                    AND cr.userId = :userId
+                    AND cr.lastReviewedAt IS NOT NULL
+                    AND cr.nextReviewDate > :today
+              )
+            """)
+    Long countDueWordsForLessonAndUser(
+            @Param("lessonVocabId") Long lessonVocabId,
+            @Param("userId") Long userId,
+            @Param("today") LocalDate today
+    );
 }
 

@@ -5,10 +5,14 @@ import com.ptit.mobile.backend.dto.request.vocab.CreateVocabRequest;
 import com.ptit.mobile.backend.dto.request.vocab.CreateVocabSimpleRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.vocab.VocabHomeStatsResponse;
+import com.ptit.mobile.backend.exception.BusinessException;
+import com.ptit.mobile.backend.exception.ErrorCode;
 import com.ptit.mobile.backend.repository.VocabularyRepository;
 import com.ptit.mobile.backend.repository.projection.VocabHomeStatsProjection;
 import com.ptit.mobile.backend.security.SecurityUtils;
 import com.ptit.mobile.backend.service.VocabularyService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +36,22 @@ public class VocabularyController {
     @PostMapping("/{lessonId}/simple")
     public BaseResponse createVocabSimple(@RequestBody CreateVocabSimpleRequest request, @PathVariable("lessonId") Long lessonId){
         return vocabularyService.createVocabSimple(request,lessonId);
+    }
+
+    @Operation(
+            summary = "Số từ cần học/ôn hôm nay (theo user + bài lesson)",
+            description = "Query: userId, lessonVocabId. data trả về là một số (long). userId phải trùng user trong JWT.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/due-today-count")
+    public BaseResponse dueTodayCount(
+            @RequestParam Long userId,
+            @RequestParam Long lessonVocabId) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        return vocabularyService.getDueTodayCountForLesson(userId, lessonVocabId);
     }
 
     @GetMapping("/home-stats")

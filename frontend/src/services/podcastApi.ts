@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { http } from '../api/http';
 
 export interface PodcastResponse {
   id: number;
@@ -39,12 +39,12 @@ export interface PodcastDetailResponse extends PodcastResponse {
 
 export const podcastApi = {
   getAllPodcasts: async () => {
-    const response = await apiClient.get<{ data: PodcastResponse[] }>('/api/podcasts');
+    const response = await http.get<{ data: PodcastResponse[] }>('/api/podcasts');
     return response.data.data;
   },
 
   getPodcastById: async (id: number) => {
-    const response = await apiClient.get<{ data: PodcastDetailResponse }>(`/api/podcasts/${id}`);
+    const response = await http.get<{ data: PodcastDetailResponse }>(`/api/podcasts/${id}`);
     return response.data.data;
   },
 };

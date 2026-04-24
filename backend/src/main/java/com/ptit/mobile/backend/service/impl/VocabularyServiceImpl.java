@@ -13,6 +13,7 @@ import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
 import com.ptit.mobile.backend.mapper.VocabularyMapper;
 import com.ptit.mobile.backend.model.Vocabulary;
+import com.ptit.mobile.backend.repository.LessonVocabRepository;
 import com.ptit.mobile.backend.repository.VocabularyRepository;
 import com.ptit.mobile.backend.security.SecurityUtils;
 import com.ptit.mobile.backend.service.VocabularyService;
@@ -21,6 +22,7 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,6 +32,7 @@ import static com.ptit.mobile.backend.exception.ErrorCode.*;
 @RequiredArgsConstructor
 public class VocabularyServiceImpl implements VocabularyService {
     private final VocabularyRepository vocabularyRepository;
+    private final LessonVocabRepository lessonVocabRepository;
     private final SecurityUtils securityUtils;
     private final VocabularyMapper vocabularyMapper;
     private final FreeDictionaryClient freeDictionaryClient;
@@ -147,5 +150,15 @@ public class VocabularyServiceImpl implements VocabularyService {
             }
         }
         return null;
+    }
+
+    @Override
+    public BaseResponse getDueTodayCountForLesson(Long userId, Long lessonVocabId) {
+        lessonVocabRepository.findByIdAndDeleteFlagFalse(Math.toIntExact(lessonVocabId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.LESSON_VOCAB_NOT_FOUND));
+        LocalDate today = LocalDate.now();
+        Long cnt = vocabularyRepository.countDueWordsForLessonAndUser(lessonVocabId, userId, today);
+        long dueCount = cnt != null ? cnt : 0L;
+        return BaseResponse.success(dueCount);
     }
 }

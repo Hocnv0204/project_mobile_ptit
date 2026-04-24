@@ -15,6 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { vocabApi } from '../../api/vocabApi';
 import { streakApi, StreakResponse } from '../../api/streakApi';
+import { useIsFocused } from '@react-navigation/native';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';

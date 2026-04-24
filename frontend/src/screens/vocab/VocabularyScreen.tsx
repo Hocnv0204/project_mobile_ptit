@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { lessonVocabApi } from '../../api/lessonVocabApi';
+import { vocabApi } from '../../api/vocabApi';
 import { LessonVocab } from '../../api/types';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
@@ -23,6 +24,35 @@ export default function VocabularyScreen({ navigation }: any) {
   const [isSaving, setIsSaving] = useState(false);
   const [editingLesson, setEditingLesson] = useState<LessonVocab | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  /** Số từ cần học/ôn hôm nay theo từng lesson (API due-today-count). */
+  const [dueCountByLessonId, setDueCountByLessonId] = useState<Record<number, number>>({});
+
+  const enrichDueCounts = async (lessons: LessonVocab[]) => {
+    const uid = user?.id;
+    if (!uid || lessons.length === 0) return;
+    try {
+      const pairs = await Promise.all(
+        lessons.map(async (l) => {
+          try {
+            const env = await vocabApi.getDueTodayCount(uid, l.id);
+            const ok = Number(env?.code) === 200;
+            const raw = env?.data;
+            const n = ok && raw != null ? Number(raw) : 0;
+            return [l.id, Number.isFinite(n) ? n : 0] as const;
+          } catch {
+            return [l.id, 0] as const;
+          }
+        }),
+      );
+      setDueCountByLessonId((prev) => {
+        const next = { ...prev };
+        for (const [id, n] of pairs) next[id] = n;
+        return next;
+      });
+    } catch {
+      /* giữ map cũ */
+    }
+  };
 
   useRefreshOnFocus(async () => {
     // Luôn refresh list hệ thống; và nếu đang ở tab personal thì refresh luôn personal
@@ -36,7 +66,9 @@ export default function VocabularyScreen({ navigation }: any) {
     try {
       setLoadingSystem(true);
       const res = await lessonVocabApi.getSystemLessons();
-      setSystemLessons(res.data || []);
+      const lessons = res.data || [];
+      setSystemLessons(lessons);
+      await enrichDueCounts(lessons);
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể tải danh sách bài học');
     } finally {
@@ -49,7 +81,9 @@ export default function VocabularyScreen({ navigation }: any) {
     try {
       setLoadingPersonal(true);
       const res = await lessonVocabApi.getByUserId(user.id);
-      setPersonalLessons(res.data || []);
+      const lessons = res.data || [];
+      setPersonalLessons(lessons);
+      await enrichDueCounts(lessons);
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể tải bài học cá nhân');
     } finally {
@@ -79,7 +113,9 @@ export default function VocabularyScreen({ navigation }: any) {
         setPersonalLessons((prev) => prev.map((x) => (x.id === editingLesson.id ? res.data : x)));
       } else {
         const res = await lessonVocabApi.createSimple(name);
-        setPersonalLessons((prev) => [...prev, res.data]);
+        const created = res.data;
+        setPersonalLessons((prev) => [...prev, created]);
+        if (user?.id) await enrichDueCounts([created]);
       }
 
       setModalVisible(false);
@@ -118,6 +154,11 @@ export default function VocabularyScreen({ navigation }: any) {
               setDeletingId(lesson.id);
               await lessonVocabApi.delete(lesson.id);
               setPersonalLessons((prev) => prev.filter((x) => x.id !== lesson.id));
+              setDueCountByLessonId((prev) => {
+                const next = { ...prev };
+                delete next[lesson.id];
+                return next;
+              });
             } catch (e: any) {
               Alert.alert('Lỗi', e?.message || 'Không thể xoá bài học');
             } finally {
@@ -140,7 +181,9 @@ export default function VocabularyScreen({ navigation }: any) {
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{item.name}</Text>
         <Text style={styles.cardSubtitle}>
-          {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+          {user?.id
+            ? `${dueCountByLessonId[item.id] ?? 0} từ cần học hôm nay`
+            : new Date(item.createdAt).toLocaleDateString('vi-VN')}
         </Text>
       </View>
       {activeTab === 'personal' ? (

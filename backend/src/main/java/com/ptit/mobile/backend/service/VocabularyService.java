@@ -11,4 +11,7 @@ public interface VocabularyService {
     BaseResponse createVocab(CreateVocabRequest request, Long lessonVocabId);
     BaseResponse createListVocab(CreateListVocabRequest request, Long lessonVocabId);
     BaseResponse createVocabSimple(CreateVocabSimpleRequest request, Long lessonVocabId);
+
+    /** Tổng từ cần học/ôn hôm nay theo userId + lessonVocabId (userId phải khớp token). */
+    BaseResponse getDueTodayCountForLesson(Long userId, Long lessonVocabId);
 }
