@@ -45,8 +45,8 @@ http.interceptors.response.use(
 
     // Backend BaseResponse có thể trả HTTP 200 nhưng code != 200 (hoặc 2xx) cho lỗi nghiệp vụ
     if (data && typeof data === 'object' && typeof data.code === 'number' && (data.code < 200 || data.code >= 300)) {
-      // Nếu backend trả code=401 nhưng HTTP 200: ưu tiên refresh token rồi retry trước
-      if (data.code === 401 && original && !original._retry && original?.url !== '/api/auth/refresh') {
+      // Nếu backend trả code=401 hoặc 5004 nhưng HTTP 200: ưu tiên refresh token rồi retry trước
+      if ((data.code === 401 || data.code === 5004) && original && !original._retry && original?.url !== '/api/auth/refresh') {
         original._retry = true;
         try {
           if (!refreshingPromise) {

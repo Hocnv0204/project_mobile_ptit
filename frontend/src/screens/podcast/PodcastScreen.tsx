@@ -11,11 +11,14 @@ import {
   TextInput,
   Dimensions,
   StatusBar,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { podcastApi, PodcastResponse, PodcastDetailResponse } from '../../services/podcastApi';
+import { levelApi, Level } from '../../api/levelApi';
 import { API_BASE_URL } from '../../config/env';
 
 // Helper: convert relative audioUrl to full HTTP URL
@@ -50,6 +53,10 @@ export default function PodcastScreen() {
   // Podcast list
   const [podcasts, setPodcasts] = useState<PodcastResponse[]>([]);
   const [filteredPodcasts, setFilteredPodcasts] = useState<PodcastResponse[]>([]);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [topics, setTopics] = useState<{ id: number; name: string }[]>([]);
+  const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [listLoading, setListLoading] = useState(true);
 
@@ -67,11 +74,82 @@ export default function PodcastScreen() {
   // UI State
   const [showTranscript, setShowTranscript] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const slideAnim = React.useRef(new Animated.Value(Dimensions.get('window').width)).current;
+
+  const openSidebar = () => {
+    setShowSidebar(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeSidebar = () => {
+    Animated.timing(slideAnim, {
+      toValue: Dimensions.get('window').width,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowSidebar(false);
+    });
+  };
+
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return gestureState.dx > 15 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dx > 0) {
+          slideAnim.setValue(gestureState.dx);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx > Dimensions.get('window').width / 4 || gestureState.vx > 0.5) {
+          closeSidebar();
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   // Load list
   useEffect(() => {
     loadPodcasts();
+    loadFilters();
   }, []);
+
+  useEffect(() => {
+    applyFilters(searchQuery, selectedLevelId, selectedTopicId);
+  }, [searchQuery, selectedLevelId, selectedTopicId, podcasts]);
+
+  const loadFilters = async () => {
+    try {
+      const levelData = await levelApi.getAll();
+      setLevels(levelData.data || []);
+    } catch (e) {
+      console.log('Error loading filters', e);
+    }
+  };
+
+  // Extract unique topics from loaded podcasts
+  useEffect(() => {
+    if (podcasts.length > 0) {
+      const topicMap = new Map<number, string>();
+      podcasts.forEach(p => {
+        if (p.topicId && !topicMap.has(p.topicId)) {
+          topicMap.set(p.topicId, `Topic ${p.topicId}`);
+        }
+      });
+      setTopics(Array.from(topicMap.entries()).map(([id, name]) => ({ id, name })));
+    }
+  }, [podcasts]);
 
   const loadPodcasts = async () => {
     try {
@@ -95,12 +173,17 @@ export default function PodcastScreen() {
       setShowSidebar(false);
       return;
     }
-    // Stop current audio
-    player.pause();
-    player.replace(null);
+    // Safely stop current audio if playing
+    try {
+      if (player && status?.playing) {
+        player.pause();
+      }
+    } catch (e) {
+      console.log('Error pausing previous audio:', e);
+    }
 
     setSelectedId(id);
-    setShowSidebar(false);
+    closeSidebar();
     try {
       setDetailLoading(true);
       const data = await podcastApi.getPodcastById(id);
@@ -139,6 +222,22 @@ export default function PodcastScreen() {
     }
   };
 
+  const playPrevious = () => {
+    if (!selectedId || filteredPodcasts.length === 0) return;
+    const currentIndex = filteredPodcasts.findIndex(p => p.id === selectedId);
+    if (currentIndex > 0) {
+      selectPodcast(filteredPodcasts[currentIndex - 1].id);
+    }
+  };
+
+  const playNext = () => {
+    if (!selectedId || filteredPodcasts.length === 0) return;
+    const currentIndex = filteredPodcasts.findIndex(p => p.id === selectedId);
+    if (currentIndex >= 0 && currentIndex < filteredPodcasts.length - 1) {
+      selectPodcast(filteredPodcasts[currentIndex + 1].id);
+    }
+  };
+
   const seek = (ms: number) => {
     let p = status.currentTime + (ms / 1000);
     if (p < 0) p = 0;
@@ -166,21 +265,28 @@ export default function PodcastScreen() {
     return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   };
 
-  // Search
+  // Search & Filter
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    if (!text) {
-      setFilteredPodcasts(podcasts);
-      return;
-    }
-    const lower = text.toLowerCase();
-    setFilteredPodcasts(
-      podcasts.filter(
+  };
+
+  const applyFilters = (query: string, level: number | null, topic: number | null) => {
+    let result = podcasts;
+    if (query) {
+      const lower = query.toLowerCase();
+      result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(lower) ||
           p.description?.toLowerCase().includes(lower)
-      )
-    );
+      );
+    }
+    if (level) {
+      result = result.filter(p => p.levelId === level);
+    }
+    if (topic) {
+      result = result.filter(p => p.topicId === topic);
+    }
+    setFilteredPodcasts(result);
   };
 
   // ─── RENDER ────────────────────────────────────────────
@@ -199,7 +305,7 @@ export default function PodcastScreen() {
       {/* ── HEADER BAR ── */}
       <View style={styles.headerBar}>
         <Text style={styles.headerLogo}>🎧 EnglishPod</Text>
-        <TouchableOpacity onPress={() => setShowSidebar(true)} style={styles.menuBtn}>
+        <TouchableOpacity onPress={openSidebar} style={styles.menuBtn}>
           <MaterialCommunityIcons name="menu" size={28} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
@@ -307,7 +413,7 @@ export default function PodcastScreen() {
           <TouchableOpacity onPress={() => seek(-10000)}>
             <MaterialCommunityIcons name="rewind-10" size={22} color={COLORS.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => seek(-5000)}>
+          <TouchableOpacity onPress={playPrevious}>
             <MaterialCommunityIcons name="skip-previous" size={28} color={COLORS.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={togglePlayPause} style={styles.playBtn}>
@@ -317,7 +423,7 @@ export default function PodcastScreen() {
               color="#FFF"
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => seek(5000)}>
+          <TouchableOpacity onPress={playNext}>
             <MaterialCommunityIcons name="skip-next" size={28} color={COLORS.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => seek(10000)}>
@@ -350,17 +456,20 @@ export default function PodcastScreen() {
       </View>
 
       {/* ── SIDEBAR MODAL ── */}
-      <Modal visible={showSidebar} animationType="slide" transparent onRequestClose={() => setShowSidebar(false)}>
+      <Modal visible={showSidebar} animationType="fade" transparent onRequestClose={closeSidebar}>
         <View style={styles.modalOverlay}>
-          <TouchableOpacity style={styles.modalDismiss} onPress={() => setShowSidebar(false)} />
-          <View style={[styles.sidebar, { paddingTop: insets.top }]}>
+          <TouchableOpacity style={styles.modalDismiss} onPress={closeSidebar} />
+          <Animated.View 
+            {...panResponder.panHandlers}
+            style={[styles.sidebar, { paddingTop: insets.top, transform: [{ translateX: slideAnim }] }]}
+          >
             {/* Sidebar Header */}
             <View style={styles.sidebarHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialCommunityIcons name="headphones" size={24} color={COLORS.primary} />
                 <Text style={styles.sidebarTitle}> EnglishPod</Text>
               </View>
-              <TouchableOpacity onPress={() => setShowSidebar(false)}>
+              <TouchableOpacity onPress={closeSidebar}>
                 <MaterialCommunityIcons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -378,6 +487,45 @@ export default function PodcastScreen() {
                 onChangeText={handleSearch}
                 placeholderTextColor={COLORS.textSecondary}
               />
+            </View>
+
+            {/* Filter Chips */}
+            <View style={styles.filtersContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+                <TouchableOpacity 
+                  style={[styles.chip, !selectedLevelId && styles.chipActive]}
+                  onPress={() => setSelectedLevelId(null)}
+                >
+                  <Text style={[styles.chipText, !selectedLevelId && styles.chipTextActive]}>All Levels</Text>
+                </TouchableOpacity>
+                {levels.map(l => (
+                  <TouchableOpacity 
+                    key={`level-${l.id}`} 
+                    style={[styles.chip, selectedLevelId === l.id && styles.chipActive]}
+                    onPress={() => setSelectedLevelId(l.id)}
+                  >
+                    <Text style={[styles.chipText, selectedLevelId === l.id && styles.chipTextActive]}>{l.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+                <TouchableOpacity 
+                  style={[styles.chip, !selectedTopicId && styles.chipActive]}
+                  onPress={() => setSelectedTopicId(null)}
+                >
+                  <Text style={[styles.chipText, !selectedTopicId && styles.chipTextActive]}>All Topics</Text>
+                </TouchableOpacity>
+                {topics.map(t => (
+                  <TouchableOpacity 
+                    key={`topic-${t.id}`} 
+                    style={[styles.chip, selectedTopicId === t.id && styles.chipActive]}
+                    onPress={() => setSelectedTopicId(t.id)}
+                  >
+                    <Text style={[styles.chipText, selectedTopicId === t.id && styles.chipTextActive]}>{t.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
             {/* List */}
@@ -411,7 +559,7 @@ export default function PodcastScreen() {
                 );
               }}
             />
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
@@ -617,4 +765,30 @@ const styles = StyleSheet.create({
   numText: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
   listTitle: { fontSize: 16, fontWeight: '500', color: COLORS.text, marginBottom: 2 },
   listSub: { fontSize: 12, color: COLORS.textSecondary },
+  filtersContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  chipRow: {
+    marginBottom: 10,
+    flexDirection: 'row',
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    marginRight: 8,
+  },
+  chipActive: {
+    backgroundColor: COLORS.primary,
+  },
+  chipText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  chipTextActive: {
+    color: '#FFF',
+  },
 });
