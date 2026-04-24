@@ -6,6 +6,7 @@ import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.UserLessonProgressResponse;
+import com.ptit.mobile.backend.dto.response.writing.UserTranslationHistoryResponse;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -24,5 +25,7 @@ public interface LessonService {
 
     void updateLessonProgress(UpdateProgressRequest request, Long userId);
 
-    List<UserLessonProgressResponse> getMyLessonsProgress(Long userId);
+    Page<UserLessonProgressResponse> getMyLessonsProgress(Long userId, int page, int size);
+
+    Page<UserTranslationHistoryResponse> getTranslationHistory(Long userId, int page, int size);
 }

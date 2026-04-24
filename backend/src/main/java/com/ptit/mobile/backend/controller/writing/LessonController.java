@@ -7,6 +7,7 @@ import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.UserLessonProgressResponse;
+import com.ptit.mobile.backend.dto.response.writing.UserTranslationHistoryResponse;
 import com.ptit.mobile.backend.service.writing.LessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,12 +17,29 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
 @RestController
 @RequestMapping("api/lesson-writings")
 @RequiredArgsConstructor
 public class LessonController {
 
     private final LessonService lessonService;
+
+    @GetMapping("/history")
+    public BaseResponse getTranslationHistory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        Page<UserTranslationHistoryResponse> history = lessonService.getTranslationHistory(userId, page, size);
+
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(history)
+                .build();
+    }
 
     @GetMapping()
     public BaseResponse getLessons(
@@ -46,10 +64,12 @@ public class LessonController {
 
     @GetMapping("/my-lessons")
     public BaseResponse getMyLessons(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             Authentication authentication
     ) {
         Long userId = (Long) authentication.getDetails();
-        List<UserLessonProgressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
+        Page<UserLessonProgressResponse> myLessons = lessonService.getMyLessonsProgress(userId, page, size);
 
         return BaseResponse.builder()
                 .code(200L)

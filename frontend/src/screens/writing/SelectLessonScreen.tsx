@@ -139,10 +139,10 @@ export default function SelectLessonScreen() {
               >
                 <Ionicons name="arrow-back" size={24} color="#1A1D26" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Select Lesson</Text>
+              <Text style={styles.headerTitle}>Chọn bài học</Text>
             </View>
             <Text style={styles.headerSubtitle}>
-              Choose a lesson to practice your writing skills
+              Chọn bài học để tập luyện kỹ năng viết
             </Text>
           </View>
 
@@ -155,7 +155,7 @@ export default function SelectLessonScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search lessons..."
+              placeholder="Tìm kiếm..."
               placeholderTextColor="#5A5A7A"
               value={searchTerm}
               onChangeText={setSearchTerm}

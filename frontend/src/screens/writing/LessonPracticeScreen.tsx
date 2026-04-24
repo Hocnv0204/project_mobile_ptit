@@ -63,8 +63,20 @@ export default function LessonPracticeScreen() {
   const inputRef = useRef<TextInput>(null);
   const paragraphScrollRef = useRef<ScrollView>(null);
   const outerScrollRef = useRef<ScrollView>(null);
+  const sentenceOffsetsRef = useRef<Record<number, number>>({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const vocabHeightAnim = useRef(new Animated.Value(0)).current;
+
+  // ── derived values ──────────────────────────────────────────────────────────
+  const currentOrderIndex = progress?.currentOrderIndex ?? 1;
+  const totalSentences = lesson?.totalSentences ?? 0;
+  const progressPercent = totalSentences > 0 ? (currentOrderIndex - 1) / totalSentences : 0;
+
+  const currentSentence: LessonSentenceResponse | undefined = lesson?.sentences.find(
+    (s) => s.orderIndex === currentOrderIndex,
+  );
+
+  const currentVocab: SuggestVocabularyResponse[] = currentSentence?.suggestVocabularies ?? [];
 
   const SCREEN_HEIGHT = Dimensions.get("window").height;
   const PARAGRAPH_HEIGHT = SCREEN_HEIGHT * 0.4;
@@ -116,11 +128,32 @@ export default function LessonPracticeScreen() {
     }).start();
   }, []);
 
+  // ── scroll to highlighted sentence ──────────────────────────────────────────
+  const scrollToCurrentSentence = useCallback((animated = true) => {
+    const offset = sentenceOffsetsRef.current[currentOrderIndex];
+    if (offset === undefined || !paragraphScrollRef.current) return;
+
+    const centerOffset = Math.max(0, offset - PARAGRAPH_HEIGHT / 2 + 13);
+    paragraphScrollRef.current.scrollTo({
+      y: centerOffset,
+      animated,
+    });
+  }, [currentOrderIndex, PARAGRAPH_HEIGHT]);
+
+  useEffect(() => {
+    // Delay slightly to ensure layout has settled
+    const timer = setTimeout(() => {
+      scrollToCurrentSentence(true);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [currentOrderIndex, scrollToCurrentSentence]);
+
   // ── data fetch ──────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      sentenceOffsetsRef.current = {}; // Clear old offsets
       const [lessonData, progressData] = await Promise.all([
         writingApi.getLessonDetails(lessonId),
         writingApi.getLessonProgress(lessonId),
@@ -201,17 +234,6 @@ export default function LessonPracticeScreen() {
      setShowRedoModal(false);
      navigation.goBack();
    };
-
-  // ── derived values ──────────────────────────────────────────────────────────
-  const currentOrderIndex = progress?.currentOrderIndex ?? 1;
-  const totalSentences = lesson?.totalSentences ?? 0;
-  const progressPercent = totalSentences > 0 ? (currentOrderIndex - 1) / totalSentences : 0;
-
-  const currentSentence: LessonSentenceResponse | undefined = lesson?.sentences.find(
-    (s) => s.orderIndex === currentOrderIndex,
-  );
-
-  const currentVocab: SuggestVocabularyResponse[] = currentSentence?.suggestVocabularies ?? [];
 
   useEffect(() => {
     if (lesson && progress && progress.currentOrderIndex > lesson.totalSentences) {
@@ -301,7 +323,6 @@ export default function LessonPracticeScreen() {
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
             keyboardShouldPersistTaps="handled"
-            onScrollBeginDrag={Keyboard.dismiss}
           >
             {/* ── Paragraph: fixed height, inner scroll ─────────────────────── */}
             {/*
@@ -316,17 +337,27 @@ export default function LessonPracticeScreen() {
                 contentContainerStyle={styles.paragraphContent}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
                 // Prevent outer scroll from stealing the gesture while user is
                 // actively scrolling inside the paragraph box
                 scrollEventThrottle={16}
               >
-                <Text style={styles.paragraphText}>
-                  {lesson.sentences.map((sentence, idx) => {
-                    const isHighlighted = sentence.orderIndex === currentOrderIndex;
-                    const cleanedSentence = sentence.sentenceVi.replace(/\.\s*$/, "");
-                    return (
-                      <Text key={sentence.id}>
+                {lesson.sentences.map((sentence, idx) => {
+                  const isHighlighted = sentence.orderIndex === currentOrderIndex;
+                  const cleanedSentence = sentence.sentenceVi.replace(/\.\s*$/, "");
+                  return (
+                    <View
+                      key={sentence.id}
+                      onLayout={(e) => {
+                        const y = e.nativeEvent.layout.y;
+                        sentenceOffsetsRef.current[sentence.orderIndex] = y;
+                        // If this is the current sentence, trigger scroll
+                        if (sentence.orderIndex === currentOrderIndex) {
+                          scrollToCurrentSentence(true);
+                        }
+                      }}
+                    >
+                      <Text style={styles.paragraphText}>
                         <Text
                           style={[
                             styles.sentenceText,
@@ -341,9 +372,9 @@ export default function LessonPracticeScreen() {
                           <Text style={styles.sentenceDot}>.</Text>
                         )}
                       </Text>
-                    );
-                  })}
-                </Text>
+                    </View>
+                  );
+                })}
               </ScrollView>
             </View>
 
@@ -468,6 +499,7 @@ export default function LessonPracticeScreen() {
         visible={showResultModal}
         onClose={() => setShowResultModal(false)}
         onNext={handleNext}
+        originalText={currentSentence?.sentenceVi}
         feedbackData={gradingResult}
       />
 
@@ -599,6 +631,9 @@ const styles = StyleSheet.create({
   paragraphContent: {
     padding: 16,
     paddingBottom: 24,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
   },
   paragraphText: {
     lineHeight: 26,
@@ -611,6 +646,7 @@ const styles = StyleSheet.create({
   sentenceHighlighted: {
     color: "#0066FF",
     fontWeight: "700",
+    fontSize: 17,
   },
   sentenceDot: {
     fontSize: 15,

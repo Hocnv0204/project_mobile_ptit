@@ -121,10 +121,10 @@ export default function SelectTopicScreen() {
               >
                 <Ionicons name="arrow-back" size={24} color="#1A1D26" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Writing Topics</Text>
+              <Text style={styles.headerTitle}>Chọn chủ đề</Text>
             </View>
             <Text style={styles.headerSubtitle}>
-              Choose a topic to practice your writing skills
+              Chọn chủ đề để tập luyện kỹ năng viết
             </Text>
           </View>
 
@@ -137,7 +137,7 @@ export default function SelectTopicScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search topics..."
+              placeholder="Tìm kiếm..."
               placeholderTextColor="#5A5A7A"
               value={searchTerm}
               onChangeText={setSearchTerm}
