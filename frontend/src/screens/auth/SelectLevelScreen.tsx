@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { levelApi, Level } from '../../api/levelApi';
 import { userApi } from '../../api/userApi';
 import { useAuthStore } from '../../store/authStore';
 import { Routes } from '../../constants/routes';
+import { useToast } from '../../components/ToastProvider';
 
 export default function SelectLevelScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user, setAuth, accessToken, refreshToken } = useAuthStore();
+  const toast = useToast();
   
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLevelId, setSelectedLevelId] = useState<number | null>(user?.levelId || null);
   const [saving, setSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchLevels();
@@ -28,7 +28,7 @@ export default function SelectLevelScreen({ navigation }: any) {
       const res = await levelApi.getAll();
       setLevels(res.data || []);
     } catch (e: any) {
-      Alert.alert('Lỗi', e?.message || 'Không thể tải danh sách trình độ');
+      toast.show(e?.message || 'Không thể tải danh sách trình độ', { type: 'error', durationMs: 4500 });
     } finally {
       setLoading(false);
     }
@@ -36,39 +36,36 @@ export default function SelectLevelScreen({ navigation }: any) {
 
   const handleSave = async () => {
     if (!selectedLevelId) {
-      Alert.alert('Thông báo', 'Vui lòng chọn trình độ của bạn');
+      toast.show('Vui lòng chọn trình độ của bạn', { type: 'info' });
       return;
     }
 
     try {
       setSaving(true);
       const res = await userApi.updateLevel(selectedLevelId);
-      
-      setSuccessMessage(res.message || 'Cập nhật trình độ thành công');
-      setShowSuccess(true);
-      
-      setTimeout(async () => {
-        // Update store state
-        if (user && accessToken && refreshToken) {
-          const updatedUser = { ...user, levelId: selectedLevelId };
-          await setAuth({
-            accessToken,
-            refreshToken,
-            user: updatedUser
-          });
-        }
 
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        } else {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: Routes.USER_NAVIGATOR }],
-          });
-        }
-      }, 1500);
+      // Update store state
+      if (user && accessToken && refreshToken) {
+        const updatedUser = { ...user, levelId: selectedLevelId };
+        await setAuth({
+          accessToken,
+          refreshToken,
+          user: updatedUser,
+        });
+      }
+
+      toast.show(res.message || 'Cập nhật trình độ thành công', { type: 'success', durationMs: 3000 });
+
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: Routes.USER_NAVIGATOR }],
+        });
+      }
     } catch (e: any) {
-      Alert.alert('Lỗi', e?.message || 'Không thể lưu trình độ');
+      toast.show(e?.message || 'Không thể lưu trình độ', { type: 'error', durationMs: 4500 });
     } finally {
       setSaving(false);
     }
@@ -78,17 +75,6 @@ export default function SelectLevelScreen({ navigation }: any) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color="#0066FF" />
-      </View>
-    );
-  }
-
-  if (showSuccess) {
-    return (
-      <View style={[styles.center, { backgroundColor: '#0066FF', flex: 1 }]}>
-        <MaterialCommunityIcons name="check-circle-outline" size={80} color="#FFF" />
-        <Text style={styles.successText}>
-          {successMessage}
-        </Text>
       </View>
     );
   }
@@ -218,5 +204,4 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { backgroundColor: '#A0C2FF' },
   btnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  successText: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginTop: 16, textAlign: 'center', paddingHorizontal: 24 },
 });

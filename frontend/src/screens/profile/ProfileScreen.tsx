@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -16,9 +16,11 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import { authApi } from '../../api/authApi';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { Routes } from '../../constants/routes';
 import { useI18n } from '../../i18n/useI18n';
+import { userApi } from '../../api/userApi';
+import { useToast } from '../../components/ToastProvider';
 
 // Reusable menu item component
 interface MenuItemProps {
@@ -43,9 +45,31 @@ const MenuItem = ({ icon, iconFamily = 'MaterialCommunityIcons', label, onPress,
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { refreshToken, user, logout } = useAuthStore();
+  const toast = useToast();
+  const isFocused = useIsFocused();
   const { signOut: googleSignOut } = useGoogleAuth();
   const { t, language, setLanguage } = useI18n();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [currentLevelValue, setCurrentLevelValue] = useState<number | string | null>(user?.levelId ?? null);
+
+  useEffect(() => {
+    if (!isFocused) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await userApi.getCurrentLevel();
+        if (cancelled) return;
+        // Ưu tiên data; nếu backend trả message là label thì dùng message
+        const val = (res.data ?? (res as any)?.message ?? null) as number | string | null;
+        setCurrentLevelValue(val);
+      } catch (e: any) {
+        toast.show(e?.message || 'Không thể tải trình độ hiện tại', { type: 'error', durationMs: 4500 });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isFocused]);
 
   const handleLogout = async () => {
     try {
@@ -69,8 +93,12 @@ export default function ProfileScreen() {
   const avatarUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=0066FF&color=fff&size=200';
 
   const levelLabel = useMemo(() => {
-    return user?.levelId ? t('profile.level.value', { id: user.levelId }) : t('profile.level.notSelected');
-  }, [user?.levelId, t]);
+    const val = currentLevelValue ?? user?.levelId ?? null;
+    if (!val) return t('profile.level.notSelected');
+    // Nếu backend trả string label như "C2 - Proficient" thì hiển thị thẳng
+    if (typeof val === 'string') return val;
+    return t('profile.level.value', { id: val });
+  }, [currentLevelValue, user?.levelId, t]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
