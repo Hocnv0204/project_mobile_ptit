@@ -10,6 +10,7 @@ import java.util.*;
 @Service
 public class OpenAIService {
 
+  @Value("${OPENAI_API_KEY:}")
   private String apiKey;
 
   private final RestTemplate restTemplate = new RestTemplate();
@@ -65,8 +66,7 @@ public class OpenAIService {
 
   /**
    * Gọi OpenAI TTS API để chuyển text thành audio MP3.
-   * 
-   * @param text  nội dung cần đọc
+   * @param text nội dung cần đọc
    * @param voice giọng đọc: alloy, echo, fable, onyx, nova, shimmer
    * @return byte[] dữ liệu MP3
    */
@@ -79,14 +79,16 @@ public class OpenAIService {
         "model", "tts-1",
         "input", text,
         "voice", voice != null ? voice : "nova",
-        "response_format", "mp3");
+        "response_format", "mp3"
+    );
 
     HttpEntity<?> request = new HttpEntity<>(body, headers);
 
     ResponseEntity<byte[]> response = restTemplate.postForEntity(
         "https://api.openai.com/v1/audio/speech",
         request,
-        byte[].class);
+        byte[].class
+    );
 
     return response.getBody();
   }
