@@ -1,12 +1,12 @@
-import { http } from '../http';
-import { ApiEnvelope } from '../types';
+import { http } from "../http";
+import { ApiEnvelope } from "../types";
 import {
   LessonSummaryResponse,
   LessonResponse,
   UserLessonProgressResponse,
   GradingRequest,
   GradingResponse,
-} from './types';
+} from "./types";
 
 export type SpringPage<T> = {
   content: T[];
@@ -30,22 +30,40 @@ export const writingApi = {
     sortBy?: string;
     sortDir?: string;
   }) => {
-    const res = await http.get<ApiEnvelope<SpringPage<LessonSummaryResponse>>>('/api/lesson-writings', { params });
+    const res = await http.get<ApiEnvelope<SpringPage<LessonSummaryResponse>>>(
+      "/api/lesson-writings",
+      { params },
+    );
     return res.data.data;
   },
 
   getLessonDetails: async (lessonId: number) => {
-    const res = await http.get<ApiEnvelope<LessonResponse>>(`/api/lesson-writings/${lessonId}`);
+    const res = await http.get<ApiEnvelope<LessonResponse>>(
+      `/api/lesson-writings/${lessonId}`,
+    );
     return res.data.data;
   },
 
   getLessonProgress: async (lessonId: number) => {
-    const res = await http.get<ApiEnvelope<UserLessonProgressResponse>>(`/api/lesson-writings/progress/${lessonId}`);
+    const res = await http.get<ApiEnvelope<UserLessonProgressResponse>>(
+      `/api/lesson-writings/progress/${lessonId}`,
+    );
+    return res.data.data;
+  },
+
+  updateLessonProgress: async (lessonId: number, currentOrderIndex: number) => {
+    const res = await http.put<ApiEnvelope<UserLessonProgressResponse>>(
+      `/api/lesson-writings/progress/${lessonId}`,
+      { currentOrderIndex },
+    );
     return res.data.data;
   },
 
   gradeAnswer: async (request: GradingRequest) => {
-    const res = await http.post<ApiEnvelope<GradingResponse>>('/api/lesson-writings/grade', request);
+    const res = await http.post<ApiEnvelope<GradingResponse>>(
+      "/api/lesson-writings/grade",
+      request,
+    );
     return res.data.data;
   },
 };

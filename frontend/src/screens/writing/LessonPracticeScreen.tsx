@@ -12,8 +12,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  Easing,
   FlatList,
   Modal,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -61,24 +63,47 @@ export default function LessonPracticeScreen() {
   } | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
 
+  const inputRef = useRef<TextInput>(null);
   const paragraphScrollRef = useRef<ScrollView>(null);
   const highlightedSentenceRefs = useRef<{ [key: number]: number }>({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const vocabHeightAnim = useRef(new Animated.Value(0)).current;
+
+  const SCREEN_HEIGHT = Dimensions.get("window").height;
+  const PARAGRAPH_HEIGHT = SCREEN_HEIGHT * 0.4;
+
+  const paragraphHeightAnim = useRef(new Animated.Value(PARAGRAPH_HEIGHT)).current;
 
   // ── keyboard listeners ──────────────────────────────────────────────────────
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
       setIsKeyboardVisible(true);
-      setShowVocab(false);
     });
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
       setIsKeyboardVisible(false);
     });
+
     return () => {
       showSub.remove();
       hideSub.remove();
     };
   }, []);
+
+  // ── animate vocab panel ─────────────────────────────────────────────────────
+  useEffect(() => {
+    Animated.timing(vocabHeightAnim, {
+      toValue: showVocab ? 1 : 0,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [showVocab]);
 
   // ── fade-in on mount ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -130,6 +155,7 @@ export default function LessonPracticeScreen() {
         question: currentSentence.sentenceVi,
         answer: userInput,
         suggestVocabularies: currentVocab.map((v) => v.term),
+        sentenceId: currentSentence.id,
       };
 
       const result = await writingApi.gradeAnswer(request);
@@ -147,14 +173,25 @@ export default function LessonPracticeScreen() {
     }
   };
 
-  const handleNext = () => {
-    setShowResultModal(false);
-    setUserInput("");
-    if (progress && lesson && progress.currentOrderIndex < lesson.totalSentences) {
-      setProgress({
-        ...progress,
-        currentOrderIndex: progress.currentOrderIndex + 1,
-      });
+  const handleNext = async () => {
+    try {
+      const newOrderIndex = progress ? progress.currentOrderIndex + 1 : 1;
+      await writingApi.updateLessonProgress(lessonId, newOrderIndex);
+      setShowResultModal(false);
+      setUserInput("");
+      if (
+        progress &&
+        lesson &&
+        progress.currentOrderIndex < lesson.totalSentences
+      ) {
+        setProgress({
+          ...progress,
+          currentOrderIndex: newOrderIndex,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to update lesson progress:", e);
+      // You might want to show an error toast here
     }
   };
 
@@ -204,158 +241,168 @@ export default function LessonPracticeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
-        >
-          <TouchableWithoutFeedback
-            onPress={Keyboard.dismiss}
-            accessible={false}
-          >
-            <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
-              {/* ── Header ──────────────────────────────────────────────────────── */}
-              <View style={styles.header}>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => navigation.goBack()}
-                >
-                  <Ionicons name="arrow-back" size={22} color="#1A1D26" />
-                </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
+            {/* ── Header ──────────────────────────────────────────────────────── */}
+            <View style={styles.header}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Ionicons name="chevron-back" size={20} color="#0066FF" />
+              </TouchableOpacity>
 
-                <View style={styles.headerCenter}>
-                  <Text style={styles.headerTitle} numberOfLines={1}>
-                    {lesson.name}
-                  </Text>
-                  <View style={styles.progressRow}>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${progressPercent * 100}%` },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.progressLabel}>
-                      {currentOrderIndex - 1}/{totalSentences}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={{ width: 40 }} />
+              <View style={styles.headerCenter}>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                  {lesson.name}
+                </Text>
               </View>
 
-              {/* ── Main content ─────────────────────────────────────────────────── */}
-              {isKeyboardVisible ? (
-                // When keyboard is open: show only the highlighted sentence above input
-                <View style={styles.focusedSentenceContainer}>
-                  <View style={styles.focusedSentenceCard}>
-                    <Text style={styles.focusedSentenceLabel}>
-                      Current sentence
-                    </Text>
-                    <Text style={styles.focusedSentenceText}>
-                      {currentSentence?.sentenceVi?.replace(/\.\s*$/, "") ?? ""}
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                // Normal mode: show full paragraph (takes ~half the screen)
-                <View style={styles.paragraphWrapper}>
-                  <ScrollView
-                    ref={paragraphScrollRef}
-                    style={styles.paragraphScroll}
-                    contentContainerStyle={styles.paragraphContent}
-                    showsVerticalScrollIndicator={true}
-                  >
+              <View style={{ width: 40 }} />
+            </View>
+
+            {/* ── Progress bar (below header) ──────────────────────────────────── */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${progressPercent * 100}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressLabel}>
+                {currentOrderIndex - 1}/{totalSentences}
+              </Text>
+            </View>
+
+            {/* ── Scrollable content area (paragraph + vocab) ──────────────────── */}
+            <ScrollView
+              style={styles.scrollableContent}
+              contentContainerStyle={styles.scrollableContentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* ── Paragraph with animated height ─────────────────────────────── */}
+              <Animated.View
+                style={[
+                  styles.paragraphWrapper,
+                  {
+                    height: paragraphHeightAnim,
+                  },
+                ]}
+              >
+                <ScrollView
+                  ref={paragraphScrollRef}
+                  style={styles.paragraphScroll}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.paragraphContent}>
                     <Text style={styles.paragraphText}>
                       {lesson.sentences.map((sentence, idx) => {
-                        const isHighlighted =
-                          sentence.orderIndex === currentOrderIndex;
-                        // Remove trailing dots from sentence to avoid double dots
-                        const cleanedSentence = sentence.sentenceVi.replace(
-                          /\.\s*$/,
-                          "",
-                        );
-                        return (
-                          <Text key={sentence.id}>
-                            <Text
-                              style={[
-                                styles.sentenceText,
-                                isHighlighted && styles.sentenceHighlighted,
-                              ]}
-                            >
-                              {cleanedSentence}
-                            </Text>
-                            {idx < lesson.sentences.length - 1 ? (
-                              <Text style={styles.sentenceDot}>. </Text>
-                            ) : (
-                              <Text style={styles.sentenceDot}>.</Text>
-                            )}
+                      const isHighlighted =
+                        sentence.orderIndex === currentOrderIndex;
+                      const cleanedSentence = sentence.sentenceVi.replace(
+                        /\.\s*$/,
+                        "",
+                      );
+                      return (
+                        <Text key={sentence.id}>
+                          <Text
+                            style={[
+                              styles.sentenceText,
+                              isHighlighted && styles.sentenceHighlighted,
+                            ]}
+                          >
+                            {cleanedSentence}
                           </Text>
-                        );
-                      })}
-                    </Text>
-                  </ScrollView>
+                          {idx < lesson.sentences.length - 1 ? (
+                            <Text style={styles.sentenceDot}>. </Text>
+                          ) : (
+                            <Text style={styles.sentenceDot}>.</Text>
+                          )}
+                        </Text>
+                      );
+                    })}
+                  </Text>
                 </View>
-              )}
+              </ScrollView>
+            </Animated.View>
 
-              {/* ── Vocabulary suggestions panel ─────────────────────────────────── */}
-              {showVocab && !isKeyboardVisible && (
-                <View style={styles.vocabPanel}>
-                  <Text style={styles.vocabPanelTitle}>💡 Gợi ý từ vựng</Text>
-                  {currentVocab.length > 0 ? (
-                    <FlatList
-                      data={currentVocab}
-                      keyExtractor={(item) => item.id.toString()}
-                      style={styles.vocabList}
-                      showsVerticalScrollIndicator={true}
-                      renderItem={({ item }) => (
-                        <View style={styles.vocabItem}>
-                          <View style={styles.vocabItemHeader}>
-                            <Text style={styles.vocabTerm}>{item.term}</Text>
-                            {item.type ? (
-                              <View style={styles.vocabTypeBadge}>
-                                <Text style={styles.vocabTypeText}>
-                                  {item.type}
-                                </Text>
-                              </View>
-                            ) : null}
-                          </View>
-                          {item.pronunciation ? (
-                            <Text style={styles.vocabPronunciation}>
-                              /{item.pronunciation}/
-                            </Text>
-                          ) : null}
-                          <Text style={styles.vocabVietnamese}>
-                            {item.vietnamese}
-                          </Text>
-                          {item.example ? (
-                            <Text style={styles.vocabExample} numberOfLines={2}>
-                              {item.example}
-                            </Text>
+              <Animated.View
+                style={[
+                  styles.vocabPanel,
+                  {
+                    maxHeight: vocabHeightAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 2000], // Increased range to ensure it's enough
+                    }),
+                    opacity: vocabHeightAnim,
+                    borderWidth: vocabHeightAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 1],
+                      extrapolate: "clamp",
+                    }),
+                    marginBottom: vocabHeightAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 8],
+                      extrapolate: "clamp",
+                    }),
+                  },
+                ]}
+              >
+                <Text style={styles.vocabPanelTitle}>💡 Gợi ý từ vựng</Text>
+                {currentVocab.length > 0 ? (
+                  <View style={styles.vocabList}>
+                    {currentVocab.map((item) => (
+                      <View key={item.id} style={styles.vocabItem}>
+                        <View style={styles.vocabItemHeader}>
+                          <Text style={styles.vocabTerm}>{item.term}</Text>
+                          {item.type ? (
+                            <View style={styles.vocabTypeBadge}>
+                              <Text style={styles.vocabTypeText}>
+                                {item.type}
+                              </Text>
+                            </View>
                           ) : null}
                         </View>
-                      )}
-                    />
-                  ) : (
-                    <View style={styles.emptyVocabContainer}>
-                      <Text style={styles.emptyVocabText}>
-                        Hiện tại không có gợi ý từ vựng cho câu này
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
+                        {item.pronunciation ? (
+                          <Text style={styles.vocabPronunciation}>
+                            /{item.pronunciation}/
+                          </Text>
+                        ) : null}
+                        <Text style={styles.vocabVietnamese}>
+                          {item.vietnamese}
+                        </Text>
+                        {item.example ? (
+                          <Text style={styles.vocabExample} numberOfLines={2}>
+                            {item.example}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.emptyVocabContainer}>
+                    <Text style={styles.emptyVocabText}>
+                      Hiện tại không có gợi ý từ vựng cho câu này
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
+            </ScrollView>
 
-              {/* Spacer to push bottomBar to bottom when keyboard is hidden */}
-              {!isKeyboardVisible && <View style={{ flex: 1 }} />}
-
-              {/* ── Bottom toolbar ───────────────────────────────────────────────── */}
-              <View style={[isKeyboardVisible && styles.bottomBarCentered]}>
-                <View style={styles.bottomBar}>
-                  <View style={styles.bottomRow}>
-                    <View style={styles.inputRow}>
+            {/* ── Bottom toolbar ─────────────────────────────────────────────────── */}
+            <View style={styles.bottomBarWrapper}>
+              <View style={styles.bottomBar}>
+                <View style={styles.bottomRow}>
+                  <View style={styles.inputRow}>
                       <TextInput
+                        ref={inputRef}
                         style={styles.textInput}
                         placeholder="Nhập câu dịch của bạn..."
                         placeholderTextColor="#5A5A7A"
@@ -363,61 +410,61 @@ export default function LessonPracticeScreen() {
                         onChangeText={setUserInput}
                         multiline
                         returnKeyType="done"
+                        textAlignVertical="center"
                       />
-                      <TouchableOpacity
-                        style={[
-                          styles.vocabToggleButton,
-                          showVocab && styles.vocabToggleActive,
-                        ]}
-                        onPress={() => {
-                          Keyboard.dismiss();
-                          setShowVocab((prev) => !prev);
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons
-                          name={showVocab ? "book" : "book-outline"}
-                          size={18}
-                          color={showVocab ? "#FFFFFF" : "#4ECDC4"}
-                        />
-                      </TouchableOpacity>
-                    </View>
-
                     <TouchableOpacity
                       style={[
-                        styles.submitButton,
-                        userInput.trim().length > 0 && !isGrading
-                          ? styles.submitButtonActive
-                          : styles.submitButtonDisabled,
+                        styles.vocabToggleButton,
+                        showVocab && styles.vocabToggleActive,
                       ]}
-                      onPress={handleSubmit}
-                      disabled={userInput.trim().length === 0 || isGrading}
+                      onPress={() => {
+                        setShowVocab((prev) => !prev);
+                      }}
                       activeOpacity={0.8}
                     >
-                      {isGrading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Ionicons
-                          name="arrow-forward"
-                          size={20}
-                          color="#FFFFFF"
-                        />
-                      )}
+                      <Ionicons
+                        name={showVocab ? "book" : "book-outline"}
+                        size={18}
+                        color={showVocab ? "#FFFFFF" : "#0066FF"}
+                      />
                     </TouchableOpacity>
                   </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.submitButton,
+                      userInput.trim().length > 0 && !isGrading
+                        ? styles.submitButtonActive
+                        : styles.submitButtonDisabled,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={userInput.trim().length === 0 || isGrading}
+                    activeOpacity={0.8}
+                  >
+                    {isGrading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Ionicons
+                        name="arrow-forward"
+                        size={20}
+                        color="#FFFFFF"
+                      />
+                    )}
+                  </TouchableOpacity>
                 </View>
               </View>
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+            </View>
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
-        {/* ── Grading Result Modal ────────────────────────────────────────── */}
-        <FeedbackModal
-          visible={showResultModal}
-          onClose={() => setShowResultModal(false)}
-          onNext={handleNext}
-          feedbackData={gradingResult}
-        />
+      {/* ── Grading Result Modal ────────────────────────────────────────── */}
+      <FeedbackModal
+        visible={showResultModal}
+        onClose={() => setShowResultModal(false)}
+        onNext={handleNext}
+        feedbackData={gradingResult}
+      />
     </SafeAreaView>
   );
 }
@@ -425,11 +472,11 @@ export default function LessonPracticeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ccccccff",
+    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA", // Đảm bảo lớp bên trong cũng cùng màu
+    backgroundColor: "#FFFFFF",
   },
   centerContainer: {
     flex: 1,
@@ -451,7 +498,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 16,
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#0066FF",
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 24,
@@ -469,14 +516,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2A2A45",
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#EBF2FF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -488,43 +533,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#1A1D26",
-    marginBottom: 6,
   },
-  progressRow: {
+
+  // ── Progress bar (standalone below header) ────────────────────────────────
+  progressContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 10,
   },
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: "#252540",
+    backgroundColor: "#E8EFFF",
     borderRadius: 3,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#0066FF",
     borderRadius: 3,
   },
   progressLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#A0A0BC",
+    color: "#0066FF",
     minWidth: 36,
     textAlign: "right",
   },
 
-  // ── Paragraph (full) ──────────────────────────────────────────────────────
-  paragraphWrapper: {
+  // ── Scrollable content area ───────────────────────────────────────────────
+  scrollableContent: {
     flex: 1,
-    maxHeight: "50%",
+  },
+  scrollableContentContainer: {
+    paddingBottom: 32,
+  },
+
+  // ── Paragraph (animated height) ──────────────────────────────────────────
+  paragraphWrapper: {
     marginHorizontal: 16,
-    marginTop: 16,
+    marginBottom: 8,
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#2A2A45",
+    borderColor: "#E0EAFF",
     overflow: "hidden",
   },
   paragraphScroll: {
@@ -538,85 +592,47 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   sentenceText: {
-    fontSize: 16,
-    color: "#A0A0BC",
+    fontSize: 15,
+    color: "#9BA3B8",
     lineHeight: 26,
   },
   sentenceHighlighted: {
-    color: "#1A1D26",
+    color: "#0066FF",
     fontWeight: "700",
-    backgroundColor: "rgba(108, 99, 255, 0.18)",
-    borderRadius: 4,
   },
   sentenceDot: {
-    fontSize: 16,
-    color: "#5A5A7A",
-  },
-
-  // ── Focused sentence (keyboard open) ─────────────────────────────────────
-  focusedSentenceContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  focusedSentenceCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#6C63FF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  focusedSentenceLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#6C63FF",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
-  focusedSentenceText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1A1D26",
-    lineHeight: 28,
+    fontSize: 15,
+    color: "#9BA3B8",
   },
 
   // ── Vocabulary panel ──────────────────────────────────────────────────────
   vocabPanel: {
-    height: 240,
     marginHorizontal: 16,
-    marginTop: 12,
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderColor: "#E0EAFF",
     overflow: "hidden",
     flexDirection: "column",
   },
   vocabPanelTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#1A1D26",
+    color: "#0066FF",
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#E0EAFF",
+    letterSpacing: 0.3,
   },
   vocabList: {
-    flex: 1,
+    width: "100%",
   },
   vocabItem: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#F0F4FF",
   },
   vocabItemHeader: {
     flexDirection: "row",
@@ -625,36 +641,38 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   vocabTerm: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
-    color: "#4ECDC4",
+    color: "#0066FF",
   },
   vocabTypeBadge: {
-    backgroundColor: "rgba(78, 205, 196, 0.15)",
-    borderRadius: 6,
-    paddingHorizontal: 6,
+    backgroundColor: "#EBF2FF",
+    borderRadius: 5,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   vocabTypeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#4ECDC4",
+    color: "#0066FF",
     textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   vocabPronunciation: {
     fontSize: 12,
-    color: "#5A5A7A",
+    color: "#7A8299",
     fontStyle: "italic",
     marginBottom: 2,
   },
   vocabVietnamese: {
     fontSize: 13,
-    color: "#A0A0BC",
+    color: "#3D4565",
     marginBottom: 2,
+    fontWeight: "500",
   },
   vocabExample: {
     fontSize: 12,
-    color: "#5A5A7A",
+    color: "#9BA3B8",
     fontStyle: "italic",
     lineHeight: 18,
   },
@@ -665,12 +683,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyVocabText: {
-    fontSize: 14,
-    color: "#A0A0BC",
+    fontSize: 13,
+    color: "#9BA3B8",
     textAlign: "center",
   },
 
   // ── Bottom bar ────────────────────────────────────────────────────────────
+  bottomBarWrapper: {
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E0EAFF",
+  },
   bottomBarCentered: {
     flex: 1,
     justifyContent: "center",
@@ -691,21 +714,18 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#E0EAFF",
     minHeight: 52,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
   },
   textInput: {
     flex: 1,
     color: "#1A1D26",
     fontSize: 15,
     maxHeight: 100,
-    textAlignVertical: "top",
+    textAlignVertical: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   vocabToggleButton: {
     width: 32,
@@ -713,10 +733,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 8,
+    marginLeft: 4,
+    marginRight: 10,
+    marginBottom: 10,
   },
   vocabToggleActive: {
-    backgroundColor: "#4ECDC4",
+    backgroundColor: "#0066FF",
   },
   submitButton: {
     width: 52,
@@ -726,9 +748,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   submitButtonActive: {
-    backgroundColor: "#2563EB",
+    backgroundColor: "#0066FF",
   },
   submitButtonDisabled: {
-    backgroundColor: "#C0C0D0",
+    backgroundColor: "#D0DCFF",
   },
 });
