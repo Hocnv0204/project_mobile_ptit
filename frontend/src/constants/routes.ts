@@ -26,6 +26,7 @@ export const Routes = {
   FILL_BLANK_SESSION: 'FillBlankSession',
 
   // Writing Stack
+  WRITING_LIST: 'WritingList',
   SELECT_LESSON: 'SelectLesson',
   LESSON_PRACTICE: 'LessonPractice',
 

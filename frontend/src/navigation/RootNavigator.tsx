@@ -14,7 +14,6 @@ import FlashcardScreen from '../screens/vocab/FlashcardScreen';
 import QuizModeSelectScreen from '../screens/vocab/QuizModeSelectScreen';
 import QuizSessionScreen from '../screens/vocab/QuizSessionScreen';
 import FillBlankSessionScreen from '../screens/vocab/FillBlankSessionScreen';
-import SelectLessonScreen from '../screens/writing/SelectLessonScreen';
 import LessonPracticeScreen from '../screens/writing/LessonPracticeScreen';
 import { Routes } from '../constants/routes';
 // import { useAppDispatch, useAppSelector } from '../store';
@@ -70,7 +69,6 @@ export default function RootNavigator() {
               <Stack.Screen name={Routes.QUIZ_MODE_SELECT} component={QuizModeSelectScreen} />
               <Stack.Screen name={Routes.QUIZ_SESSION} component={QuizSessionScreen} />
               <Stack.Screen name={Routes.FILL_BLANK_SESSION} component={FillBlankSessionScreen} />
-              <Stack.Screen name={Routes.SELECT_LESSON} component={SelectLessonScreen} />
               <Stack.Screen name={Routes.LESSON_PRACTICE} component={LessonPracticeScreen} />
             </>
           ) : (

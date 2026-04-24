@@ -209,7 +209,7 @@ export default function SelectLessonScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ccccccff", // Đổi màu xám đậm cũ thành màu bạn muốn
+    backgroundColor: "#ffffffff", // Đổi màu xám đậm cũ thành màu bạn muốn
   },
   headerBar: {
     flexDirection: "row",

@@ -8,6 +8,8 @@ import com.ptit.mobile.backend.dto.response.writing.LessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.UserLessonProgressResponse;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface LessonService {
     GradingResponse gradeAnswer(GradingRequest request, Long userId);
 
@@ -21,4 +23,6 @@ public interface LessonService {
     UserLessonProgressResponse getLessonProgress(Long userId, Integer lessonId);
 
     void updateLessonProgress(UpdateProgressRequest request, Long userId);
+
+    List<UserLessonProgressResponse> getMyLessonsProgress(Long userId);
 }
