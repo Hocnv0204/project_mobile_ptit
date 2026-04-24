@@ -27,6 +27,7 @@ export const Routes = {
 
   // Writing Stack
   WRITING_LIST: 'WritingList',
+  SELECT_TOPIC: 'SelectTopic',
   SELECT_LESSON: 'SelectLesson',
   LESSON_PRACTICE: 'LessonPractice',
 

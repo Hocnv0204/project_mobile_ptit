@@ -65,4 +65,11 @@ export const writingApi = {
     );
     return res.data.data;
   },
+
+  getMyLessons: async () => {
+    const res = await http.get<ApiEnvelope<UserLessonProgressResponse[]>>(
+      "/api/lesson-writings/my-lessons",
+    );
+    return res.data.data;
+  },
 };

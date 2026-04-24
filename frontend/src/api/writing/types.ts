@@ -33,6 +33,8 @@ export type UserLessonProgressResponse = {
   id: number;
   userId: number;
   lessonWritingId: number;
+  lessonName: string;
+  lessonDescription: string;
   currentOrderIndex: number;
   totalSentences: number;
   status: string;

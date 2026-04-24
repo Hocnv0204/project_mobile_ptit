@@ -4,182 +4,156 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Colors } from "../../constants/colors";
 import { Routes } from "../../constants/routes";
-import { topicApi } from "../../api/topic/topicApi";
-import { TopicResponse } from "../../api/topic/types";
+import { writingApi } from "../../api/writing/writingApi";
+import { UserLessonProgressResponse } from "../../api/writing/types";
 
 export default function WritingScreen() {
-  const [topics, setTopics] = useState<TopicResponse[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(0);
+  const [lessons, setLessons] = useState<UserLessonProgressResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const navigation = useNavigation<any>();
 
-  // Debounce search term
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const fetchTopics = async (
-    pageNumber: number,
-    search: string,
-    isRefresh = false,
-  ) => {
+  const fetchMyLessons = async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
-      const data = await topicApi.getTopics({
-        page: pageNumber,
-        size: 10,
-        searchTerm: search || undefined,
-        sortBy: "createdAt",
-        sortDir: "DESC",
-      });
-
-      if (isRefresh || pageNumber === 0) {
-        setTopics(data.content);
-      } else {
-        setTopics((prev) => [...prev, ...data.content]);
-      }
-
-      setHasMore(!data.last);
+      const data = await writingApi.getMyLessons();
+      setLessons(data);
     } catch (error) {
-      console.error("Failed to fetch topics:", error);
+      console.error("Failed to fetch my lessons:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    setPage(0);
-    fetchTopics(0, debouncedSearch);
-  }, [debouncedSearch]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyLessons();
+    }, [])
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    setPage(0);
-    fetchTopics(0, debouncedSearch, true);
-  }, [debouncedSearch]);
+    fetchMyLessons(true);
+  }, []);
 
-  const handleLoadMore = () => {
-    if (!loading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchTopics(nextPage, debouncedSearch);
-    }
+  const renderItem = ({ item }: { item: UserLessonProgressResponse }) => {
+    const progress = item.totalSentences > 0 
+      ? (item.currentOrderIndex -1) / item.totalSentences 
+      : 0;
+    
+    return (
+      <TouchableOpacity
+        style={styles.lessonCard}
+        activeOpacity={0.8}
+        onPress={() => {
+          navigation.navigate(Routes.LESSON_PRACTICE, { 
+            lessonId: item.lessonWritingId,
+            lessonName: item.lessonName 
+          });
+        }}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="book" size={24} color="#0066FF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.cardContent}>
+              <Text style={styles.lessonName} numberOfLines={1}>
+                {item.lessonName}
+              </Text>
+              <Text style={styles.lessonDesc} numberOfLines={2}>
+                {item.lessonDescription || "No description available."}
+              </Text>
+            </View>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${Math.min(progress * 100, 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {(item.currentOrderIndex -1)}/{item.totalSentences}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
+        </View>
+      </TouchableOpacity>
+    );
   };
-
-  const navigation = useNavigation<any>();
-
-  const renderItem = ({ item }: { item: TopicResponse }) => (
-    <TouchableOpacity
-      style={styles.topicCard}
-      activeOpacity={0.8}
-      onPress={() => {
-        navigation.navigate(Routes.SELECT_LESSON, { topicId: item.id });
-      }}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="document-text" size={24} color="#6C63FF" />
-        </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.topicName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.topicDesc} numberOfLines={2}>
-            {item.description || "No description available for this topic."}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Writing Topics</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>My Writing</Text>
             <Text style={styles.headerSubtitle}>
-              Choose a topic to practice your writing skills
+              Continue your writing practice
             </Text>
           </View>
-
-          <View style={styles.searchContainer}>
-            <Ionicons
-              name="search"
-              size={20}
-              color="#A0A0BC"
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search topics..."
-              placeholderTextColor="#5A5A7A"
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-            />
-            {searchTerm.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchTerm("")}
-                style={styles.clearButton}
-              >
-                <Ionicons name="close-circle" size={20} color="#A0A0BC" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <FlatList
-            data={topics}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor="#6C63FF"
-                colors={["#6C63FF"]}
-              />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListEmptyComponent={
-              !loading ? (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="book-outline" size={64} color="#252540" />
-                  <Text style={styles.emptyTitle}>No topics found</Text>
-                  <Text style={styles.emptySubtitle}>
-                    Try adjusting your search
-                  </Text>
-                </View>
-              ) : null
-            }
-            ListFooterComponent={
-              loading && !refreshing ? (
-                <View style={styles.footerLoader}>
-                  <ActivityIndicator size="small" color="#6C63FF" />
-                </View>
-              ) : null
-            }
-          />
+          <TouchableOpacity 
+            style={styles.topicButton}
+            onPress={() => navigation.navigate(Routes.SELECT_TOPIC)}
+          >
+            <Ionicons name="grid-outline" size={20} color="#FFF" />
+            <Text style={styles.topicButtonText}>Topics</Text>
+          </TouchableOpacity>
         </View>
+
+        <FlatList
+          data={lessons}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#6C63FF"
+              colors={["#6C63FF"]}
+            />
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="document-text-outline" size={64} color="#E0E0E0" />
+                <Text style={styles.emptyTitle}>No lessons yet</Text>
+                <Text style={styles.emptySubtitle}>
+                  Choose a topic to start practicing
+                </Text>
+                <TouchableOpacity 
+                  style={styles.startBtn}
+                  onPress={() => navigation.navigate(Routes.SELECT_TOPIC)}
+                >
+                  <Text style={styles.startBtnText}>Explore Topics</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            loading && !refreshing ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color="#6C63FF" />
+              </View>
+            ) : null
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -187,16 +161,18 @@ export default function WritingScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#ffffffff", // Đổi màu xám đậm cũ thành màu bạn muốn
+    backgroundColor: "#F8F9FA",
   },
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA", // Đảm bảo lớp bên trong cũng cùng màu
     paddingHorizontal: 20,
   },
   header: {
     marginTop: 10,
     marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 28,
@@ -208,45 +184,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A0A0BC",
   },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+  topicButton: {
+    backgroundColor: '#0066FF',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    height: 56,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: "#6C63FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
   },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: "#1A1D26",
-    fontSize: 16,
-    height: "100%",
-  },
-  clearButton: {
-    padding: 4,
+  topicButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    marginLeft: 8,
   },
   listContainer: {
     paddingBottom: 20,
   },
-  topicCard: {
+  lessonCard: {
     backgroundColor: '#FFF',
     padding: 16,
-    borderRadius: 16, // Bo góc tròn cho card
+    borderRadius: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 2, // Dành riêng cho Android
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -256,29 +224,52 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(108, 99, 255, 0.1)",
+    backgroundColor: "rgba(0, 102, 255, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
   },
   cardContent: {
-    flex: 1,
+    marginBottom: 12,
   },
-  topicName: {
+  lessonName: {
     fontSize: 18,
     fontWeight: "600",
     color: "#1A1D26",
     marginBottom: 4,
   },
-  topicDesc: {
+  lessonDesc: {
     fontSize: 14,
     color: "#A0A0BC",
     lineHeight: 20,
   },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#F0F0F7',
+    borderRadius: 3,
+    marginRight: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#0066FF',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#5A5A7A',
+    fontWeight: '600',
+    minWidth: 35,
+  },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 60,
+    paddingTop: 80,
   },
   emptyTitle: {
     fontSize: 20,
@@ -290,6 +281,19 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 16,
     color: "#A0A0BC",
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  startBtn: {
+    backgroundColor: '#0066FF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  startBtnText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   footerLoader: {
     paddingVertical: 20,

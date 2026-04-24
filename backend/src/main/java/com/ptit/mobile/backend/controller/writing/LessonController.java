@@ -44,6 +44,20 @@ public class LessonController {
                 .build();
     }
 
+    @GetMapping("/my-lessons")
+    public BaseResponse getMyLessons(
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        List<UserLessonPr ogressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
+
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(myLessons)
+                .build();
+    }
+
     @GetMapping("/{lessonId}")
     public BaseResponse getLessonDetails(
             @PathVariable Integer lessonId
@@ -95,20 +109,6 @@ public class LessonController {
         return BaseResponse.builder()
                 .code(200L)
                 .message("Lesson progress updated successfully")
-                .build();
-    }
-
-    @GetMapping("/my-lessons")
-    public BaseResponse getMyLessons(
-            Authentication authentication
-    ) {
-        Long userId = (Long) authentication.getDetails();
-        List<UserLessonProgressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
-
-        return BaseResponse.builder()
-                .code(200L)
-                .message("Success")
-                .data(myLessons)
                 .build();
     }
 }
