@@ -14,9 +14,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authApi } from '../../api/authApi';
 import { vocabApi } from '../../api/vocabApi';
+import { streakApi, StreakResponse } from '../../api/streakApi';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';
+
+import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { http } from '../../api/http';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
 const { width } = Dimensions.get('window');
@@ -36,6 +40,9 @@ export default function HomeScreen({ navigation }: any) {
   const [currentUser, setCurrentUser] = useState(MOCK_USER);
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
+  const isFocused = useIsFocused();
+  const { expoPushToken } = usePushNotifications();
+  const [streakData, setStreakData] = useState<StreakResponse | null>(null);
   const [vocabStatsLoading, setVocabStatsLoading] = useState(false);
   const [vocabStats, setVocabStats] = useState({
     dueToday: 0,
@@ -60,6 +67,46 @@ export default function HomeScreen({ navigation }: any) {
     }
   }, []);
 
+  useEffect(() => {
+    const saveToken = async () => {
+      if (expoPushToken?.data && user?.id) {
+        try {
+          await http.post('/api/v1/tokens/save', {
+            token: expoPushToken.data,
+            userId: user.id.toString(),
+            deviceInfo: Platform.OS,
+          });
+          console.log('Push token saved to backend.');
+        } catch (error) {
+          console.error('Failed to save push token:', error);
+        }
+      }
+    };
+    saveToken();
+  }, [expoPushToken, user?.id]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.id || !isFocused) return;
+      try {
+        setVocabStatsLoading(true);
+        const statsRes = await vocabApi.homeStats();
+        const s = statsRes.data;
+        setVocabStats({
+          dueToday: s?.dueToday ?? 0,
+          overdue: s?.overdue ?? 0,
+          upcoming7d: s?.upcoming7d ?? 0,
+          newWords: s?.newWords ?? 0,
+          total: s?.total ?? 0,
+        });
+      } catch (e: any) {
+        toast.show(e?.message || 'Không thể tải thống kê học tập', { type: 'error', durationMs: 4500 });
+      } finally {
+        setVocabStatsLoading(false);
+      }
+    };
+    run();
+  }, [user?.id, isFocused]);
   useRefreshOnFocus(async ({ cancelled }) => {
     if (!user?.id) return;
     try {
@@ -80,6 +127,19 @@ export default function HomeScreen({ navigation }: any) {
       setVocabStatsLoading(false);
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    const fetchStreak = async () => {
+      if (!user?.id || !isFocused) return;
+      try {
+        const res = await streakApi.getStreak();
+        if (res.data) setStreakData(res.data);
+      } catch (e: any) {
+        console.log('Fetch streak error:', e);
+      }
+    };
+    fetchStreak();
+  }, [user?.id, isFocused]);
 
   const onPressAction = (route: string) => {
     navigation.navigate(route);
@@ -116,6 +176,26 @@ export default function HomeScreen({ navigation }: any) {
           </View>
           <TouchableOpacity style={styles.headerRight}>
             <MaterialCommunityIcons name="menu-down" size={28} color="#1A1D26" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Streak Section */}
+        <View style={styles.streakContainer}>
+          <View style={styles.streakLeft}>
+            <View style={styles.fireIconContainer}>
+              <MaterialCommunityIcons name="fire" size={28} color="#FF6B00" />
+            </View>
+            <View>
+              <Text style={styles.streakNumber}>{streakData?.currentStreak || 0} ngày</Text>
+              <Text style={styles.streakLabel}>Chuỗi học tập</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.streakDetailBtn}
+            onPress={() => onPressAction(Routes.STREAK_DETAILS)}
+          >
+            <Text style={styles.streakDetailBtnText}>Chi tiết</Text>
+            <MaterialCommunityIcons name="chevron-right" size={16} color="#0066FF" />
           </TouchableOpacity>
         </View>
 
@@ -277,6 +357,62 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#0066FF',
     marginBottom: 16,
+  },
+
+  // Streak Section
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+  },
+  streakLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fireIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFBEB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  streakNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  streakLabel: {
+    fontSize: 13,
+    color: '#70778C',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  streakDetailBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBF3FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  streakDetailBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0066FF',
+    marginRight: 4,
   },
 
   // 2. Grid Container

@@ -3,11 +3,13 @@ package com.ptit.mobile.backend.controller;
 import com.ptit.mobile.backend.dto.request.flashcard.SubmitReviewRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.service.FlashcardService;
+import com.ptit.mobile.backend.service.StreakService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class FlashcardController {
 
     private final FlashcardService flashcardService;
+    private final StreakService streakService;
 
     @Operation(
         summary = "Lấy phiên flashcard của một bài học",
@@ -27,8 +30,11 @@ public class FlashcardController {
     @GetMapping("/{lessonVocabId}/session")
     public BaseResponse getSession(
             @PathVariable Long lessonVocabId,
-            @RequestParam(value = "mode", required = false, defaultValue = "DUE") String mode
+            @RequestParam(value = "mode", required = false, defaultValue = "DUE") String mode,
+            Authentication authentication
     ) {
+        Long userId = (Long) authentication.getDetails();
+        streakService.updateStreak(userId);
         return flashcardService.getSession(lessonVocabId, mode);
     }
 

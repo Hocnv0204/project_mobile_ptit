@@ -3,11 +3,13 @@ package com.ptit.mobile.backend.controller;
 import com.ptit.mobile.backend.dto.request.quiz.CheckAnswerRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.service.QuizService;
+import com.ptit.mobile.backend.service.StreakService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class QuizController {
 
     private final QuizService quizService;
+    private final StreakService streakService;
 
     /**
      * Sinh toàn bộ session câu hỏi trắc nghiệm cho 1 bài học.
@@ -32,7 +35,10 @@ public class QuizController {
     @GetMapping("/lesson/{lessonVocabId}/session")
     public BaseResponse generateSession(
             @PathVariable Long lessonVocabId,
-            @RequestParam(value = "mode", defaultValue = "MIXED") String mode) {
+            @RequestParam(value = "mode", defaultValue = "MIXED") String mode,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getDetails();
+        streakService.updateStreak(userId);
         return quizService.generateSession(lessonVocabId, mode);
     }
 
@@ -58,7 +64,9 @@ public class QuizController {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @GetMapping("/lesson/{lessonVocabId}/fill-blank")
-    public BaseResponse generateFillBlankSession(@PathVariable Long lessonVocabId) {
+    public BaseResponse generateFillBlankSession(@PathVariable Long lessonVocabId, Authentication authentication) {
+        Long userId = (Long) authentication.getDetails();
+        streakService.updateStreak(userId);
         return quizService.generateFillBlankSession(lessonVocabId);
     }
 }

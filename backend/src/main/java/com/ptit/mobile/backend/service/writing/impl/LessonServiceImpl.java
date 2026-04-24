@@ -19,6 +19,7 @@ import com.ptit.mobile.backend.repository.writing.LessonSentenceRepository;
 import com.ptit.mobile.backend.repository.writing.SuggestVocabularyRepository;
 import com.ptit.mobile.backend.repository.writing.UserLessonProgressRepository;
 import com.ptit.mobile.backend.repository.writing.UserTranslationHistoryRepository;
+import com.ptit.mobile.backend.service.StreakService;
 import com.ptit.mobile.backend.service.writing.LessonService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
@@ -49,9 +50,13 @@ public class LessonServiceImpl implements LessonService {
     private final UserLessonProgressRepository userLessonProgressRepository;
     private final UserTranslationHistoryRepository userTranslationHistoryRepository;
     private final ObjectMapper objectMapper;
+    private final StreakService streakService;
 
     @Override
     public GradingResponse gradeAnswer(GradingRequest request, Long userId) {
+        // update streak
+        streakService.updateStreak(userId);
+
         String providerType = request.getAiProvider() != null ? request.getAiProvider() : "groq";
         String suggestVocab = String.join(", ", request.getSuggestVocabularies());
         GradingResponse response = lessonGradingService.gradeAnswer(

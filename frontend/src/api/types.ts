@@ -62,3 +62,10 @@ export type PageResponse<T> = {
   totalPages: number;
   last: boolean;
 };
+
+export interface StreakResponse {
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: string | null;
+  alreadyCheckedInToday: boolean;
+}

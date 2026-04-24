@@ -38,11 +38,18 @@
       "package": "com.ptit.linguaboost",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "extra": {
       "apiUrlWeb": "http://172.20.10.4:8080/api",
-      "apiUrlAndroid": "http://172.20.10.4:8080/api"
+      "apiUrlAndroid": "http://172.20.10.4:8080/api",
+      "eas": {
+        "projectId": "fd87ffc3-d9ac-4601-bcea-5e24efc67f78"
+      }
     },
     "plugins": [
       "expo-font",
@@ -58,6 +65,7 @@
       ],
       "expo-audio",
       "expo-video"
-    ]
+    ],
+    "owner": "darkgodwind"
   }
 }
