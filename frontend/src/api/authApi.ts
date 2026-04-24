@@ -6,6 +6,8 @@ export type RegisterBody = {
   password: string;
   username?: string;
   fullName?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string; // YYYY-MM-DD
 };
 
 export type VerifyOtpBody = {

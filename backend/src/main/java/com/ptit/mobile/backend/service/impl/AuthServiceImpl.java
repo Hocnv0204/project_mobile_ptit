@@ -83,6 +83,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .dateBirth(request.getDateOfBirth())
                 .isActive(false)        // ← chưa kích hoạt cho đến khi xác thực OTP
                 .isEmailVerified(false)
                 .deleteFlag(false)
