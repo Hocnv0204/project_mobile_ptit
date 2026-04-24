@@ -6,7 +6,7 @@ import { Routes } from '../constants/routes';
 // Import Screens
 import HomeScreen from '../screens/home/HomeScreen';
 import VocabularyScreen from '../screens/vocab/VocabularyScreen';
-import WritingScreen from '../screens/writing/WritingScreen';
+import WritingNavigator from './WritingNavigator';
 import DictationScreen from '../screens/dictation/DictationScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PodcastNavigator from './PodcastNavigator';
@@ -81,7 +81,7 @@ export default function MainTabNavigator() {
       />
       <Tab.Screen 
         name={Routes.WRITING} 
-        component={WritingScreen} 
+        component={WritingNavigator} 
         options={{ tabBarLabel: t('tabs.writing') }} 
       />
       <Tab.Screen 

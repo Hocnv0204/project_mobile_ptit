@@ -33,6 +33,8 @@ export type UserLessonProgressResponse = {
   id: number;
   userId: number;
   lessonWritingId: number;
+  lessonName: string;
+  lessonDescription: string;
   currentOrderIndex: number;
   totalSentences: number;
   status: string;
@@ -44,6 +46,7 @@ export type GradingRequest = {
   question: string;
   answer: string;
   suggestVocabularies: string[];
+  sentenceId: number;
   aiProvider?: string;
 };
 
@@ -52,11 +55,11 @@ export type GradingResponse = {
   accuracy_label: string;
   suggested_translation: string;
   diff: Array<{
-    type: 'keep' | 'delete' | 'insert';
+    type: "keep" | "delete" | "insert";
     text: string;
   }>;
   feedback_points: Array<{
-    type: 'error' | 'warning' | 'correct';
+    type: "error" | "warning" | "correct";
     user_text: string;
     correct_text: string;
     explanation: string;

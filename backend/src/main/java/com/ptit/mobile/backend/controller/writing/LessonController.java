@@ -1,6 +1,7 @@
 package com.ptit.mobile.backend.controller.writing;
 
 import com.ptit.mobile.backend.dto.request.writing.GradingRequest;
+import com.ptit.mobile.backend.dto.request.writing.UpdateProgressRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonResponse;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/lesson-writings")
@@ -41,6 +44,20 @@ public class LessonController {
                 .build();
     }
 
+    @GetMapping("/my-lessons")
+    public BaseResponse getMyLessons(
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        List<UserLessonProgressResponse> myLessons = lessonService.getMyLessonsProgress(userId);
+
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(myLessons)
+                .build();
+    }
+
     @GetMapping("/{lessonId}")
     public BaseResponse getLessonDetails(
             @PathVariable Integer lessonId
@@ -54,8 +71,12 @@ public class LessonController {
     }
 
     @PostMapping("/grade")
-    public BaseResponse gradeAnswer(@Valid @RequestBody GradingRequest request) {
-        GradingResponse gradingResponse = lessonService.gradeAnswer(request);
+    public BaseResponse gradeAnswer(
+            @Valid @RequestBody GradingRequest request,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        GradingResponse gradingResponse = lessonService.gradeAnswer(request, userId);
         return BaseResponse.builder()
                 .code(200L)
                 .message("Answer graded successfully")
@@ -75,6 +96,19 @@ public class LessonController {
                 .code(200L)
                 .message("Success")
                 .data(progress)
+                .build();
+    }
+
+    @PutMapping("/progress")
+    public BaseResponse updateLessonProgress(
+            @Valid @RequestBody UpdateProgressRequest request,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        lessonService.updateLessonProgress(request, userId);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Lesson progress updated successfully")
                 .build();
     }
 }

@@ -26,12 +26,17 @@ export const Routes = {
   FILL_BLANK_SESSION: 'FillBlankSession',
 
   // Writing Stack
+  WRITING_LIST: 'WritingList',
+  SELECT_TOPIC: 'SelectTopic',
   SELECT_LESSON: 'SelectLesson',
   LESSON_PRACTICE: 'LessonPractice',
 
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',
   WRITING_GRADE: 'WritingGrade',
+
+  // Dictation Stack
+  DICTATION_PLAYER: 'DictationPlayer',
 
   // Podcast Stack
   PODCAST_LIST: 'PodcastList',

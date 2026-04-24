@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import VocabListPage from "./pages/vocab/VocabListPage";
 import LevelListPage from "./pages/level/LevelListPage";
 import LessonVocabListPage from "./pages/lesson-vocab/LessonVocabListPage";
+import PodcastListPage from './pages/podcast/PodcastListPage';
+import DictationPage from './pages/dictation/DictationPage';
 import { useAuthStore } from "./store/authStore";
 import "./App.css";
 
@@ -36,6 +38,9 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="vocab" element={<VocabListPage />} />
+          <Route path="podcasts" element={<PodcastListPage />} />
+          <Route path="dictation" element={<DictationPage />} />
+          <Route path="users" element={<div>User Management (Coming Soon)</div>} />
           <Route path="level" element={<LevelListPage />} />
           <Route path="lesson-vocab" element={<LessonVocabListPage />} />
           <Route
