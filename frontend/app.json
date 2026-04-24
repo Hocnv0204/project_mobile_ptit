@@ -55,7 +55,9 @@
           "iosClientId": "35790031845-86alfa4bq4t4pmp9ajkqbohnmi7j88lf.apps.googleusercontent.com",
           "iosUrlScheme": "com.googleusercontent.apps.35790031845-86alfa4bq4t4pmp9ajkqbohnmi7j88lf"
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-video"
     ]
   }
 }

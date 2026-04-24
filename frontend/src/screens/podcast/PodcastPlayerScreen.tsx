@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { podcastApi, PodcastDetailResponse, DialogueItem, VocabItem } from '../../services/podcastApi';
 
 const COLORS = {
@@ -22,10 +22,8 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   
   // Audio state
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [position, setPosition] = useState(0);
+  const player = useAudioPlayer();
+  const status = useAudioPlayerStatus(player);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [isLooping, setIsLooping] = useState(false);
   
@@ -56,95 +54,57 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
   };
 
   const initAudio = async (url: string) => {
-    // Unload previous sound if exists
-    if (sound) {
-      await sound.unloadAsync();
-    }
-    
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: true,
       });
 
-      const { sound: newSound, status } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: false, isLooping: false },
-        onPlaybackStatusUpdate
-      );
-      
-      setSound(newSound);
-      if (status.isLoaded && status.durationMillis) {
-        setDuration(status.durationMillis);
-      }
+      player.replace(url);
     } catch (error) {
       console.error('Error initializing audio', error);
     }
   };
 
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.isLoaded) {
-      setPosition(status.positionMillis);
-      setDuration(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying);
-      if (status.didJustFinish && !status.isLooping) {
-        setIsPlaying(false);
-        setPosition(status.durationMillis || 0);
-      }
-    }
-  };
-
-  useEffect(() => {
-    return sound
-      ? () => {
-          sound.unloadAsync();
-        }
-      : undefined;
-  }, [sound]);
-
-  const togglePlayPause = async () => {
-    if (!sound) return;
-    if (isPlaying) {
-      await sound.pauseAsync();
+  const togglePlayPause = () => {
+    if (status.playing) {
+      player.pause();
     } else {
       // If finished, restart
-      if (position >= duration && duration > 0) {
-        await sound.setPositionAsync(0);
+      if (status.currentTime >= status.duration && status.duration > 0) {
+        player.seekTo(0);
       }
-      await sound.playAsync();
+      player.play();
     }
   };
 
-  const seek = async (amountMillis: number) => {
-    if (!sound) return;
-    let newPosition = position + amountMillis;
+  const seek = (amountMillis: number) => {
+    let newPosition = status.currentTime + (amountMillis / 1000);
     if (newPosition < 0) newPosition = 0;
-    if (newPosition > duration) newPosition = duration;
-    await sound.setPositionAsync(newPosition);
+    if (newPosition > status.duration) newPosition = status.duration;
+    player.seekTo(newPosition);
   };
 
-  const toggleLoop = async () => {
-    if (!sound) return;
+  const toggleLoop = () => {
     const newLooping = !isLooping;
-    await sound.setIsLoopingAsync(newLooping);
+    player.loop = newLooping;
     setIsLooping(newLooping);
   };
 
-  const changeSpeed = async () => {
-    if (!sound) return;
+  const changeSpeed = () => {
     const speeds = [1.0, 1.25, 1.5, 0.75];
     const currentIndex = speeds.indexOf(playbackSpeed);
     const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
-    await sound.setRateAsync(nextSpeed, true);
+    player.setPlaybackRate(nextSpeed);
     setPlaybackSpeed(nextSpeed);
   };
 
-  const formatTime = (millis: number) => {
-    if (isNaN(millis) || millis < 0) return '0:00';
-    const totalSeconds = Math.floor(millis / 1000);
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds < 0) return '0:00';
+    const totalSeconds = Math.floor(seconds);
     const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    const sec = totalSeconds % 60;
+    return `${minutes}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
   if (loading) {
@@ -241,7 +201,7 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
             <View 
               style={[
                 styles.progressBarFill, 
-                { width: duration > 0 ? `${(position / duration) * 100}%` : '0%' }
+                { width: status.duration > 0 ? `${(status.currentTime / status.duration) * 100}%` : '0%' }
               ]} 
             />
           </View>
@@ -261,7 +221,7 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
           
           <TouchableOpacity onPress={togglePlayPause} style={styles.playButton}>
             <MaterialCommunityIcons 
-              name={isPlaying ? "pause" : "play"} 
+              name={status.playing ? "pause" : "play"} 
               size={32} 
               color="#FFF" 
             />
@@ -295,8 +255,8 @@ export default function PodcastPlayerScreen({ route, navigation }: any) {
         </View>
 
         <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(position)}</Text>
-          <Text style={styles.timeText}>{formatTime(duration)}</Text>
+          <Text style={styles.timeText}>{formatTime(status.currentTime)}</Text>
+          <Text style={styles.timeText}>{formatTime(status.duration)}</Text>
         </View>
 
       </View>

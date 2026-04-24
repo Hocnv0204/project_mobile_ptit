@@ -35,6 +35,9 @@ export const Routes = {
   AI_LESSON_HOME: 'AILessonHome',
   WRITING_GRADE: 'WritingGrade',
 
+  // Dictation Stack
+  DICTATION_PLAYER: 'DictationPlayer',
+
   // Podcast Stack
   PODCAST_LIST: 'PodcastList',
   PODCAST_PLAYER: 'PodcastPlayer',

@@ -19,7 +19,7 @@ public class UserDictationProgress {
     private UUID id;
 
     @Column(name = "user_id")
-    private UUID userId;
+    private Long userId;
 
     @Column(name = "dictation_id")
     private UUID dictationId;

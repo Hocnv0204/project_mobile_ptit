@@ -47,6 +47,11 @@ const MainLayout: React.FC = () => {
       label: 'Podcasts',
     },
     {
+      key: '/dictation',
+      icon: <SoundOutlined />,
+      label: 'Dictation',
+    },
+    {
       key: '/users',
       icon: <UserOutlined />,
       label: 'Users',
