@@ -4,6 +4,7 @@ import com.ptit.mobile.backend.dto.request.lessonvocab.CreateLessonVocabRequest;
 import com.ptit.mobile.backend.dto.request.lessonvocab.CreateLessonVocabSimpleRequest;
 import com.ptit.mobile.backend.dto.request.lessonvocab.UpdateLessonVocabRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
+import com.ptit.mobile.backend.dto.response.PageResponse;
 import com.ptit.mobile.backend.dto.response.lessonvocab.LessonVocabResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
@@ -12,6 +13,8 @@ import com.ptit.mobile.backend.repository.LessonVocabRepository;
 import com.ptit.mobile.backend.security.SecurityUtils;
 import com.ptit.mobile.backend.service.LessonVocabService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -143,6 +146,15 @@ public class LessonVocabServiceImpl implements LessonVocabService {
                 .map(this::toResponse)
                 .toList();
         return BaseResponse.success(data);
+    }
+
+    @Override
+    public BaseResponse getLessonVocabCms(Pageable pageable) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        Page<LessonVocab> page = lessonVocabRepository.findLessonVocabByUserId(userId, pageable);
+        return BaseResponse.success(
+                PageResponse.toPageResponse(page.map(this::toResponse))
+        );
     }
 
     private LessonVocabResponse toResponse(LessonVocab lesson) {

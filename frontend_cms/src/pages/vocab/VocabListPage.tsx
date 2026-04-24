@@ -132,8 +132,9 @@ const VocabListPage: React.FC = () => {
       }
       fetchLessons();
       setIsLessonModalOpen(false);
-    } catch (error) {
-      message.error("Operation failed");
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || "Operation failed";
+      message.error(errorMsg);
     }
   };
 
@@ -200,8 +201,9 @@ const VocabListPage: React.FC = () => {
         fetchVocabularies(selectedLesson!.id);
       }
       setIsModalOpen(false);
-    } catch (error) {
-      message.error("Operation failed");
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || "Operation failed";
+      message.error(errorMsg);
     }
   };
 

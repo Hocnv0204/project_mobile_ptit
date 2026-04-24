@@ -48,7 +48,7 @@ const MainLayout: React.FC = () => {
     {
       key: "/lesson-vocab",
       icon: <BookOutlined />,
-      label: "Lesson Variables",
+      label: "Lesson Vocabularies",
     },
     {
       key: "/users",

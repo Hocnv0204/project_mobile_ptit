@@ -34,7 +34,7 @@ const LessonVocabListPage: React.FC = () => {
         lessonVocabApi.getAll(),
         levelApi.getAll(),
       ]);
-      setLessons(lessonsRes.data || []);
+      setLessons(lessonsRes.data.content || []);
       setLevels(levelsRes.data || []);
     } catch (error) {
       message.error("Failed to fetch data");
@@ -89,7 +89,9 @@ const LessonVocabListPage: React.FC = () => {
       }
       setIsModalVisible(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || "Operation failed";
+      message.error(errorMsg);
       console.error(error);
     }
   };
@@ -101,8 +103,15 @@ const LessonVocabListPage: React.FC = () => {
       title: "Level",
       dataIndex: "levelId",
       key: "levelId",
-      render: (levelId: number) =>
-        levels.find((l) => l.id === levelId)?.name || levelId,
+      render: (levelId: number | null) =>
+        levelId ? (levels.find((l) => l.id === levelId)?.name || levelId) : "N/A",
+    },
+    { title: "Created By", dataIndex: "createBy", key: "createBy" },
+    {
+      title: "Created At",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date: string) => new Date(date).toLocaleString(),
     },
     {
       title: "Action",
