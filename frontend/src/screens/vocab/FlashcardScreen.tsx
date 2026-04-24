@@ -1,17 +1,41 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Vocabulary } from '../../api/types';
+import { flashcardApi, FlashcardCard } from '../../api/flashcardApi';
 
 export default function FlashcardScreen({ route, navigation }: any) {
-  const { vocabularies } = route.params as { vocabularies: Vocabulary[] };
+  const { lessonVocabId, lessonName } = route.params as { lessonVocabId: number; lessonName?: string };
   const insets = useSafeAreaInsets();
 
+  const [loading, setLoading] = useState(true);
+  const [cards, setCards] = useState<FlashcardCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [sessionMode, setSessionMode] = useState<'DUE' | 'ALL'>('DUE');
 
   const flipAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    fetchSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonVocabId]);
+
+  const fetchSession = async (mode: 'DUE' | 'ALL' = 'DUE') => {
+    try {
+      setLoading(true);
+      const res = await flashcardApi.getSession(lessonVocabId, mode);
+      setCards(res.data?.dueCards || []);
+      setCurrentIndex(0);
+      setSessionMode(mode);
+      resetFlip();
+    } catch (e: any) {
+      Alert.alert('Lỗi', e?.message || 'Không thể tải phiên flashcard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFlip = () => {
     Animated.spring(flipAnim, {
@@ -29,7 +53,7 @@ export default function FlashcardScreen({ route, navigation }: any) {
   };
 
   const handleNext = () => {
-    if (currentIndex < vocabularies.length - 1) {
+    if (currentIndex < cards.length - 1) {
       resetFlip();
       setCurrentIndex((prev) => prev + 1);
     }
@@ -42,8 +66,8 @@ export default function FlashcardScreen({ route, navigation }: any) {
     }
   };
 
-  const currentVocab = vocabularies[currentIndex];
-  const progress = (currentIndex + 1) / vocabularies.length;
+  const currentCard = cards[currentIndex];
+  const progress = cards.length > 0 ? (currentIndex + 1) / cards.length : 0;
 
   const frontInterpolate = flipAnim.interpolate({
     inputRange: [0, 180],
@@ -58,7 +82,86 @@ export default function FlashcardScreen({ route, navigation }: any) {
   const frontAnimatedStyle = { transform: [{ rotateY: frontInterpolate }] };
   const backAnimatedStyle = { transform: [{ rotateY: backInterpolate }] };
 
-  if (!currentVocab) return null;
+  const submitQuality = async (quality: number) => {
+    if (!currentCard) return;
+    try {
+      setSubmitting(true);
+      await flashcardApi.submitReview({ vocabularyId: currentCard.vocabularyId, quality });
+      // Sau khi chấm: chuyển sang thẻ tiếp theo ngay, tránh bị "reset session" liên tục
+      if (sessionMode === 'DUE') {
+        // Thẻ vừa ôn sẽ không còn "due" nữa, nên bỏ khỏi list
+        setCards((prev) => prev.filter((_, idx) => idx !== currentIndex));
+        setCurrentIndex((prevIdx) => {
+          const nextLen = cards.length - 1;
+          if (nextLen <= 0) return 0;
+          return Math.min(prevIdx, nextLen - 1);
+        });
+        resetFlip();
+      } else {
+        // ALL: giữ list và chuyển thẻ (vẫn cập nhật SM-2)
+        handleNext();
+      }
+    } catch (e: any) {
+      Alert.alert('Lỗi', e?.message || 'Không thể lưu kết quả ôn thẻ');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#0066FF" />
+      </View>
+    );
+  }
+
+  if (!currentCard) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
+            <MaterialCommunityIcons name="close" size={24} color="#1A1D26" />
+          </Pressable>
+          <Text style={styles.emptyTitle}>{lessonName || 'Flashcards'}</Text>
+          <View style={{ width: 32 }} />
+        </View>
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>Hôm nay bạn không có thẻ nào cần ôn.</Text>
+          <View style={styles.emptyActions}>
+            <Pressable
+              style={styles.reloadBtn}
+              onPress={async () => {
+                // "Theo lịch" = lấy thẻ due
+                await fetchSession('DUE');
+              }}
+            >
+              <Text style={styles.reloadBtnText}>Theo lịch</Text>
+            </Pressable>
+            <Pressable
+              style={styles.reviewAllBtn}
+              onPress={async () => {
+                // "Học lại" = session mới với ALL thẻ trong lesson
+                await fetchSession('ALL');
+              }}
+            >
+              <Text style={styles.reviewAllBtnText}>Học lại</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -73,7 +176,7 @@ export default function FlashcardScreen({ route, navigation }: any) {
           </View>
         </View>
         <Text style={styles.progressText}>
-          {currentIndex + 1}/{vocabularies.length}
+          {currentIndex + 1}/{cards.length}
         </Text>
       </View>
 
@@ -83,8 +186,8 @@ export default function FlashcardScreen({ route, navigation }: any) {
           {/* Front Card */}
           <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
             <Text style={styles.cardLabel}>TỪ VỰNG</Text>
-            <Text style={styles.term}>{currentVocab.term.toUpperCase()}</Text>
-            <Text style={styles.pronunciation}>{currentVocab.pronunciation || '---'}</Text>
+            <Text style={styles.term}>{currentCard.term.toUpperCase()}</Text>
+            <Text style={styles.pronunciation}>{currentCard.pronunciation || '---'}</Text>
             
             <View style={styles.hintContainer}>
               <MaterialCommunityIcons name="gesture-tap" size={20} color="#A0A7BA" />
@@ -95,12 +198,28 @@ export default function FlashcardScreen({ route, navigation }: any) {
           {/* Back Card */}
           <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
             <Text style={styles.cardLabel}>NGHĨA</Text>
-            <Text style={styles.meaning}>{currentVocab.vi}</Text>
-            <Text style={styles.type}>Loại từ: {currentVocab.type || '---'}</Text>
-            {currentVocab.example ? (
-              <Text style={styles.example}>Ví dụ: {currentVocab.example}</Text>
+            <Text style={styles.meaning}>{currentCard.vi}</Text>
+            <Text style={styles.type}>Loại từ: {currentCard.type || '---'}</Text>
+            {currentCard.example ? (
+              <Text style={styles.example}>Ví dụ: {currentCard.example}</Text>
             ) : null}
           </Animated.View>
+        </Pressable>
+      </View>
+
+      {/* Quality Buttons (SM-2) */}
+      <View style={styles.qualityRow}>
+        <Pressable style={[styles.qBtn, styles.qAgain, submitting && styles.qDisabled]} onPress={() => submitQuality(0)} disabled={submitting}>
+          <Text style={styles.qText}>Again</Text>
+        </Pressable>
+        <Pressable style={[styles.qBtn, styles.qHard, submitting && styles.qDisabled]} onPress={() => submitQuality(3)} disabled={submitting}>
+          <Text style={styles.qText}>Hard</Text>
+        </Pressable>
+        <Pressable style={[styles.qBtn, styles.qGood, submitting && styles.qDisabled]} onPress={() => submitQuality(4)} disabled={submitting}>
+          <Text style={styles.qText}>Good</Text>
+        </Pressable>
+        <Pressable style={[styles.qBtn, styles.qEasy, submitting && styles.qDisabled]} onPress={() => submitQuality(5)} disabled={submitting}>
+          <Text style={styles.qText}>Easy</Text>
         </Pressable>
       </View>
 
@@ -120,11 +239,11 @@ export default function FlashcardScreen({ route, navigation }: any) {
         </Pressable>
 
         <Pressable 
-          style={[styles.navBtn, currentIndex === vocabularies.length - 1 && styles.navBtnDisabled]} 
+          style={[styles.navBtn, currentIndex === cards.length - 1 && styles.navBtnDisabled]} 
           onPress={handleNext}
-          disabled={currentIndex === vocabularies.length - 1}
+          disabled={currentIndex === cards.length - 1}
         >
-          <MaterialCommunityIcons name="arrow-right" size={28} color={currentIndex === vocabularies.length - 1 ? '#E2E8F0' : '#0066FF'} />
+          <MaterialCommunityIcons name="arrow-right" size={28} color={currentIndex === cards.length - 1 ? '#E2E8F0' : '#0066FF'} />
         </Pressable>
       </View>
     </View>
@@ -133,6 +252,7 @@ export default function FlashcardScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,6 +283,13 @@ const styles = StyleSheet.create({
     width: 32,
     textAlign: 'center',
   },
+  emptyTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: '#1A1D26' },
+  emptyText: { fontSize: 16, fontWeight: '700', color: '#70778C', textAlign: 'center', marginBottom: 16 },
+  emptyActions: { flexDirection: 'row', gap: 10 },
+  reloadBtn: { backgroundColor: '#0066FF', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  reloadBtnText: { color: '#FFF', fontWeight: '800' },
+  reviewAllBtn: { backgroundColor: '#1A1D26', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  reviewAllBtnText: { color: '#FFF', fontWeight: '800' },
   cardContainer: {
     flex: 1,
     padding: 24,
@@ -242,6 +369,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A0A7BA',
   },
+  qualityRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  qBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  qText: { fontSize: 14, fontWeight: '800', color: '#1A1D26' },
+  qAgain: { backgroundColor: '#FEE2E2' },
+  qHard: { backgroundColor: '#FEF3C7' },
+  qGood: { backgroundColor: '#DBEAFE' },
+  qEasy: { backgroundColor: '#DCFCE7' },
+  qDisabled: { opacity: 0.6 },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -19,7 +19,7 @@ import org.springframework.security.core.Authentication;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/lessons")
+@RequestMapping("api/admin/lessons")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminLessonController {

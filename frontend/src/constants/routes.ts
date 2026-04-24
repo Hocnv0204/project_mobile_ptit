@@ -25,6 +25,10 @@ export const Routes = {
   QUIZ_SESSION: 'QuizSession',
   FILL_BLANK_SESSION: 'FillBlankSession',
 
+  // Writing Stack
+  SELECT_LESSON: 'SelectLesson',
+  LESSON_PRACTICE: 'LessonPractice',
+
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',
   WRITING_GRADE: 'WritingGrade',

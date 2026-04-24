@@ -39,10 +39,40 @@ http.interceptors.request.use(async (config) => {
 });
 
 http.interceptors.response.use(
-  (res) => {
+  async (res) => {
     const data: any = res?.data;
-    // Backend BaseResponse có thể trả HTTP 200 nhưng code != 200 cho lỗi nghiệp vụ
-    if (data && typeof data === 'object' && typeof data.code === 'number' && data.code !== 200) {
+    const original: any = res?.config;
+
+    // Backend BaseResponse có thể trả HTTP 200 nhưng code != 200 (hoặc 2xx) cho lỗi nghiệp vụ
+    if (data && typeof data === 'object' && typeof data.code === 'number' && (data.code < 200 || data.code >= 300)) {
+      // Nếu backend trả code=401 nhưng HTTP 200: ưu tiên refresh token rồi retry trước
+      if (data.code === 401 && original && !original._retry && original?.url !== '/api/auth/refresh') {
+        original._retry = true;
+        try {
+          if (!refreshingPromise) {
+            refreshingPromise = refreshAccessToken()
+              .then(async (auth) => {
+                useAuthStore.getState().setAuth({
+                  accessToken: auth.accessToken,
+                  refreshToken: auth.refreshToken,
+                  user: auth.user,
+                });
+                return auth;
+              })
+              .finally(() => {
+                refreshingPromise = null;
+              });
+          }
+          const auth = await refreshingPromise;
+          original.headers = original.headers ?? {};
+          original.headers.Authorization = `Bearer ${auth.accessToken}`;
+          return http(original);
+        } catch (e) {
+          useAuthStore.getState().logout();
+          return Promise.reject(toApiError(e, API_BASE_URL));
+        }
+      }
+
       // Trả về lỗi "đã chuẩn hoá" để UI show đúng message backend
       return Promise.reject({ code: data.code, message: extractBackendMessage(data) || 'Đã có lỗi xảy ra' });
     }

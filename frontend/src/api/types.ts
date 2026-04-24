@@ -46,3 +46,19 @@ export interface Vocabulary {
   lessonVocabId?: number;
 }
 
+export type VocabularyStatus = 'NEW' | 'DUE_TODAY' | 'OVERDUE' | 'UPCOMING';
+
+export type VocabularyWithStatus = Vocabulary & {
+  status: VocabularyStatus;
+  nextReviewDate?: string;
+  daysUntilReview?: number;
+};
+
+export type PageResponse<T> = {
+  content: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};

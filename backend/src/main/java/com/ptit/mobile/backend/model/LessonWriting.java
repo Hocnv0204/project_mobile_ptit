@@ -22,13 +22,10 @@ public class LessonWriting {
     private String name;
 
     @Column(columnDefinition = "TEXT")
-    private String paragraph;
-
-    @Column(columnDefinition = "TEXT")
-    private String note;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "total_sentences")
+    private Integer totalSentences;
 
     @Column(length = 50)
     private String status;

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class LessonGradingService {
     public GradingResponse gradeAnswer(
             String question,
             String answer,
+            String suggestVocab,
             String providerType
     ) {
         try {
@@ -44,6 +47,7 @@ public class LessonGradingService {
             return provider.gradeAnswer(
                     question,
                     answer,
+                    suggestVocab,
                     apiUrl,
                     apiKey
             );

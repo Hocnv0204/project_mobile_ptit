@@ -75,6 +75,12 @@ public enum ErrorCode {
     QUIZ_VOCAB_NOT_FOUND(9302, "Vocabulary not found"),
     QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED"),
 
+    // Flashcard / SM-2 (9400)
+    FLASHCARD_CARD_REVIEW_NOT_FOUND(9401, "Card review not found"),
+    FLASHCARD_VOCAB_NOT_FOUND(9402, "Vocabulary not found for flashcard"),
+    FLASHCARD_INVALID_QUALITY(9403, "Quality must be between 0 and 5"),
+    FLASHCARD_LESSON_VOCAB_NOT_FOUND(9404, "Lesson vocab not found for flashcard session"),
+
     // Podcast (10xxx)
     PODCAST_NOT_FOUND(10001, "Podcast not found"),
     PODCAST_GENERATE_FAILED(10002, "Failed to generate podcast from AI");
