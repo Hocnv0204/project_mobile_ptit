@@ -1,6 +1,8 @@
 package com.ptit.mobile.backend.repository;
 
 import com.ptit.mobile.backend.model.LessonVocab;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,5 +33,7 @@ public interface LessonVocabRepository extends JpaRepository<LessonVocab, Intege
     @Query("SELECT lv FROM LessonVocab lv JOIN User u ON lv.userId = u.id " +
            "WHERE u.username = :username AND lv.deleteFlag = false ORDER BY lv.id ASC")
     List<LessonVocab> findAllByUsernameAndDeleteFlagFalse(@Param("username") String username);
+
+    Page<LessonVocab> findLessonVocabByUserId (Long userId, Pageable pageable);
 }
 

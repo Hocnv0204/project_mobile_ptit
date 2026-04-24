@@ -10,6 +10,15 @@ export type CreateVocabSimpleRequest = {
   vi: string;
 };
 
+export type VocabHomeStats = {
+  total: number;
+  newWords: number;
+  dueToday: number;
+  overdue: number;
+  upcoming: number;
+  upcoming7d: number;
+};
+
 export const vocabApi = {
   createListVocab: async (lessonId: number, payload: CreateListVocabRequest) => {
     const res = await http.post<ApiEnvelope<any>>(`/api/vocab/${lessonId}`, payload);
@@ -32,5 +41,10 @@ export const vocabApi = {
       throw err;
     }
     return body;
+  },
+
+  homeStats: async () => {
+    const res = await http.get<ApiEnvelope<VocabHomeStats>>('/api/vocab/home-stats');
+    return res.data;
   },
 };

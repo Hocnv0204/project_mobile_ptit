@@ -11,11 +11,15 @@ import com.ptit.mobile.backend.repository.CardReviewRepository;
 import com.ptit.mobile.backend.repository.VocabularyRepository;
 import com.ptit.mobile.backend.security.SecurityUtils;
 import com.ptit.mobile.backend.service.LessonVocabService;
+import com.ptit.mobile.backend.utils.DataUtils;
+import com.ptit.mobile.backend.utils.PaginationUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.support.PageableUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -142,5 +146,16 @@ public class LessonVocabController {
             @RequestParam("username") String username,
             @RequestParam(value = "levelId", required = false) Long levelId) {
         return lessonVocabService.getByUsernameAndLevel(username, levelId);
+    }
+
+    @GetMapping("/admin")
+    public BaseResponse getLessonCms(
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
+            @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "order", required = false) String order
+            ){
+        Pageable pageable = PaginationUtils.createPageable(page, size, sort, order);
+        return lessonVocabService.getLessonVocabCms(pageable);
     }
 }

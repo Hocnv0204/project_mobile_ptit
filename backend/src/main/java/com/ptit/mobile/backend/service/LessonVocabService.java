@@ -4,6 +4,7 @@ import com.ptit.mobile.backend.dto.request.lessonvocab.CreateLessonVocabRequest;
 import com.ptit.mobile.backend.dto.request.lessonvocab.CreateLessonVocabSimpleRequest;
 import com.ptit.mobile.backend.dto.request.lessonvocab.UpdateLessonVocabRequest;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
+import org.springframework.data.domain.Pageable;
 
 public interface LessonVocabService {
     BaseResponse create(CreateLessonVocabRequest request);
@@ -21,4 +22,6 @@ public interface LessonVocabService {
     BaseResponse getByUserId(Long userId);
 
     BaseResponse getByUsernameAndLevel(String username, Long levelId);
+
+    BaseResponse getLessonVocabCms(Pageable pageable);
 }
