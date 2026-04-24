@@ -14,9 +14,10 @@ export interface DictationItem {
 export interface DictationSegment {
   id: string;
   sequenceOrder: number;
-  startTime: number;
-  endTime: number;
-  blankText: string;
+  startTime: number;  // seconds (float)
+  endTime: number;    // seconds (float)
+  englishText: string; // full sentence, for answer reveal
+  blankText: string;   // sentence with ** placeholders
   answerKeys: string[];
 }
 

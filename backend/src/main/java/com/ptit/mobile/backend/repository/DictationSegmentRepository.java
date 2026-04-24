@@ -14,4 +14,6 @@ public interface DictationSegmentRepository extends JpaRepository<DictationSegme
     List<DictationSegment> findByDictationIdOrderBySequenceOrderAsc(UUID dictationId);
 
     Optional<DictationSegment> findByDictationIdAndSequenceOrder(UUID dictationId, Integer sequenceOrder);
+
+    void deleteByDictationId(UUID dictationId);
 }

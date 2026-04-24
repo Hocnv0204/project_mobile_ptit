@@ -3,6 +3,7 @@ import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
 import Dashboard from './pages/Dashboard';
 import VocabListPage from './pages/vocab/VocabListPage';
+import DictationPage from './pages/dictation/DictationPage';
 import { useAuthStore } from './store/authStore';
 import './App.css';
 
@@ -29,6 +30,7 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="vocab" element={<VocabListPage />} />
+          <Route path="dictation" element={<DictationPage />} />
           <Route path="users" element={<div>User Management (Coming Soon)</div>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

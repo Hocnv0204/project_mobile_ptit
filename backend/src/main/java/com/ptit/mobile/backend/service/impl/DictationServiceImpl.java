@@ -84,6 +84,7 @@ public class DictationServiceImpl implements DictationService {
                         .sequenceOrder(seg.getSequenceOrder())
                         .startTime(seg.getStartTime())
                         .endTime(seg.getEndTime())
+                        .englishText(seg.getEnglishText())
                         .blankText(seg.getBlankText())
                         .answerKeys(seg.getAnswerKeys())
                         .build())

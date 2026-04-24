@@ -15,8 +15,9 @@ import java.util.UUID;
 public class SegmentResponse {
     private UUID id;
     private Integer sequenceOrder;
-    private Float startTime;
-    private Float endTime;
-    private String blankText;
+    private Float startTime;   // seconds (float)
+    private Float endTime;     // seconds (float)
+    private String englishText; // full sentence — used for "show answer" mode
+    private String blankText;  // sentence with ** placeholders
     private List<String> answerKeys;
 }
