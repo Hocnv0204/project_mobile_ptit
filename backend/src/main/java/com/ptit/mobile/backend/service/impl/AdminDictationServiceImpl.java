@@ -56,12 +56,12 @@ public class AdminDictationServiceImpl implements AdminDictationService {
     @Transactional
     public BaseResponse createFromSrtFile(String title, String youtubeUrl, MultipartFile srtFile) {
         if (srtFile == null || srtFile.isEmpty()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "SRT file is required");
+            throw new BusinessException(ErrorCode.BAD_REQUEST.getCode(), "SRT file is required");
         }
         String filename = srtFile.getOriginalFilename() != null
                 ? srtFile.getOriginalFilename().toLowerCase() : "";
         if (!filename.endsWith(".srt") && !filename.endsWith(".vtt")) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Only .srt or .vtt files are accepted");
+            throw new BusinessException(ErrorCode.BAD_REQUEST.getCode(), "Only .srt or .vtt files are accepted");
         }
 
         String content;
@@ -71,7 +71,7 @@ public class AdminDictationServiceImpl implements AdminDictationService {
                     .lines()
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Cannot read SRT file: " + e.getMessage());
+            throw new BusinessException(ErrorCode.BAD_REQUEST.getCode(), "Cannot read SRT file: " + e.getMessage());
         }
 
         List<Map<String, Object>> segments = filename.endsWith(".vtt")
@@ -79,7 +79,7 @@ public class AdminDictationServiceImpl implements AdminDictationService {
                 : parseSrt(content);
 
         if (segments.isEmpty()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "SRT file is empty or malformed");
+            throw new BusinessException(ErrorCode.BAD_REQUEST.getCode(), "SRT file is empty or malformed");
         }
 
         return saveSegments(title, youtubeUrl, segments);
@@ -209,9 +209,12 @@ public class AdminDictationServiceImpl implements AdminDictationService {
 
     private List<Map<String, Object>> parseVtt(String vtt) {
         List<Map<String, Object>> result = new ArrayList<>();
-        String[] blocks = vtt.split("\n\n");
+        // Normalize line endings to \n (handles both CRLF from Windows and LF from Linux)
+        String normalized = vtt.replace("\r\n", "\n").replace("\r", "\n");
+        String[] blocks = normalized.split("\n\n");
+        // Support both HH:MM:SS.mmm and MM:SS.mmm (YouTube VTT short format)
         Pattern tsPattern = Pattern.compile(
-                "(\\d{2}:\\d{2}:\\d{2}[,.]\\d{3})\\s*-->\\s*(\\d{2}:\\d{2}:\\d{2}[,.]\\d{3})");
+                "((?:\\d{2}:)?\\d{2}:\\d{2}[,.]\\d{3})\\s*-->\\s*((?:\\d{2}:)?\\d{2}:\\d{2}[,.]\\d{3})");
 
         for (String block : blocks) {
             String[] lines = block.trim().split("\n");
@@ -233,7 +236,13 @@ public class AdminDictationServiceImpl implements AdminDictationService {
 
             StringBuilder text = new StringBuilder();
             for (int i = textStart; i < lines.length; i++) {
-                String clean = lines[i].replaceAll("<[^>]+>", "").trim();
+                // Strip VTT tags (<c>, <b>, timestamps like <00:01.000>) and trim
+                String clean = lines[i]
+                        .replaceAll("<[^>]+>", "")
+                        .replaceAll("&amp;", "&")
+                        .replaceAll("&lt;", "<")
+                        .replaceAll("&gt;", ">")
+                        .trim();
                 if (!clean.isEmpty()) {
                     if (text.length() > 0) text.append(" ");
                     text.append(clean);
@@ -251,12 +260,20 @@ public class AdminDictationServiceImpl implements AdminDictationService {
     }
 
     private double timestampToSeconds(String ts) {
-        // HH:MM:SS,mmm  or  HH:MM:SS.mmm
+        // Supports HH:MM:SS,mmm / HH:MM:SS.mmm  (SRT/VTT full)
+        //      and     MM:SS.mmm                 (YouTube VTT short)
         String[] parts = ts.replace(",", ".").split(":");
-        double h = Double.parseDouble(parts[0]);
-        double m = Double.parseDouble(parts[1]);
-        double s = Double.parseDouble(parts[2]);
-        return h * 3600 + m * 60 + s;
+        if (parts.length == 3) {
+            double h = Double.parseDouble(parts[0]);
+            double m = Double.parseDouble(parts[1]);
+            double s = Double.parseDouble(parts[2]);
+            return h * 3600 + m * 60 + s;
+        } else if (parts.length == 2) {
+            double m = Double.parseDouble(parts[0]);
+            double s = Double.parseDouble(parts[1]);
+            return m * 60 + s;
+        }
+        return 0.0;
     }
 
     // ─────────────────────────────────────────────────
