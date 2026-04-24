@@ -11,6 +11,9 @@ import {
   Input,
   Select,
   Tag,
+  Row,
+  Col,
+  Statistic,
 } from "antd";
 import {
   PlusOutlined,
@@ -269,42 +272,41 @@ const VocabListPage: React.FC = () => {
   };
 
   const lessonColumns = [
-    { title: "STT", key: "stt", render: (_: any, __: any, index: number) => index + 1 },
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Description", dataIndex: "description", key: "description" },
+    { title: "STT", key: "stt", width: 60, render: (_: any, __: any, index: number) => index + 1 },
     {
-      title: "Level",
-      dataIndex: "levelId",
-      key: "levelId",
-      render: (levelId: number) => {
-        const level = levels.find((l) => l.id === levelId);
-        return level ? level.name : levelId;
-      },
+      title: "Lesson Details",
+      key: "details",
+      render: (_: any, record: LessonVocab) => (
+        <div>
+          <div style={{ fontWeight: "bold" }}>{record.name}</div>
+          <div style={{ fontSize: "12px", color: "#8c8c8c" }}>
+            Level: {levels.find((l) => l.id === record.levelId)?.name || record.levelId}
+          </div>
+        </div>
+      ),
     },
     {
       title: "Action",
       key: "action",
+      width: 150,
       render: (_: any, record: LessonVocab) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => handleLessonSelect(record)}
-          >
-            View Vocabs
-          </Button>
+          />
           <Button
+            size="small"
             icon={<EditOutlined />}
             onClick={() => handleEditLesson(record)}
-          >
-            Edit
-          </Button>
+          />
           <Button
+            size="small"
             icon={<DeleteOutlined />}
             danger
             onClick={() => handleDeleteLesson(record.id)}
-          >
-            Delete
-          </Button>
+          />
         </Space>
       ),
     },
@@ -349,8 +351,21 @@ const VocabListPage: React.FC = () => {
   ];
 
   return (
-    <div>
-      <Breadcrumb style={{ marginBottom: 16 }}>
+    <div style={{ padding: "0 8px" }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col span={6}>
+          <Card size="small">
+            <Statistic title="Total Lessons" value={lessons.length} valueStyle={{ fontSize: '20px' }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card size="small">
+            <Statistic title="Vocabularies" value={vocabularies.length} valueStyle={{ fontSize: '20px' }} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Breadcrumb style={{ marginBottom: 8, fontSize: '12px' }}>
         <Breadcrumb.Item
           onClick={() => setSelectedLesson(null)}
           style={{ cursor: "pointer" }}
@@ -364,10 +379,12 @@ const VocabListPage: React.FC = () => {
 
       {!selectedLesson ? (
         <Card
+          size="small"
           title="Lesson Vocabularies"
           extra={
             <Button
               type="primary"
+              size="small"
               icon={<PlusOutlined />}
               onClick={handleAddLesson}
             >
@@ -380,23 +397,27 @@ const VocabListPage: React.FC = () => {
             dataSource={lessons}
             loading={loading}
             rowKey="id"
+            size="small"
           />
         </Card>
       ) : (
         <Card
+          size="small"
           title={
-            <span>
+            <span style={{ fontSize: '14px' }}>
               <Button
+                size="small"
                 icon={<ArrowLeftOutlined />}
                 onClick={() => setSelectedLesson(null)}
                 style={{ marginRight: 8 }}
               />{" "}
-              Vocabularies in {selectedLesson.name}
+              {selectedLesson.name}
             </span>
           }
           extra={
             <Button
               type="primary"
+              size="small"
               icon={<PlusOutlined />}
               onClick={() => setIsBulkModalOpen(true)}
             >
@@ -409,6 +430,7 @@ const VocabListPage: React.FC = () => {
             dataSource={vocabularies}
             loading={loading}
             rowKey="id"
+            size="small"
           />
         </Card>
       )}

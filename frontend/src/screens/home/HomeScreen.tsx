@@ -13,8 +13,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { authApi } from '../../api/authApi';
+import { vocabApi } from '../../api/vocabApi';
 import { Routes } from '../../constants/routes';
+import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../components/ToastProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +37,17 @@ const MOCK_USER: UserData = {
 
 export default function HomeScreen({ navigation }: any) {
   const [currentUser, setCurrentUser] = useState(MOCK_USER);
+  const toast = useToast();
+  const user = useAuthStore((s) => s.user);
+  const isFocused = useIsFocused();
+  const [vocabStatsLoading, setVocabStatsLoading] = useState(false);
+  const [vocabStats, setVocabStats] = useState({
+    dueToday: 0,
+    overdue: 0,
+    upcoming7d: 0,
+    newWords: 0,
+    total: 0,
+  });
 
   useEffect(() => {
     authApi.me()
@@ -46,6 +61,29 @@ export default function HomeScreen({ navigation }: any) {
       })
       .catch(err => console.log('Fetch profile error:', err));
   }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.id || !isFocused) return;
+      try {
+        setVocabStatsLoading(true);
+        const statsRes = await vocabApi.homeStats();
+        const s = statsRes.data;
+        setVocabStats({
+          dueToday: s?.dueToday ?? 0,
+          overdue: s?.overdue ?? 0,
+          upcoming7d: s?.upcoming7d ?? 0,
+          newWords: s?.newWords ?? 0,
+          total: s?.total ?? 0,
+        });
+      } catch (e: any) {
+        toast.show(e?.message || 'Không thể tải thống kê học tập', { type: 'error', durationMs: 4500 });
+      } finally {
+        setVocabStatsLoading(false);
+      }
+    };
+    run();
+  }, [user?.id, isFocused]);
 
   const onPressAction = (route: string) => {
     navigation.navigate(route);
@@ -110,89 +148,44 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* 3. Learning Profile */}
+        {/* 3. Trạng thái học hiện tại */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Learning Profile</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>Xem tất cả</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Trạng thái học</Text>
+          <View />
         </View>
 
-        {/* Trình độ TOEIC Card */}
-        <View style={styles.toeicCard}>
-          <Text style={styles.toeicTitle}>Trình độ {currentUser.level} của bạn</Text>
-          <View style={styles.stairsImagePlaceholder}>
-            <MaterialCommunityIcons name="stairs-up" size={48} color="#EBF3FF" style={{ alignSelf: 'flex-end', opacity: 0.5 }} />
-          </View>
-          
-          <View style={styles.toeicProgressRow}>
-            {/* Step 1 */}
-            <View style={styles.toeicStep}>
-              <View style={styles.stepDotOuter}>
-                <View style={styles.stepDotInner} />
+        <View style={styles.dashboardCard}>
+          <View style={styles.dashboardHeader}>
+            <View style={styles.dashboardTitleRow}>
+              <View style={styles.dashboardIcon}>
+                <MaterialCommunityIcons name="book-open-variant" size={18} color="#0066FF" />
               </View>
-              <Text style={styles.stepLabel}>Đầu vào</Text>
-              <Text style={styles.stepValue}>-</Text>
+              <Text style={styles.dashboardTitle}>Vocabulary</Text>
             </View>
-            
-            <View style={styles.stepLine} />
-
-            {/* Step 2 */}
-            <View style={styles.toeicStep}>
-              <View style={styles.stepDotOuter}>
-                <View style={styles.stepDotInner} />
-              </View>
-              <Text style={styles.stepLabel}>Dự đoán</Text>
-              <Text style={styles.stepValue}>-</Text>
-            </View>
-
-            <View style={styles.stepLine} />
-
-            {/* Step 3 */}
-            <View style={styles.toeicStep}>
-              <View style={styles.stepDotOuterActive}>
-                <MaterialCommunityIcons name="bullseye-arrow" size={16} color="#0066FF" />
-              </View>
-              <Text style={styles.stepLabel}>Mục tiêu</Text>
-              <Text style={styles.stepValue}>-</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 4 Stats Cards */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View style={styles.statHeader}>
-              <MaterialCommunityIcons name="clock-outline" size={16} color="#70778C" />
-              <Text style={styles.statLabel}>Tổng thời lượng</Text>
-              <MaterialCommunityIcons name="information" size={14} color="#A0A7BA" style={styles.infoIcon} />
-            </View>
-            <Text style={[styles.statValue, { color: '#0066FF' }]}>0 phút</Text>
+            {vocabStatsLoading ? (
+              <Text style={styles.dashboardHint}>Đang cập nhật...</Text>
+            ) : (
+              <Text style={styles.dashboardHint}>{vocabStats.total} từ</Text>
+            )}
           </View>
 
-          <View style={styles.statCard}>
-            <View style={styles.statHeader}>
-              <MaterialCommunityIcons name="trophy" size={16} color="#FFB84C" />
-              <Text style={styles.statLabel}>Tổng số cúp</Text>
-              <MaterialCommunityIcons name="information" size={14} color="#A0A7BA" style={styles.infoIcon} />
+          <View style={styles.dashboardGrid}>
+            <View style={[styles.dashboardItem, { backgroundColor: '#EEF2FF' }]}>
+              <Text style={styles.dashboardLabel}>Cần học hôm nay</Text>
+              <Text style={[styles.dashboardValue, { color: '#3730A3' }]}>{vocabStats.dueToday}</Text>
             </View>
-            <Text style={[styles.statValue, { color: '#FFB84C' }]}>0</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statHeader}>
-              <MaterialCommunityIcons name="file-document-edit-outline" size={16} color="#E91E63" />
-              <Text style={styles.statLabel}>Số bài test đã làm</Text>
+            <View style={[styles.dashboardItem, { backgroundColor: '#FEF2F2' }]}>
+              <Text style={styles.dashboardLabel}>Quá hạn</Text>
+              <Text style={[styles.dashboardValue, { color: '#B91C1C' }]}>{vocabStats.overdue}</Text>
             </View>
-            <Text style={[styles.statValue, { color: '#E91E63' }]}>0</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statHeader}>
-              <MaterialCommunityIcons name="play-box-outline" size={16} color="#4CAF50" />
-              <Text style={styles.statLabel}>Số bài đã học</Text>
+            <View style={[styles.dashboardItem, { backgroundColor: '#ECFDF5' }]}>
+              <Text style={styles.dashboardLabel}>Sắp tới (7 ngày)</Text>
+              <Text style={[styles.dashboardValue, { color: '#047857' }]}>{vocabStats.upcoming7d}</Text>
             </View>
-            <Text style={[styles.statValue, { color: '#4CAF50' }]}>0</Text>
+            <View style={[styles.dashboardItem, { backgroundColor: '#FFF7ED' }]}>
+              <Text style={styles.dashboardLabel}>Từ mới</Text>
+              <Text style={[styles.dashboardValue, { color: '#C2410C' }]}>{vocabStats.newWords}</Text>
+            </View>
           </View>
         </View>
 
@@ -312,96 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // 3. TOEIC Card
-  toeicCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    overflow: 'hidden',
-  },
-  toeicTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D26',
-    marginBottom: 24,
-    zIndex: 1,
-  },
-  stairsImagePlaceholder: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 0,
-  },
-  toeicProgressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    zIndex: 1,
-  },
-  toeicStep: {
-    alignItems: 'center',
-  },
-  stepDotOuter: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#0066FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  stepDotInner: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#0066FF',
-  },
-  stepDotOuterActive: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#EBF3FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  stepLine: {
-    flex: 1,
-    height: 1,
-    borderWidth: 1,
-    borderColor: '#EEF0F6',
-    borderStyle: 'dashed',
-    marginHorizontal: 8,
-    marginTop: -40,
-  },
-  stepLabel: {
-    fontSize: 12,
-    color: '#70778C',
-    marginBottom: 4,
-  },
-  stepValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1D26',
-  },
-
-  // 4. Stats Grid
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    width: (width - 40 - 16) / 2,
+  dashboardCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
@@ -410,28 +314,38 @@ const styles = StyleSheet.create({
     borderColor: '#EEF0F6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  statHeader: {
+  dashboardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#4A5568',
-    marginLeft: 6,
-    flex: 1,
+  dashboardTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  dashboardIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: '#EBF3FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
-  infoIcon: {
-    marginLeft: 4,
+  dashboardTitle: { fontSize: 16, fontWeight: '800', color: '#1A1D26' },
+  dashboardHint: { fontSize: 13, color: '#70778C', fontWeight: '700' },
+  dashboardGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  dashboardItem: {
+    // screen paddingHorizontal: 20*2, card padding: 16*2, gap giữa 2 cột: 12
+    width: (width - 40 - 32 - 12) / 2,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
+  dashboardLabel: { fontSize: 12, color: '#334155', fontWeight: '700' },
+  dashboardValue: { fontSize: 22, fontWeight: '900', marginTop: 8 },
 
   bottomSpacer: {
     height: 40,
