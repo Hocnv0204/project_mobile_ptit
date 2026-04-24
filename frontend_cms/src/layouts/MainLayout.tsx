@@ -7,6 +7,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   DashboardOutlined,
+  SoundOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -39,6 +40,11 @@ const MainLayout: React.FC = () => {
       key: '/vocab',
       icon: <BookOutlined />,
       label: 'Vocabulary',
+    },
+    {
+      key: '/podcasts',
+      icon: <SoundOutlined />,
+      label: 'Podcasts',
     },
     {
       key: '/users',
