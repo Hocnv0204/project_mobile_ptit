@@ -30,6 +30,8 @@ export const Routes = {
   SELECT_TOPIC: 'SelectTopic',
   SELECT_LESSON: 'SelectLesson',
   LESSON_PRACTICE: 'LessonPractice',
+  WRITING_HISTORY: 'WritingHistory',
+  WRITING_ACTIVE_LESSONS: 'WritingActiveLessons',
 
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',

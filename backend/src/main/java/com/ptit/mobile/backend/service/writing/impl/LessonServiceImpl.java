@@ -7,6 +7,7 @@ import com.ptit.mobile.backend.dto.response.writing.GradingResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.UserLessonProgressResponse;
+import com.ptit.mobile.backend.dto.response.writing.UserTranslationHistoryResponse;
 import com.ptit.mobile.backend.mapper.lesson.LessonMapper;
 import com.ptit.mobile.backend.model.LessonSentence;
 import com.ptit.mobile.backend.model.LessonWriting;
@@ -23,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -189,13 +191,16 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
-    public List<UserLessonProgressResponse> getMyLessonsProgress(Long userId) {
-        List<UserLessonProgress> progressList = userLessonProgressRepository.findAllByUserIdOrderByUpdatedAtDesc(userId);
-        if (progressList.isEmpty()) {
-            return new ArrayList<>();
+    public Page<UserLessonProgressResponse> getMyLessonsProgress(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Page<UserLessonProgress> progressPage = userLessonProgressRepository
+                .findAllByUserIdOrderByUpdatedAtDesc(userId, pageable);
+
+        if (progressPage.isEmpty()) {
+            return progressPage.map(p -> UserLessonProgressResponse.builder().build());
         }
 
-        List<Integer> lessonIds = progressList.stream()
+        List<Integer> lessonIds = progressPage.getContent().stream()
                 .map(UserLessonProgress::getLessonWritingId)
                 .toList();
 
@@ -203,7 +208,7 @@ public class LessonServiceImpl implements LessonService {
         java.util.Map<Integer, LessonWriting> lessonMap = lessons.stream()
                 .collect(java.util.stream.Collectors.toMap(LessonWriting::getId, l -> l));
 
-        return progressList.stream().map(progress -> {
+        List<UserLessonProgressResponse> content = progressPage.getContent().stream().map(progress -> {
             UserLessonProgressResponse response = UserLessonProgressResponse.builder()
                     .id(progress.getId())
                     .userId(progress.getUserId())
@@ -223,5 +228,37 @@ public class LessonServiceImpl implements LessonService {
 
             return response;
         }).toList();
+
+        return new PageImpl<>(content, pageable, progressPage.getTotalElements());
+    }
+
+    @Override
+    public Page<UserTranslationHistoryResponse> getTranslationHistory(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<UserTranslationHistory> historyPage = userTranslationHistoryRepository
+                .findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+
+        if (historyPage.isEmpty()) {
+            return historyPage.map(h -> lessonMapper.toHistoryResponse(h, "N/A"));
+        }
+
+        // Lấy danh sách sentenceId của page hiện tại để fetch sentenceVi một lần
+        List<Integer> sentenceIds = historyPage.getContent().stream()
+                .map(UserTranslationHistory::getSentenceId)
+                .distinct()
+                .toList();
+
+        List<LessonSentence> sentences = lessonSentenceRepository.findAllById(sentenceIds);
+        java.util.Map<Integer, String> sentenceMap = sentences.stream()
+                .collect(java.util.stream.Collectors.toMap(LessonSentence::getId, LessonSentence::getSentenceVi));
+
+        List<UserTranslationHistoryResponse> content = historyPage.getContent().stream()
+                .map(history -> {
+                    String sentenceVi = sentenceMap.getOrDefault(history.getSentenceId(), "N/A");
+                    return lessonMapper.toHistoryResponse(history, sentenceVi);
+                })
+                .toList();
+
+        return new PageImpl<>(content, pageable, historyPage.getTotalElements());
     }
 }

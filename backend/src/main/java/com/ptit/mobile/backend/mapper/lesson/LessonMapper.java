@@ -5,6 +5,7 @@ import com.ptit.mobile.backend.dto.response.writing.*;
 import com.ptit.mobile.backend.model.LessonWriting;
 import com.ptit.mobile.backend.model.LessonSentence;
 import com.ptit.mobile.backend.model.SuggestVocabulary;
+import com.ptit.mobile.backend.model.UserTranslationHistory;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -13,6 +14,23 @@ import java.util.stream.Collectors;
 
 @Component
 public class LessonMapper {
+
+    public UserTranslationHistoryResponse toHistoryResponse(UserTranslationHistory history, String sentenceVi) {
+        if (history == null) {
+            return null;
+        }
+        return UserTranslationHistoryResponse.builder()
+                .id(history.getId())
+                .userId(history.getUserId())
+                .lessonWritingId(history.getLessonWritingId())
+                .sentenceId(history.getSentenceId())
+                .userAnswer(history.getUserAnswer())
+                .aiFeedbackJson(history.getAiFeedbackJson())
+                .accuracyScore(history.getAccuracyScore())
+                .createdAt(history.getCreatedAt())
+                .sentenceVi(sentenceVi)
+                .build();
+    }
 
     public LessonSummaryResponse toSummaryResponse(LessonWriting lesson) {
         if (lesson == null) {

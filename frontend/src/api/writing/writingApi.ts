@@ -6,6 +6,7 @@ import {
   UserLessonProgressResponse,
   GradingRequest,
   GradingResponse,
+  UserTranslationHistoryResponse,
 } from "./types";
 
 export type SpringPage<T> = {
@@ -66,9 +67,24 @@ export const writingApi = {
     return res.data.data;
   },
 
-  getMyLessons: async () => {
-    const res = await http.get<ApiEnvelope<UserLessonProgressResponse[]>>(
+  getMyLessons: async (params?: {
+    page?: number;
+    size?: number;
+  }) => {
+    const res = await http.get<ApiEnvelope<SpringPage<UserLessonProgressResponse>>>(
       "/api/lesson-writings/my-lessons",
+      { params },
+    );
+    return res.data.data;
+  },
+
+  getTranslationHistory: async (params?: {
+    page?: number;
+    size?: number;
+  }) => {
+    const res = await http.get<ApiEnvelope<SpringPage<UserTranslationHistoryResponse>>>(
+      "/api/lesson-writings/history",
+      { params },
     );
     return res.data.data;
   },

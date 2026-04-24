@@ -6,14 +6,19 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 import { GradingResponse } from '../../api/writing/types';
 
 interface FeedbackModalProps {
   visible: boolean;
   onClose: () => void;
   onNext?: () => void;
+  mode?: 'practice' | 'history';
+  originalText?: string;
   feedbackData: {
     message?: string;
     code?: number;
@@ -25,6 +30,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   visible,
   onClose,
   onNext,
+  mode = 'practice',
+  originalText,
   feedbackData,
 }) => {
   if (!feedbackData || !feedbackData.data) return null;
@@ -38,6 +45,27 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     overall_comment,
   } = data;
 
+  // Sort feedback_points: correct -> warning -> error
+  const sortedFeedback = feedback_points ? [...feedback_points].sort((a, b) => {
+    const order = { correct: 1, warning: 2, error: 3 };
+    return (order[a.type] || 99) - (order[b.type] || 99);
+  }) : [];
+
+  const size = 70;
+  const strokeWidth = 6;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (accuracy_score / 100) * circumference;
+
+  const getAccuracyColor = (score: number) => {
+    if (score >= 90) return '#059669'; // Excellent
+    if (score >= 70) return '#D97706'; // Good
+    if (score >= 50) return '#EA580C'; // Fair
+    return '#DC2626';             // Needs Improvement
+  };
+
+  const accuracyColor = getAccuracyColor(accuracy_score);
+
   return (
     <Modal
       visible={visible}
@@ -50,8 +78,34 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={styles.accuracyContainer}>
-              <View style={styles.accuracyCircle}>
-                <Text style={styles.accuracyText}>{accuracy_score}%</Text>
+              <View style={styles.accuracyCircleWrapper}>
+                <Svg width={size} height={size}>
+                  {/* Background Circle */}
+                  <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="#E5E7EB"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                  />
+                  {/* Progress Circle */}
+                  <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={accuracyColor}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="none"
+                    transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                  />
+                </Svg>
+                <View style={styles.accuracyTextOverlay}>
+                  <Text style={[styles.accuracyText, { color: accuracyColor }]}>{accuracy_score}%</Text>
+                </View>
               </View>
               <View>
                 <Text style={styles.accuracyTitle}>Accuracy</Text>
@@ -64,9 +118,19 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
           </View>
 
           <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            {/* Section 0: Original Sentence */}
+            {originalText && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Câu gốc:</Text>
+                <View style={styles.originalContainer}>
+                  <Text style={styles.originalText}>{originalText}</Text>
+                </View>
+              </View>
+            )}
+
             {/* Section 1: Suggestion */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Suggestion:</Text>
+              <Text style={styles.sectionTitle}>Bản dịch gợi ý:</Text>
               <View style={styles.diffContainer}>
                 <Text style={styles.diffText}>
                   {diff.map((item, index) => {
@@ -95,26 +159,71 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
               </View>
             </View>
 
-            {/* Section 2: Suggested Improvements */}
-            {feedback_points && feedback_points.length > 0 && (
+            {/* Section 2: Feedback Details */}
+            {sortedFeedback.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Suggested improvements:</Text>
-                {feedback_points.map((point, index) => (
-                  <View key={index} style={styles.feedbackItem}>
-                    <View style={styles.bullet} />
-                    <Text style={styles.feedbackExplanation}>
-                      {point.explanation.split(new RegExp(`(${point.user_text}|${point.correct_text})`, 'g')).map((part, i) => {
-                        if (part === point.user_text) {
-                          return <Text key={i} style={styles.highlightError}>{part}</Text>;
-                        }
-                        if (part === point.correct_text) {
-                          return <Text key={i} style={styles.highlightCorrect}>{part}</Text>;
-                        }
-                        return part;
-                      })}
-                    </Text>
-                  </View>
-                ))}
+                <Text style={styles.sectionTitle}>Phân tích chi tiết:</Text>
+                {sortedFeedback.map((point, index) => {
+                  const isCorrect = point.type === 'correct';
+                  const isError = point.type === 'error';
+                  const isWarning = point.type === 'warning';
+
+                  let iconName: any = 'checkmark-circle';
+                  let label = 'Chính xác';
+                  let cardStyle = styles.cardCorrect;
+                  let textColor = '#15803D';
+                  let badgeBg = '#DCFCE7';
+
+                  if (isError) {
+                    iconName = 'close-circle';
+                    label = 'Cần sửa';
+                    cardStyle = styles.cardError;
+                    textColor = '#B91C1C';
+                    badgeBg = '#FEE2E2';
+                  } else if (isWarning) {
+                    iconName = 'alert-circle';
+                    label = 'Lưu ý';
+                    cardStyle = styles.cardWarning;
+                    textColor = '#B45309';
+                    badgeBg = '#FEF3C7';
+                  }
+
+                  return (
+                    <View key={index} style={[styles.feedbackCard, cardStyle]}>
+                      <View style={styles.feedbackCardHeader}>
+                        <Ionicons name={iconName} size={18} color={textColor} />
+                        <Text style={[styles.feedbackLabel, { color: textColor }]}>
+                          {label}
+                        </Text>
+                      </View>
+
+                      <View style={styles.feedbackContent}>
+                        <View style={styles.badgeRow}>
+                          <View style={[styles.monoBadge, { backgroundColor: badgeBg }]}>
+                            <Text style={[styles.monoText, { color: textColor }]}>
+                              {point.user_text}
+                            </Text>
+                          </View>
+                          
+                          {point.correct_text && (
+                            <>
+                              <Ionicons name="arrow-forward" size={16} color="#9CA3AF" style={{ marginHorizontal: 8 }} />
+                              <View style={[styles.monoBadge, { backgroundColor: '#DCFCE7' }]}>
+                                <Text style={[styles.monoText, { color: '#15803D' }]}>
+                                  {point.correct_text}
+                                </Text>
+                              </View>
+                            </>
+                          )}
+                        </View>
+                        
+                        <Text style={styles.explanationText}>
+                          {point.explanation}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             )}
 
@@ -126,35 +235,37 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
             )}
           </ScrollView>
 
-          <View style={styles.footerButtons}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                accuracy_score >= 70 ? styles.retryButton : styles.fullWidthButton,
-              ]}
-              onPress={onClose}
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  accuracy_score >= 70 ? styles.retryButtonText : styles.fullWidthButtonText,
-                ]}
-              >
-                Thử lại
-              </Text>
-            </TouchableOpacity>
-
-            {accuracy_score >= 70 && (
+          {mode === 'practice' && (
+            <View style={styles.footerButtons}>
               <TouchableOpacity
-                style={[styles.button, styles.nextButton]}
-                onPress={onNext}
+                style={[
+                  styles.button,
+                  accuracy_score >= 70 ? styles.retryButton : styles.fullWidthButton,
+                ]}
+                onPress={onClose}
               >
-                <Text style={[styles.buttonText, styles.nextButtonText]}>
-                  Chuyển câu tiếp
+                <Text
+                  style={[
+                    styles.buttonText,
+                    accuracy_score >= 70 ? styles.retryButtonText : styles.fullWidthButtonText,
+                  ]}
+                >
+                  Thử lại
                 </Text>
               </TouchableOpacity>
-            )}
-          </View>
+
+              {accuracy_score >= 70 && (
+                <TouchableOpacity
+                  style={[styles.button, styles.nextButton]}
+                  onPress={onNext}
+                >
+                  <Text style={[styles.buttonText, styles.nextButtonText]}>
+                    Chuyển câu tiếp
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -191,20 +302,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  accuracyCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 4,
-    borderColor: '#E5E7EB',
+  accuracyCircleWrapper: {
+    width: 70,
+    height: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
+  },
+  accuracyTextOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   accuracyText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontWeight: '800',
   },
   accuracyTitle: {
     fontSize: 12,
@@ -227,10 +343,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#374151',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   diffContainer: {
     padding: 14,
@@ -238,6 +354,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#F3F4F6',
+  },
+  originalContainer: {
+    padding: 14,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  originalText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#1E40AF',
+    fontWeight: '500',
   },
   diffText: {
     fontSize: 16,
@@ -257,32 +386,59 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
     fontWeight: 'bold',
   },
-  feedbackItem: {
+  feedbackCard: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+  },
+  cardCorrect: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  cardError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  cardWarning: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FEF3C7',
+  },
+  feedbackCardHeader: {
     flexDirection: 'row',
-    marginBottom: 12,
-    paddingLeft: 4,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#9CA3AF',
-    marginTop: 8,
-    marginRight: 10,
+  feedbackLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 6,
   },
-  feedbackExplanation: {
-    flex: 1,
+  feedbackContent: {
+    marginLeft: 2,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  monoBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  monoText: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  explanationText: {
     fontSize: 14,
     color: '#4B5563',
-    lineHeight: 22,
-  },
-  highlightError: {
-    color: '#DC2626',
-    fontWeight: '700',
-  },
-  highlightCorrect: {
-    color: '#059669',
-    fontWeight: '700',
+    lineHeight: 20,
   },
   overallCommentContainer: {
     backgroundColor: '#F3F4F6',

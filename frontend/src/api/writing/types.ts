@@ -66,3 +66,15 @@ export type GradingResponse = {
   }>;
   overall_comment: string;
 };
+
+export type UserTranslationHistoryResponse = {
+  id: number;
+  userId: number;
+  lessonWritingId: number;
+  sentenceId: number;
+  userAnswer: string;
+  aiFeedbackJson: string;
+  accuracyScore: number;
+  createdAt: string;
+  sentenceVi: string;
+};
