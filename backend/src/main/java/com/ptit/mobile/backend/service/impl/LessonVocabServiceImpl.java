@@ -9,7 +9,9 @@ import com.ptit.mobile.backend.dto.response.lessonvocab.LessonVocabResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
 import com.ptit.mobile.backend.model.LessonVocab;
+import com.ptit.mobile.backend.model.User;
 import com.ptit.mobile.backend.repository.LessonVocabRepository;
+import com.ptit.mobile.backend.repository.UserRepository;
 import com.ptit.mobile.backend.security.SecurityUtils;
 import com.ptit.mobile.backend.service.LessonVocabService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LessonVocabServiceImpl implements LessonVocabService {
     private final LessonVocabRepository lessonVocabRepository;
+    private final UserRepository userRepository;
 
     @Override
     public BaseResponse create(CreateLessonVocabRequest request) {
@@ -133,7 +136,11 @@ public class LessonVocabServiceImpl implements LessonVocabService {
     }
 
     @Override
-    public BaseResponse getByUsernameAndLevel(String username, Long levelId) {
+    public BaseResponse getByUsernameAndLevel() {
+        String username = "admin";
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = userRepository.findById(userId).orElseThrow();
+        Long levelId = user.getLevelId();
         List<LessonVocab> lessons;
         if (levelId != null) {
             lessons = lessonVocabRepository

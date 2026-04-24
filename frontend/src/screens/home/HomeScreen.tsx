@@ -13,12 +13,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useIsFocused } from '@react-navigation/native';
 import { authApi } from '../../api/authApi';
 import { vocabApi } from '../../api/vocabApi';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/ToastProvider';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +39,6 @@ export default function HomeScreen({ navigation }: any) {
   const [currentUser, setCurrentUser] = useState(MOCK_USER);
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
-  const isFocused = useIsFocused();
   const [vocabStatsLoading, setVocabStatsLoading] = useState(false);
   const [vocabStats, setVocabStats] = useState({
     dueToday: 0,
@@ -49,41 +48,41 @@ export default function HomeScreen({ navigation }: any) {
     total: 0,
   });
 
-  useEffect(() => {
-    authApi.me()
-      .then(res => {
-        if (res && res.data) {
-          setCurrentUser(prev => ({
-            ...prev,
-            name: res.data.fullName || res.data.username || prev.name,
-          }));
-        }
-      })
-      .catch(err => console.log('Fetch profile error:', err));
+  useRefreshOnFocus(async ({ cancelled }) => {
+    try {
+      const res = await authApi.me();
+      if (cancelled()) return;
+      if (res && res.data) {
+        setCurrentUser((prev) => ({
+          ...prev,
+          name: res.data.fullName || res.data.username || prev.name,
+        }));
+      }
+    } catch (e) {
+      // ignore
+    }
   }, []);
 
-  useEffect(() => {
-    const run = async () => {
-      if (!user?.id || !isFocused) return;
-      try {
-        setVocabStatsLoading(true);
-        const statsRes = await vocabApi.homeStats();
-        const s = statsRes.data;
-        setVocabStats({
-          dueToday: s?.dueToday ?? 0,
-          overdue: s?.overdue ?? 0,
-          upcoming7d: s?.upcoming7d ?? 0,
-          newWords: s?.newWords ?? 0,
-          total: s?.total ?? 0,
-        });
-      } catch (e: any) {
-        toast.show(e?.message || 'Không thể tải thống kê học tập', { type: 'error', durationMs: 4500 });
-      } finally {
-        setVocabStatsLoading(false);
-      }
-    };
-    run();
-  }, [user?.id, isFocused]);
+  useRefreshOnFocus(async ({ cancelled }) => {
+    if (!user?.id) return;
+    try {
+      setVocabStatsLoading(true);
+      const statsRes = await vocabApi.homeStats();
+      if (cancelled()) return;
+      const s = statsRes.data;
+      setVocabStats({
+        dueToday: s?.dueToday ?? 0,
+        overdue: s?.overdue ?? 0,
+        upcoming7d: s?.upcoming7d ?? 0,
+        newWords: s?.newWords ?? 0,
+        total: s?.total ?? 0,
+      });
+    } catch (e: any) {
+      toast.show(e?.message || 'Không thể tải thống kê học tập', { type: 'error', durationMs: 4500 });
+    } finally {
+      setVocabStatsLoading(false);
+    }
+  }, [user?.id]);
 
   const onPressAction = (route: string) => {
     navigation.navigate(route);

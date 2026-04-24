@@ -49,4 +49,13 @@ public class UserController {
         }
         return (Long) auth.getDetails();
     }
+
+    @GetMapping("/me/level")
+    public BaseResponse getCurrentLevel() {
+        Long userId = getCurrentUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        Integer levelId = Integer.parseInt(user.getLevelId().toString());
+        return BaseResponse.success(levelRepository.findById(levelId).orElseThrow().getName());
+    }
 }

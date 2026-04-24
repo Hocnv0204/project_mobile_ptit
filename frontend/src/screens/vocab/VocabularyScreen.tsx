@@ -6,6 +6,7 @@ import { lessonVocabApi } from '../../api/lessonVocabApi';
 import { LessonVocab } from '../../api/types';
 import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
 export default function VocabularyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -23,15 +24,18 @@ export default function VocabularyScreen({ navigation }: any) {
   const [editingLesson, setEditingLesson] = useState<LessonVocab | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchSystemLessons();
-  }, []);
+  useRefreshOnFocus(async () => {
+    // Luôn refresh list hệ thống; và nếu đang ở tab personal thì refresh luôn personal
+    await fetchSystemLessons();
+    if (activeTab === 'personal') {
+      await fetchPersonalLessons();
+    }
+  }, [activeTab, user?.id]);
 
   const fetchSystemLessons = async () => {
     try {
       setLoadingSystem(true);
-      // Lấy lesson của admin, lọc theo levelId của user hiện tại
-      const res = await lessonVocabApi.getSystemLessons('admin', user?.levelId ?? undefined);
+      const res = await lessonVocabApi.getSystemLessons();
       setSystemLessons(res.data || []);
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể tải danh sách bài học');
