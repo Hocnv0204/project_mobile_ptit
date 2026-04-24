@@ -6,6 +6,8 @@ export type RegisterBody = {
   password: string;
   username?: string;
   fullName?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string; // YYYY-MM-DD
 };
 
 export type VerifyOtpBody = {
@@ -28,6 +30,21 @@ export type GoogleLoginBody = {
 
 export type RefreshBody = {
   refreshToken: string;
+};
+
+export type ChangePasswordBody = {
+  oldPassword: string;
+  newPassword: string;
+};
+
+export type ForgotPasswordRequestOtpBody = {
+  email: string;
+};
+
+export type ForgotPasswordResetBody = {
+  email: string;
+  otp: string;
+  newPassword: string;
 };
 
 export const authApi = {
@@ -57,6 +74,18 @@ export const authApi = {
   },
   async logout(body: RefreshBody) {
     const res = await http.post<ApiEnvelope<null>>('/api/auth/logout', body);
+    return res.data;
+  },
+  async changePassword(body: ChangePasswordBody) {
+    const res = await http.put<ApiEnvelope<null>>('/api/auth/change-password', body);
+    return res.data;
+  },
+  async forgotPasswordRequestOtp(body: ForgotPasswordRequestOtpBody) {
+    const res = await http.post<ApiEnvelope<null>>('/api/auth/forgot-password/request-otp', body);
+    return res.data;
+  },
+  async forgotPasswordReset(body: ForgotPasswordResetBody) {
+    const res = await http.put<ApiEnvelope<null>>('/api/auth/forgot-password/reset', body);
     return res.data;
   },
   async me() {

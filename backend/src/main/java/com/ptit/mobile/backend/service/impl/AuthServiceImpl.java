@@ -5,6 +5,9 @@ import com.ptit.mobile.backend.dto.request.auth.RefreshTokenRequest;
 import com.ptit.mobile.backend.dto.request.auth.RegisterRequest;
 import com.ptit.mobile.backend.dto.request.auth.ResendOtpRequest;
 import com.ptit.mobile.backend.dto.request.auth.VerifyOtpRequest;
+import com.ptit.mobile.backend.dto.request.auth.ChangePasswordRequest;
+import com.ptit.mobile.backend.dto.request.auth.ForgotPasswordRequest;
+import com.ptit.mobile.backend.dto.request.auth.ResetPasswordRequest;
 import com.ptit.mobile.backend.dto.response.auth.AuthResponse;
 import com.ptit.mobile.backend.exception.BusinessException;
 import com.ptit.mobile.backend.exception.ErrorCode;
@@ -80,6 +83,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .dateBirth(request.getDateOfBirth())
                 .isActive(false)        // ← chưa kích hoạt cho đến khi xác thực OTP
                 .isEmailVerified(false)
                 .deleteFlag(false)
@@ -261,6 +266,28 @@ public class AuthServiceImpl implements AuthService {
         log.info("User {} logged out from all devices", userId);
     }
 
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        if (request.getOldPassword() == null || request.getNewPassword() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        if (Objects.equals(request.getOldPassword(), request.getNewPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT.getCode(), "New password must be different from old password");
+        }
+
+        UserCredential credential = userCredentialRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), credential.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.OLD_PASSWORD_INCORRECT);
+        }
+
+        credential.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        credential.setUpdatedAt(LocalDateTime.now());
+        userCredentialRepository.save(credential);
+    }
+
     
 
     private void sendOtpToEmail(String email, String fullName) {
@@ -268,6 +295,56 @@ public class AuthServiceImpl implements AuthService {
         redisOtpRepository.saveOtp(email, otp, otpExpirationMs);
         redisOtpRepository.markResendCooldown(email, OTP_RESEND_COOLDOWN_MS);
         emailService.sendOtpVerificationEmail(email, otp, fullName);
+    }
+
+    private void sendResetOtpToEmail(String email, String fullName) {
+        String otp = generateOtp();
+        redisOtpRepository.saveResetOtp(email, otp, otpExpirationMs);
+        redisOtpRepository.markResetResendCooldown(email, OTP_RESEND_COOLDOWN_MS);
+        // Reuse same template for now
+        emailService.sendOtpVerificationEmail(email, otp, fullName);
+    }
+
+    @Override
+    public void forgotPasswordSendOtp(ForgotPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (redisOtpRepository.isResetResendOnCooldown(email)) {
+            throw new BusinessException(ErrorCode.OTP_RESEND_TOO_SOON);
+        }
+        sendResetOtpToEmail(email, user.getFullName());
+        log.info("Reset password OTP sent for email={}", email);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+        String inputOtp = request.getOtp().trim();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        String storedOtp = redisOtpRepository.getResetOtp(email);
+        if (storedOtp == null) {
+            throw new BusinessException(ErrorCode.OTP_EXPIRED);
+        }
+        if (!storedOtp.equals(inputOtp)) {
+            throw new BusinessException(ErrorCode.OTP_INVALID);
+        }
+
+        UserCredential credential = userCredentialRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
+
+        credential.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        credential.setUpdatedAt(LocalDateTime.now());
+        userCredentialRepository.save(credential);
+
+        // Invalidate used OTP and revoke tokens for security
+        redisOtpRepository.deleteResetOtp(email);
+        redisTokenRepository.deleteAllRefreshTokensByUserId(user.getId());
     }
 
     private String generateOtp() {

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   Platform,
   StatusBar,
   Dimensions
@@ -25,13 +24,11 @@ const { width } = Dimensions.get('window');
 // --- TYPES ---
 export interface UserData {
   name: string;
-  avatarUrl: string;
   level: string;
 }
 
 const MOCK_USER: UserData = {
   name: "Nguyễn Văn Học",
-  avatarUrl: "https://picsum.photos/100",
   level: "TOEIC",
 };
 
@@ -88,6 +85,11 @@ export default function HomeScreen({ navigation }: any) {
     navigation.navigate(route);
   };
 
+  const avatarLetter = useMemo(() => {
+    const s = (currentUser.name || '').trim();
+    return (s ? s[0] : 'P').toUpperCase();
+  }, [currentUser.name]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
@@ -103,7 +105,9 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.headerContainer}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => navigation.navigate(Routes.PROFILE)}>
-              <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatarImage} />
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarLetter}>{avatarLetter}</Text>
+              </View>
             </TouchableOpacity>
             <View style={styles.headerTextContainer}>
               <Text style={styles.greetingText}>Xin chào, {currentUser.name}</Text>
@@ -224,12 +228,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarImage: {
+  avatarCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
+  },
+  avatarLetter: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
   },
   headerTextContainer: {
     justifyContent: 'center',

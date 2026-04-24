@@ -13,7 +13,10 @@ import { useToast } from '../../components/ToastProvider';
 
 const schema = z.object({
   email: z.string().email('Email không hợp lệ'),
-  otp: z.string().regex(/^\d{6}$/, 'OTP gồm đúng 6 chữ số'),
+  otp: z.preprocess(
+    (v) => String(v ?? '').replace(/\s+/g, '').trim(),
+    z.string().regex(/^\d{6}$/, 'OTP gồm đúng 6 chữ số'),
+  ),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -126,6 +129,7 @@ export default function EmailVerifyScreen({ route, navigation }: any) {
                   onChangeText={(t) => onChange(t.replace(/[^\d]/g, ''))}
                   onBlur={onBlur}
                   keyboardType="number-pad"
+                  maxLength={6}
                   outlineColor="#E0E5ED"
                   activeOutlineColor="#0066FF"
                   style={styles.input}

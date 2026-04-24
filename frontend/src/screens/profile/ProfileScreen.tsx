@@ -7,7 +7,6 @@ import {
   ScrollView, 
   Platform,
   StatusBar,
-  Image,
   Modal,
   Pressable,
 } from 'react-native';
@@ -82,8 +81,10 @@ export default function ProfileScreen() {
 
   const displayName = user?.fullName || user?.username || 'Nguyễn Văn Học';
   const displayEmail = user?.email || 'nguyenhh1102@gmail.com';
-  // Use a generic placeholder avatar if no URL is provided
-  const avatarUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=0066FF&color=fff&size=200';
+  const avatarLetter = useMemo(() => {
+    const s = (displayName || '').trim();
+    return (s ? s[0] : 'P').toUpperCase();
+  }, [displayName]);
 
   const levelLabel = useMemo(() => {
     const val = currentLevelValue ?? user?.levelId ?? null;
@@ -103,7 +104,9 @@ export default function ProfileScreen() {
         
         {/* User Card */}
         <View style={styles.userCard}>
-          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarLetter}>{avatarLetter}</Text>
+          </View>
           <Text style={styles.userName}>{displayName}</Text>
           <Text style={styles.userEmail}>{displayEmail}</Text>
         </View>
@@ -116,7 +119,12 @@ export default function ProfileScreen() {
             label={t('profile.items.currentLevel', { value: levelLabel })} 
             onPress={() => navigation.navigate(Routes.SELECT_LEVEL)} 
           />
-          <MenuItem icon="lock-outline" label={t('profile.items.changePassword')} isLast />
+          <MenuItem
+            icon="lock-outline"
+            label={t('profile.items.changePassword')}
+            onPress={() => navigation.navigate(Routes.CHANGE_PASSWORD)}
+            isLast
+          />
         </View>
 
         {/* Section: CÀI ĐẶT */}
@@ -219,11 +227,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  avatar: {
+  avatarCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
     marginBottom: 16,
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarLetter: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '900',
   },
   userName: {
     fontSize: 20,
