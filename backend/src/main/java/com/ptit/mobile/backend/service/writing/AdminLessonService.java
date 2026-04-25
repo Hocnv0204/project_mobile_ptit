@@ -3,6 +3,7 @@ package com.ptit.mobile.backend.service.writing;
 import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateSuggestVocabularyRequest;
+import com.ptit.mobile.backend.dto.request.writing.ManualCreateLessonRequest;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
 import com.ptit.mobile.backend.dto.response.writing.LessonGenerationResponse;
@@ -13,6 +14,8 @@ import java.util.List;
 public interface AdminLessonService {
 
     AdminLessonDetailResponse requestLessonGeneration(AdminCreateLessonRequest request);
+
+    AdminLessonDetailResponse createManualLesson(ManualCreateLessonRequest request);
 
     Page<AdminLessonSummaryResponse> getAllLessonsForAdmin(
             String searchTerm, Integer topicId, Integer levelId, Boolean isDeleted,

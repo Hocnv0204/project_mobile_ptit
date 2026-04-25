@@ -10,6 +10,12 @@ import java.time.LocalDateTime;
 public class AdminLessonSummaryResponse {
     private Integer id;
     private String name;
-    private LocalDateTime createdAt;
+    private String status;
     private Boolean deleteFlag;
+    private Integer topicId;
+    private String topicName;
+    private Integer levelId;
+    private String levelName;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

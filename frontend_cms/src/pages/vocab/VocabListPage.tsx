@@ -167,11 +167,7 @@ const VocabListPage: React.FC = () => {
     fetchVocabularies(lesson.id);
   };
 
-  const handleAddVocab = () => {
-    setEditingVocab(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
+
 
   const handleEditVocab = (vocab: Vocabulary) => {
     setEditingVocab(vocab);
@@ -179,7 +175,7 @@ const VocabListPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteVocab = async (id: number) => {
+  const handleDeleteVocab = async (_id: number) => {
     Modal.confirm({
       title: "Are you sure you want to delete this vocabulary?",
       onOk: async () => {
