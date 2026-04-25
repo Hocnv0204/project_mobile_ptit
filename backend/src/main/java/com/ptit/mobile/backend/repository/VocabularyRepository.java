@@ -67,5 +67,23 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
             @Param("userId") Long userId,
             @Param("today") LocalDate today
     );
+
+    /**
+     * Tổng bản ghi vocabulary do user có role (vd. ROLE_ADMIN) tạo — khớp {@code vocabulary.user_id}
+     * lúc thêm từ qua API (SecurityUtils).
+     */
+    @Query(
+            value = """
+                    SELECT COUNT(v.id) FROM vocabulary v
+                    WHERE v.user_id IS NOT NULL
+                      AND v.user_id IN (
+                          SELECT ur.user_id FROM user_roles ur
+                          INNER JOIN roles r ON r.id = ur.role_id
+                          WHERE r.name = :roleName
+                      )
+                    """,
+            nativeQuery = true
+    )
+    Long countVocabularyCreatedByUsersWithRole(@Param("roleName") String roleName);
 }
 

@@ -1,5 +1,5 @@
 import { http } from './http';
-import { ApiEnvelope, LessonVocab, VocabularyWithStatus } from './types';
+import { ApiEnvelope, LessonVocab, PageResponse, VocabularyWithStatus } from './types';
 
 export type UpdateLessonVocabRequest = {
   name: string;
@@ -30,6 +30,26 @@ export const lessonVocabApi = {
   /** Lấy lesson hệ thống theo user hiện tại (backend tự suy ra level). */
   getSystemLessons: async () => {
     const res = await http.get<ApiEnvelope<LessonVocab[]>>('/api/lesson-vocab/system');
+    return res.data;
+  },
+
+  /**
+   * Danh sách lesson phân trang (CMS / admin). data = Spring Page: content, pageNumber, pageSize, totalElements, last, …
+   */
+  getAdminList: async (params: {
+    page?: number;
+    size?: number;
+    sort?: string;
+    order?: 'asc' | 'desc' | string;
+  } = {}) => {
+    const res = await http.get<ApiEnvelope<PageResponse<LessonVocab>>>('/api/lesson-vocab/admin', {
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 10,
+        sort: params.sort,
+        order: params.order,
+      },
+    });
     return res.data;
   },
 

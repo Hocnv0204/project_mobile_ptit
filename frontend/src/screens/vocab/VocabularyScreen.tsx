@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,11 +9,16 @@ import { Routes } from '../../constants/routes';
 import { useAuthStore } from '../../store/authStore';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
+const SYSTEM_PAGE_SIZE = 10;
+
 export default function VocabularyScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   
   const [loadingSystem, setLoadingSystem] = useState(true);
+  const [loadingSystemMore, setLoadingSystemMore] = useState(false);
+  const [systemPage, setSystemPage] = useState(0);
+  const [systemLast, setSystemLast] = useState(true);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [systemLessons, setSystemLessons] = useState<LessonVocab[]>([]);
   const [personalLessons, setPersonalLessons] = useState<LessonVocab[]>([]);
@@ -62,17 +67,45 @@ export default function VocabularyScreen({ navigation }: any) {
     }
   }, [activeTab, user?.id]);
 
-  const fetchSystemLessons = async () => {
+  /** Tab Hệ thống: GET /api/lesson-vocab/admin (phân trang). append = tải trang tiếp theo. */
+  const fetchSystemLessons = async (append = false) => {
+    if (append && (loadingSystemMore || systemLast)) return;
     try {
-      setLoadingSystem(true);
-      const res = await lessonVocabApi.getSystemLessons();
-      const lessons = res.data || [];
-      setSystemLessons(lessons);
+      if (append) {
+        setLoadingSystemMore(true);
+      } else {
+        setLoadingSystem(true);
+      }
+      const nextPage = append ? systemPage + 1 : 0;
+      const env = await lessonVocabApi.getAdminList({ page: nextPage, size: SYSTEM_PAGE_SIZE });
+      if (Number(env?.code) !== 200) {
+        throw new Error(env?.message || 'Không thể tải danh sách bài học');
+      }
+      const pr = env.data;
+      if (!pr) {
+        throw new Error('Không nhận được dữ liệu phân trang');
+      }
+      const lessons = pr.content || [];
+      setSystemLast(!!pr.last);
+      setSystemPage(pr.pageNumber ?? nextPage);
+      if (append) {
+        setSystemLessons((prev) => {
+          const seen = new Set(prev.map((x) => x.id));
+          const merged = [...prev];
+          for (const l of lessons) {
+            if (!seen.has(l.id)) merged.push(l);
+          }
+          return merged;
+        });
+      } else {
+        setSystemLessons(lessons);
+      }
       await enrichDueCounts(lessons);
     } catch (e: any) {
       Alert.alert('Lỗi', e?.message || 'Không thể tải danh sách bài học');
     } finally {
       setLoadingSystem(false);
+      setLoadingSystemMore(false);
     }
   };
 
@@ -96,6 +129,15 @@ export default function VocabularyScreen({ navigation }: any) {
     if (tab === 'personal' && personalLessons.length === 0) {
       fetchPersonalLessons();
     }
+    if (tab === 'system' && systemLessons.length === 0 && !loadingSystem) {
+      fetchSystemLessons(false);
+    }
+  };
+
+  const onSystemEndReached = () => {
+    if (activeTab !== 'system' || systemLast || loadingSystem || loadingSystemMore) return;
+    if (systemLessons.length === 0) return;
+    fetchSystemLessons(true);
   };
 
   const handleSaveLesson = async () => {
@@ -257,6 +299,15 @@ export default function VocabularyScreen({ navigation }: any) {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           renderItem={renderItem}
+          onEndReached={activeTab === 'system' ? onSystemEndReached : undefined}
+          onEndReachedThreshold={0.35}
+          ListFooterComponent={
+            activeTab === 'system' && loadingSystemMore ? (
+              <View style={styles.listFooterLoad}>
+                <ActivityIndicator size="small" color="#0066FF" />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
@@ -396,6 +447,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FEE2E2',
   },
+  listFooterLoad: { paddingVertical: 20, alignItems: 'center' },
   emptyContainer: { alignItems: 'center', marginTop: 40 },
   emptyText: { color: '#A0A7BA', fontSize: 16 },
   fab: {

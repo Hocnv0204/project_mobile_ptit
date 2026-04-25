@@ -48,8 +48,13 @@ interface Vocabulary {
   audioUrl?: string;
 }
 
+const LESSON_PAGE_SIZE = 10;
+
 const VocabListPage: React.FC = () => {
   const [lessons, setLessons] = useState<LessonVocab[]>([]);
+  /** Tổng số bài (toàn bộ trang) — từ API totalElements, không phải độ dài mảng trang hiện tại. */
+  const [totalLessons, setTotalLessons] = useState(0);
+  const [lessonListPage, setLessonListPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<LessonVocab | null>(
     null,
@@ -70,33 +75,65 @@ const VocabListPage: React.FC = () => {
   const [formattedVocabs, setFormattedVocabs] = useState<Vocabulary[]>([]);
   const [isFormatting, setIsFormatting] = useState(false);
   const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
+  /** Tổng vocabulary do tài khoản ROLE_ADMIN tạo (API /api/vocab/stats/admin-vocabulary-total). */
+  const [adminVocabTotal, setAdminVocabTotal] = useState(0);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchAdminVocabTotal = async () => {
     try {
-      const [lessonsRes, levelsRes] = await Promise.all<any>([
-        api.get("/api/lesson-vocab/admin"),
-        api.get("/api/levels"),
-      ]);
-      setLessons(lessonsRes.data.content || []);
-      setLevels(levelsRes.data || []);
-    } catch (error) {
-      message.error("Failed to fetch data");
-    } finally {
-      setLoading(false);
+      const res = (await api.get("/api/vocab/stats/admin-vocabulary-total")) as {
+        data?: unknown;
+        code?: number;
+      };
+      const raw = res?.data;
+      const n = raw != null && raw !== "" ? Number(raw) : 0;
+      setAdminVocabTotal(Number.isFinite(n) ? n : 0);
+    } catch {
+      setAdminVocabTotal(0);
     }
   };
 
-  const fetchLessons = async () => {
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      try {
+        const [lessonsRes, levelsRes] = await Promise.all([
+          api.get("/api/lesson-vocab/admin", {
+            params: { page: 0, size: LESSON_PAGE_SIZE },
+          }),
+          api.get("/api/levels"),
+          fetchAdminVocabTotal(),
+        ]);
+        const page: any = (lessonsRes as { data?: unknown })?.data;
+        setLessons(page?.content || []);
+        setTotalLessons(page?.totalElements ?? 0);
+        setLessonListPage((page?.pageNumber ?? 0) + 1);
+        setLevels((levelsRes as any)?.data || []);
+      } catch {
+        message.error("Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void init();
+  }, []);
+
+  /** Chỉ danh sách lesson (phân trang). Spring `page` 0-based; `current` Ant Design 1-based. */
+  const fetchLessons = async (current: number) => {
     setLoading(true);
     try {
-      const response: any = await api.get("/api/lesson-vocab/admin");
-      setLessons(response.data.content || []);
-    } catch (error) {
+      const lessonsRes: { data?: { content?: unknown[]; totalElements?: number; pageNumber?: number; totalPages?: number } } =
+        await api.get("/api/lesson-vocab/admin", {
+          params: { page: Math.max(0, current - 1), size: LESSON_PAGE_SIZE },
+        });
+      const page = lessonsRes?.data;
+      const rows = page?.content || [];
+      setLessons(rows as LessonVocab[]);
+      setTotalLessons(page?.totalElements ?? 0);
+      setLessonListPage((page?.pageNumber ?? current - 1) + 1);
+      if (rows.length === 0 && current > 1) {
+        await fetchLessons(current - 1);
+      }
+    } catch {
       message.error("Failed to fetch lessons");
     } finally {
       setLoading(false);
@@ -122,7 +159,7 @@ const VocabListPage: React.FC = () => {
         try {
           await api.delete(`/api/lesson-vocab/${id}`);
           message.success("Lesson deleted");
-          fetchLessons();
+          await fetchLessons(lessonListPage);
         } catch (error) {
           message.error("Delete failed");
         }
@@ -140,7 +177,7 @@ const VocabListPage: React.FC = () => {
         await api.post("/api/lesson-vocab", values);
         message.success("Lesson created");
       }
-      fetchLessons();
+      await fetchLessons(editingLesson ? lessonListPage : 1);
       setIsLessonModalOpen(false);
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Operation failed";
@@ -206,9 +243,10 @@ const VocabListPage: React.FC = () => {
         message.success("Update simulated (endpoint pending)");
       } else {
         // Create
-        await api.post(`api/vocab/${selectedLesson?.id}/single`, values);
+        await api.post(`/api/vocab/${selectedLesson?.id}/single`, values);
         message.success("Vocabulary created!");
-        fetchVocabularies(selectedLesson!.id);
+        void fetchVocabularies(selectedLesson!.id);
+        void fetchAdminVocabTotal();
       }
       setIsModalOpen(false);
     } catch (error: any) {
@@ -253,7 +291,8 @@ const VocabListPage: React.FC = () => {
         })),
       });
       message.success("Bulk vocabularies created successfully!");
-      fetchVocabularies(selectedLesson!.id);
+      void fetchVocabularies(selectedLesson!.id);
+      void fetchAdminVocabTotal();
       setIsBulkModalOpen(false);
       setBulkInput("");
       setFormattedVocabs([]);
@@ -272,7 +311,13 @@ const VocabListPage: React.FC = () => {
   };
 
   const lessonColumns = [
-    { title: "STT", key: "stt", width: 60, render: (_: any, __: any, index: number) => index + 1 },
+    {
+      title: "STT",
+      key: "stt",
+      width: 60,
+      render: (_: any, __: any, index: number) =>
+        (lessonListPage - 1) * LESSON_PAGE_SIZE + index + 1,
+    },
     {
       title: "Lesson Details",
       key: "details",
@@ -355,12 +400,16 @@ const VocabListPage: React.FC = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card size="small">
-            <Statistic title="Total Lessons" value={lessons.length} valueStyle={{ fontSize: '20px' }} />
+            <Statistic title="Total Lessons" value={totalLessons} valueStyle={{ fontSize: '20px' }} />
           </Card>
         </Col>
         <Col span={6}>
           <Card size="small">
-            <Statistic title="Vocabularies" value={vocabularies.length} valueStyle={{ fontSize: '20px' }} />
+            <Statistic
+              title="Vocabularies (admin)"
+              value={adminVocabTotal}
+              valueStyle={{ fontSize: "20px" }}
+            />
           </Card>
         </Col>
       </Row>
@@ -398,6 +447,16 @@ const VocabListPage: React.FC = () => {
             loading={loading}
             rowKey="id"
             size="small"
+            pagination={{
+              current: lessonListPage,
+              pageSize: LESSON_PAGE_SIZE,
+              total: totalLessons,
+              showSizeChanger: false,
+              showTotal: (t, range) => `${range[0]}-${range[1]} / ${t} bài`,
+              onChange: (p) => {
+                void fetchLessons(p);
+              },
+            }}
           />
         </Card>
       ) : (

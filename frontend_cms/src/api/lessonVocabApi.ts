@@ -10,18 +10,15 @@ export interface LessonVocab {
   updatedAt: string;
 }
 
-export interface PageResponse<T> {
-  message: string;
-  code: number;
-  data: {
-    content: T[];
-    pageNumber: number;
-    pageSize: number;
-    totalElements: number;
-    totalPages: number;
-    last: boolean;
-  };
-}
+/** Phần `data` của BaseResponse khi gọi GET /api/lesson-vocab/admin (Spring Page). */
+export type LessonVocabAdminPage = {
+  content: LessonVocab[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};
 
 export interface CreateLessonVocabRequest {
   name: string;
@@ -29,7 +26,23 @@ export interface CreateLessonVocabRequest {
 }
 
 export const lessonVocabApi = {
+  /** Không truyền params → backend dùng mặc định page/size. */
   getAll: () => axiosInstance.get("/api/lesson-vocab/admin"),
+
+  getAdminPaged: (params: {
+    page?: number;
+    size?: number;
+    sort?: string;
+    order?: string;
+  } = {}) =>
+    axiosInstance.get("/api/lesson-vocab/admin", {
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 10,
+        sort: params.sort,
+        order: params.order,
+      },
+    }),
   getById: (id: number) => axiosInstance.get(`/api/lesson-vocab/${id}`),
   create: (data: CreateLessonVocabRequest) =>
     axiosInstance.post("/api/lesson-vocab", data),

@@ -6,7 +6,6 @@ import {
   Modal,
   Form,
   Input,
-  InputNumber,
   message,
   Select,
 } from "antd";
@@ -19,32 +18,69 @@ import type {
 import { levelApi } from "../../api/levelApi";
 import type { Level } from "../../api/levelApi";
 
+const PAGE_SIZE = 10;
+
+type AdminListEnvelope = {
+  data?: {
+    content?: LessonVocab[];
+    pageNumber?: number;
+    totalElements?: number;
+  };
+};
+
 const LessonVocabListPage: React.FC = () => {
   const [lessons, setLessons] = useState<LessonVocab[]>([]);
+  const [totalLessons, setTotalLessons] = useState(0);
+  const [lessonListPage, setLessonListPage] = useState(1);
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form] = Form.useForm<CreateLessonVocabRequest>();
 
-  const fetchData = async () => {
+  const fetchLessons = async (current: number) => {
     setLoading(true);
     try {
-      const [lessonsRes, levelsRes] = await Promise.all<any>([
-        lessonVocabApi.getAll(),
-        levelApi.getAll(),
-      ]);
-      setLessons(lessonsRes.data.content || []);
-      setLevels(levelsRes.data || []);
-    } catch (error) {
-      message.error("Failed to fetch data");
+      const lessonsRes = (await lessonVocabApi.getAdminPaged({
+        page: Math.max(0, current - 1),
+        size: PAGE_SIZE,
+      })) as AdminListEnvelope;
+      const page = lessonsRes?.data;
+      const rows = page?.content || [];
+      setLessons(rows);
+      setTotalLessons(page?.totalElements ?? 0);
+      setLessonListPage((page?.pageNumber ?? current - 1) + 1);
+      if (rows.length === 0 && current > 1) {
+        await fetchLessons(current - 1);
+      }
+    } catch {
+      message.error("Failed to fetch lessons");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    const init = async () => {
+      setLoading(true);
+      try {
+        const [lessonsRes, levelsRes] = await Promise.all([
+          lessonVocabApi.getAdminPaged({ page: 0, size: PAGE_SIZE }),
+          levelApi.getAll(),
+        ]);
+        const lr = lessonsRes as AdminListEnvelope;
+        const p = lr?.data;
+        setLessons(p?.content || []);
+        setTotalLessons(p?.totalElements ?? 0);
+        setLessonListPage((p?.pageNumber ?? 0) + 1);
+        setLevels((levelsRes as { data?: Level[] })?.data || []);
+      } catch {
+        message.error("Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void init();
   }, []);
 
   const handleAdd = () => {
@@ -69,7 +105,7 @@ const LessonVocabListPage: React.FC = () => {
         try {
           await lessonVocabApi.delete(id);
           message.success("Lesson deleted");
-          fetchData();
+          await fetchLessons(lessonListPage);
         } catch (error) {
           message.error("Failed to delete lesson");
         }
@@ -88,7 +124,7 @@ const LessonVocabListPage: React.FC = () => {
         message.success("Lesson created");
       }
       setIsModalVisible(false);
-      fetchData();
+      await fetchLessons(editingId ? lessonListPage : 1);
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Operation failed";
       message.error(errorMsg);
@@ -97,14 +133,21 @@ const LessonVocabListPage: React.FC = () => {
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    {
+      title: "STT",
+      key: "stt",
+      width: 64,
+      render: (_: unknown, __: LessonVocab, index: number) =>
+        (lessonListPage - 1) * PAGE_SIZE + index + 1,
+    },
+    { title: "ID", dataIndex: "id", key: "id", width: 72 },
     { title: "Name", dataIndex: "name", key: "name" },
     {
       title: "Level",
       dataIndex: "levelId",
       key: "levelId",
       render: (levelId: number | null) =>
-        levelId ? (levels.find((l) => l.id === levelId)?.name || levelId) : "N/A",
+        levelId ? levels.find((l) => l.id === levelId)?.name || levelId : "N/A",
     },
     { title: "Created By", dataIndex: "createBy", key: "createBy" },
     {
@@ -116,7 +159,8 @@ const LessonVocabListPage: React.FC = () => {
     {
       title: "Action",
       key: "action",
-      render: (_: any, record: LessonVocab) => (
+      width: 200,
+      render: (_: unknown, record: LessonVocab) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             Edit
@@ -140,9 +184,15 @@ const LessonVocabListPage: React.FC = () => {
           marginBottom: 16,
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <h2>Lesson Vocabularies</h2>
+        <h2 style={{ margin: 0 }}>
+          Lesson Vocabularies
+          <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 400, color: "#888" }}>
+            (Tổng: {totalLessons} bài)
+          </span>
+        </h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           Add Lesson
         </Button>
@@ -152,6 +202,16 @@ const LessonVocabListPage: React.FC = () => {
         dataSource={lessons}
         rowKey="id"
         loading={loading}
+        pagination={{
+          current: lessonListPage,
+          pageSize: PAGE_SIZE,
+          total: totalLessons,
+          showSizeChanger: false,
+          showTotal: (t, range) => `${range[0]}-${range[1]} / ${t} bài`,
+          onChange: (p) => {
+            void fetchLessons(p);
+          },
+        }}
       />
 
       <Modal

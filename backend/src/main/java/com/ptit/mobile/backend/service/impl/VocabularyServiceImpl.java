@@ -161,4 +161,11 @@ public class VocabularyServiceImpl implements VocabularyService {
         long dueCount = cnt != null ? cnt : 0L;
         return BaseResponse.success(dueCount);
     }
+
+    @Override
+    public BaseResponse getTotalVocabularyCreatedByAdmins() {
+        Long cnt = vocabularyRepository.countVocabularyCreatedByUsersWithRole("ROLE_ADMIN");
+        long n = cnt != null ? cnt : 0L;
+        return BaseResponse.success(n);
+    }
 }

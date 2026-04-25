@@ -14,4 +14,7 @@ public interface VocabularyService {
 
     /** Tổng từ cần học/ôn hôm nay theo userId + lessonVocabId (userId phải khớp token). */
     BaseResponse getDueTodayCountForLesson(Long userId, Long lessonVocabId);
+
+    /** Tổng vocabulary do tài khoản có role ROLE_ADMIN tạo (theo vocabulary.user_id). */
+    BaseResponse getTotalVocabularyCreatedByAdmins();
 }

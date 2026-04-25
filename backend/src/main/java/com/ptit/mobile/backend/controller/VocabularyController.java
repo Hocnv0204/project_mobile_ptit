@@ -54,6 +54,16 @@ public class VocabularyController {
         return vocabularyService.getDueTodayCountForLesson(userId, lessonVocabId);
     }
 
+    @Operation(
+            summary = "Tổng vocabulary do admin tạo",
+            description = "Đếm các bản ghi vocabulary có user_id thuộc user gán role ROLE_ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/stats/admin-vocabulary-total")
+    public BaseResponse adminVocabularyTotal() {
+        return vocabularyService.getTotalVocabularyCreatedByAdmins();
+    }
+
     @GetMapping("/home-stats")
     public BaseResponse homeStats() {
         Long userId = SecurityUtils.getCurrentUserId();
