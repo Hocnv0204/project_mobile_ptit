@@ -43,22 +43,10 @@ LinguaBoost hướng tới ba nhóm mục tiêu:
 
 ### 🔥 Streak (Chuỗi học tập)
 
-- **Mục tiêu**: ghi nhận số ngày người dùng có hoạt động học liên tiếp.
-- **Dữ liệu streak** (API trả về):
-  - `currentStreak`: chuỗi hiện tại (ngày)
-  - `longestStreak`: chuỗi dài nhất (ngày)
-  - `lastActivityDate`: ngày hoạt động gần nhất
-  - `alreadyCheckedInToday`: đã “điểm danh” hôm nay hay chưa
-- **Cơ chế cập nhật**:
-  - Nếu **hôm nay đã có hoạt động** → không tăng (idempotent trong ngày).
-  - Nếu **hôm qua có hoạt động** → `currentStreak + 1`.
-  - Nếu **bỏ lỡ ≥ 1 ngày** (hoặc lần đầu) → reset `currentStreak = 1`.
-- **Khi nào streak được cập nhật?**
-  - Có endpoint “điểm danh” riêng: `POST /api/streaks/check-in`.
-  - Ngoài ra backend cũng **tự gọi cập nhật streak** khi người dùng hoàn thành/ghi nhận hoạt động học ở một số module (ví dụ: quiz, flashcard, dictation, podcast, writing).
-- **Nhắc học (push notification)**:
-  - Job scheduler chạy mặc định **20:00 mỗi ngày** (Asia/Ho_Chi_Minh). Nếu user **chưa học hôm nay** thì gửi nhắc nhở.
-  - Mobile nhận notification có `data.screen = "StreakDetailsScreen"` để điều hướng vào màn chi tiết streak.
+- Theo dõi chuỗi ngày học liên tiếp: `currentStreak`, `longestStreak`, `lastActivityDate`, `alreadyCheckedInToday`.
+- API: `GET /api/streaks` (xem streak), `POST /api/streaks/check-in` (điểm danh trong ngày — idempotent).
+- Streak tự được cập nhật khi người dùng hoàn thành hoạt động học ở các module (quiz/flashcard/dictation/podcast/writing).
+- Scheduler nhắc học qua push mặc định 20:00 mỗi ngày (Asia/Ho_Chi_Minh), điều hướng `StreakDetailsScreen`.
 
 ### 📖 Vocabulary Module
 
