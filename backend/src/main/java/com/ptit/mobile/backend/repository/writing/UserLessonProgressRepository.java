@@ -15,5 +15,7 @@ public interface UserLessonProgressRepository extends JpaRepository<UserLessonPr
 
     List<UserLessonProgress> findAllByUserIdOrderByUpdatedAtDesc(Long userId);
 
+    List<UserLessonProgress> findAllByUserIdAndLessonWritingIdIn(Long userId, List<Integer> lessonWritingIds);
+
     Page<UserLessonProgress> findAllByUserIdOrderByUpdatedAtDesc(Long userId, Pageable pageable);
 }

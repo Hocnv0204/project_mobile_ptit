@@ -52,6 +52,18 @@ export const writingApi = {
     return res.data.data;
   },
 
+  getBulkLessonProgress: async (lessonIds: number[]) => {
+    const res = await http.get<ApiEnvelope<UserLessonProgressResponse[]>>(
+      "/api/lesson-writings/progress/bulk",
+      {
+        params: {
+          lessonIds: lessonIds.join(","),
+        },
+      },
+    );
+    return res.data.data;
+  },
+
   updateLessonProgress: async (lessonId: number, currentOrderIndex: number) => {
     await http.put<ApiEnvelope<void>>(
       "/api/lesson-writings/progress",
