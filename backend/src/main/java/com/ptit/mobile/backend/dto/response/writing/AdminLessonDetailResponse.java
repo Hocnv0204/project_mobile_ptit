@@ -1,6 +1,5 @@
 package com.ptit.mobile.backend.dto.response.writing;
 
-import com.ptit.mobile.backend.dto.response.writing.SuggestVocabularyResponse;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,10 +12,15 @@ public class AdminLessonDetailResponse {
     private Integer id;
     private String name;
     private String description;
+    private String status;
     private Boolean deleteFlag;
+    private Integer totalSentences;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Integer topicId;
     private String topicName;
+    private Integer levelId;
     private String levelName;
+    private List<LessonSentenceResponse> sentences;
     private List<SuggestVocabularyResponse> suggestVocabularies;
 }

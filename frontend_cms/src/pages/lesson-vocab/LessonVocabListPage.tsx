@@ -93,7 +93,7 @@ const LessonVocabListPage: React.FC = () => {
     setEditingId(record.id);
     form.setFieldsValue({
       name: record.name,
-      levelId: record.levelId,
+      levelId: record.levelId ?? undefined,
     });
     setIsModalVisible(true);
   };

@@ -2,10 +2,7 @@ package com.ptit.mobile.backend.mapper.lesson;
 
 import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
 import com.ptit.mobile.backend.dto.response.writing.*;
-import com.ptit.mobile.backend.model.LessonWriting;
-import com.ptit.mobile.backend.model.LessonSentence;
-import com.ptit.mobile.backend.model.SuggestVocabulary;
-import com.ptit.mobile.backend.model.UserTranslationHistory;
+import com.ptit.mobile.backend.model.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -53,14 +50,14 @@ public class LessonMapper {
         response.setName(lesson.getName());
         response.setDescription(lesson.getDescription());
         response.setTotalSentences(lesson.getTotalSentences());
-        
+
         if (sentences != null) {
             List<LessonSentenceResponse> sentenceResponses = sentences.stream().map(sentence -> {
                 LessonSentenceResponse sentenceResponse = new LessonSentenceResponse();
                 sentenceResponse.setId(sentence.getId());
                 sentenceResponse.setSentenceVi(sentence.getSentenceVi());
                 sentenceResponse.setOrderIndex(sentence.getOrderIndex());
-                
+
                 if (vocabularies != null) {
                     List<SuggestVocabularyResponse> vocabsForSentence = vocabularies.stream()
                             .filter(v -> sentence.getId().equals(v.getLessonSentenceId()))
@@ -70,14 +67,14 @@ public class LessonMapper {
                 } else {
                     sentenceResponse.setSuggestVocabularies(Collections.emptyList());
                 }
-                
+
                 return sentenceResponse;
             }).collect(Collectors.toList());
             response.setSentences(sentenceResponses);
         } else {
             response.setSentences(Collections.emptyList());
         }
-        
+
         return response;
     }
 
@@ -95,50 +92,107 @@ public class LessonMapper {
         return response;
     }
 
-    public AdminLessonSummaryResponse toAdminSummaryResponse(LessonWriting lesson) {
-        if (lesson == null) {
-            return null;
-        }
-
-        AdminLessonSummaryResponse response = new AdminLessonSummaryResponse();
-        response.setId(lesson.getId());
-        response.setName(lesson.getName());
-        response.setCreatedAt(lesson.getCreatedAt());
-        response.setDeleteFlag(lesson.getDeleteFlag());
-
+    public LessonSentenceResponse toSentenceResponse(LessonSentence sentence) {
+        if (sentence == null) return null;
+        LessonSentenceResponse response = new LessonSentenceResponse();
+        response.setId(sentence.getId());
+        response.setSentenceVi(sentence.getSentenceVi());
+        response.setOrderIndex(sentence.getOrderIndex());
+        response.setSuggestVocabularies(Collections.emptyList());
         return response;
     }
 
-    public AdminLessonDetailResponse toAdminDetailResponse(LessonWriting lesson) {
+    public LessonSentenceResponse toSentenceResponse(LessonSentence sentence, List<SuggestVocabulary> vocabularies) {
+        if (sentence == null) return null;
+        LessonSentenceResponse response = new LessonSentenceResponse();
+        response.setId(sentence.getId());
+        response.setSentenceVi(sentence.getSentenceVi());
+        response.setOrderIndex(sentence.getOrderIndex());
+        if (vocabularies != null) {
+            response.setSuggestVocabularies(vocabularies.stream()
+                    .filter(v -> sentence.getId().equals(v.getLessonSentenceId()))
+                    .map(this::toSuggestVocabularyResponse)
+                    .collect(Collectors.toList()));
+        } else {
+            response.setSuggestVocabularies(Collections.emptyList());
+        }
+        return response;
+    }
+
+    // ==================== Admin Summary ====================
+
+    public AdminLessonSummaryResponse toAdminSummaryResponse(LessonWriting lesson) {
+        return toAdminSummaryResponse(lesson, null, null);
+    }
+
+    public AdminLessonSummaryResponse toAdminSummaryResponse(LessonWriting lesson, Topic topic, Level level) {
         if (lesson == null) {
             return null;
         }
+        AdminLessonSummaryResponse response = new AdminLessonSummaryResponse();
+        response.setId(lesson.getId());
+        response.setName(lesson.getName());
+        response.setStatus(lesson.getStatus());
+        response.setDeleteFlag(lesson.getDeleteFlag());
+        response.setCreatedAt(lesson.getCreatedAt());
+        response.setUpdatedAt(lesson.getUpdatedAt());
+        response.setTopicId(lesson.getTopicId());
+        response.setLevelId(lesson.getLevelId());
+        response.setTopicName(topic != null ? topic.getName() : null);
+        response.setLevelName(level != null ? level.getName() : null);
+        return response;
+    }
 
+    // ==================== Admin Detail ====================
+
+    public AdminLessonDetailResponse toAdminDetailResponse(LessonWriting lesson) {
+        return toAdminDetailResponse(lesson, null, null, null, null);
+    }
+
+    public AdminLessonDetailResponse toAdminDetailResponse(LessonWriting lesson, List<SuggestVocabulary> vocabularies) {
+        return toAdminDetailResponse(lesson, null, null, null, vocabularies);
+    }
+
+    public AdminLessonDetailResponse toAdminDetailResponse(
+            LessonWriting lesson,
+            Topic topic,
+            Level level,
+            List<LessonSentence> sentences,
+            List<SuggestVocabulary> vocabularies
+    ) {
+        if (lesson == null) {
+            return null;
+        }
         AdminLessonDetailResponse response = new AdminLessonDetailResponse();
         response.setId(lesson.getId());
         response.setName(lesson.getName());
         response.setDescription(lesson.getDescription());
+        response.setStatus(lesson.getStatus());
         response.setDeleteFlag(lesson.getDeleteFlag());
+        response.setTotalSentences(lesson.getTotalSentences());
         response.setCreatedAt(lesson.getCreatedAt());
         response.setUpdatedAt(lesson.getUpdatedAt());
+        response.setTopicId(lesson.getTopicId());
+        response.setLevelId(lesson.getLevelId());
+        response.setTopicName(topic != null ? topic.getName() : "");
+        response.setLevelName(level != null ? level.getName() : "");
 
-        // Set topic and level names (will need to fetch from repositories if needed)
-        response.setTopicName(""); // Will be populated from related data if available
-        response.setLevelName(""); // Will be populated from related data if available
+        if (sentences != null) {
+            response.setSentences(sentences.stream()
+                    .map(s -> toSentenceResponse(s, vocabularies))
+                    .collect(Collectors.toList()));
+        } else {
+            response.setSentences(Collections.emptyList());
+        }
 
-        // Initialize empty list for vocabularies
-        response.setSuggestVocabularies(java.util.Collections.emptyList());
-
-        return response;
-    }
-
-    public AdminLessonDetailResponse toAdminDetailResponse(LessonWriting lesson, List<SuggestVocabulary> vocabularies) {
-        AdminLessonDetailResponse response = toAdminDetailResponse(lesson);
-        if (response != null && vocabularies != null) {
+        if (vocabularies != null) {
             response.setSuggestVocabularies(vocabularies.stream()
                     .map(this::toSuggestVocabularyResponse)
                     .collect(Collectors.toList()));
+        } else {
+            response.setSuggestVocabularies(Collections.emptyList());
         }
+
         return response;
     }
 
@@ -146,7 +200,6 @@ public class LessonMapper {
         if (request == null || lesson == null) {
             return;
         }
-
         if (request.getName() != null) {
             lesson.setName(request.getName());
         }

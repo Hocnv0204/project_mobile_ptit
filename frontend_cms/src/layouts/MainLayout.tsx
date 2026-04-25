@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Layout, Menu, Button, theme, ConfigProvider } from "antd";
+import { Layout, Menu, Button, theme } from "antd";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -52,6 +52,11 @@ const MainLayout: React.FC = () => {
       label: "Lesson Vocabularies",
     },
     {
+      key: '/lesson-writing',
+      icon: <BookOutlined />,
+      label: 'Lesson Writing',
+    },
+    {
       key: '/podcasts',
       icon: <SoundOutlined />,
       label: 'Podcasts',
@@ -87,7 +92,10 @@ const MainLayout: React.FC = () => {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[
+            menuItems.find(item => location.pathname === item.key || 
+              (item.key !== '/' && location.pathname.startsWith(item.key)))?.key || location.pathname
+          ]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
         />
