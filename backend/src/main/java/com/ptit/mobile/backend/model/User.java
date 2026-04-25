@@ -49,6 +49,9 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "level_id")
+    private Long levelId;
+
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 }

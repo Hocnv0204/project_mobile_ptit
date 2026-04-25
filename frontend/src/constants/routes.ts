@@ -1,33 +1,54 @@
 export const Routes = {
+  WELCOME: 'Welcome',
   // Auth Stack
   SPLASH: 'Splash',
   ONBOARDING: 'Onboarding',
   LOGIN: 'Login',
   REGISTER: 'Register',
   EMAIL_VERIFY: 'EmailVerify',
+  SELECT_LEVEL: 'SelectLevel',
+  CHANGE_PASSWORD: 'ChangePassword',
+  FORGOT_PASSWORD_REQUEST: 'ForgotPasswordRequest',
+  FORGOT_PASSWORD_RESET: 'ForgotPasswordReset',
 
   // User Bottom Tabs
   HOME: 'Home',
   VOCABULARY: 'Vocabulary',
-  AI_LESSON: 'AILesson',
-  PODCAST: 'Podcast',
+  WRITING: 'Writing',
+  DICTATION: 'Dictation',
   PROFILE: 'Profile',
+  PODCAST: 'Podcast',
+
+  // Streak
+  STREAK_DETAILS: 'StreakDetails',
 
   // Vocab Stack
-  TOPIC_LIST: 'TopicList',
-  VOCAB_LIST: 'VocabList',
-  VOCAB_DETAIL: 'VocabDetail',
-  VOCAB_QUIZ: 'VocabQuiz',
-  ADD_VOCAB: 'AddVocab',
+  LESSON_DETAIL: 'LessonDetail',
+  ADD_VOCAB_AI: 'AddVocabAi',
+  AI_VOCAB_RESULT: 'AiVocabResult',
+  FLASHCARD: 'Flashcard',
+  QUIZ_MODE_SELECT: 'QuizModeSelect',
+  QUIZ_SESSION: 'QuizSession',
+  FILL_BLANK_SESSION: 'FillBlankSession',
+
+  // Writing Stack
+  WRITING_LIST: 'WritingList',
+  SELECT_TOPIC: 'SelectTopic',
+  SELECT_LESSON: 'SelectLesson',
+  LESSON_PRACTICE: 'LessonPractice',
+  WRITING_HISTORY: 'WritingHistory',
+  WRITING_ACTIVE_LESSONS: 'WritingActiveLessons',
 
   // AI Stack
   AI_LESSON_HOME: 'AILessonHome',
   WRITING_GRADE: 'WritingGrade',
 
+  // Dictation Stack
+  DICTATION_PLAYER: 'DictationPlayer',
+
   // Podcast Stack
   PODCAST_LIST: 'PodcastList',
   PODCAST_PLAYER: 'PodcastPlayer',
-  DICTATION: 'Dictation',
 
   // Admin Drawer
   ADMIN_DASHBOARD: 'AdminDashboard',

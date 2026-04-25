@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_email_verified  BOOLEAN DEFAULT FALSE,
     delete_flag        BOOLEAN DEFAULT FALSE,
 
+    level_id    BIGINT,
+
     created_at  TIMESTAMP,
     updated_at  TIMESTAMP,
     last_login  TIMESTAMP
@@ -225,14 +227,14 @@ CREATE TABLE IF NOT EXISTS notification (
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS streak_activities (
-    id             BIGINT PRIMARY KEY,
+    id             BIGSERIAL PRIMARY KEY,
     user_id        BIGINT REFERENCES users(id),
     activity_type  VARCHAR(50),
     created_at     TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS user_streaks (
-    id                  BIGINT PRIMARY KEY,
+    id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT UNIQUE REFERENCES users(id),
 
     current_streak      INT DEFAULT 0,

@@ -3,13 +3,11 @@ spring:
     name: backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/mobile_app_db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/mobile_app_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
 
-  # Redis hiện để OPTIONAL: không cần chạy Redis vẫn khởi động được backend.
-  # Khi cần dùng Redis/Spring Session Redis thì cấu hình và bật lại sau.
   session:
     store-type: none
 
@@ -22,19 +20,61 @@ spring:
 
   flyway:
     enabled: true
-    baseline-on-migrate: true   # Cho phép Flyway chạy khi schema đã tồn tại (tạo bởi docker init.sql)
-    baseline-version: 0         # Đánh dấu baseline là version 0
+    baseline-on-migrate: true
+    baseline-version: 0
     locations: classpath:db/migration
+    # ignore-missing-migrations: true
 
-  # Redis: nếu chưa dùng tới thì không cần cấu hình (backend vẫn chạy).
-  # Khi cần, bạn có thể bật lại cấu hình bên dưới:
-  # data:
-  #   redis:
-  #     host: localhost
-  #     port: 6379
-  #     password: redis123
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:3000ms}
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        debug: false
 
 management:
   health:
     redis:
-      enabled: false
+      enabled: true
+
+jwt:
+  secret: ${JWT_SECRET:}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000} # 15 phút (ms)
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000} # 7 ngày (ms)
+
+otp:
+  expiration: ${OTP_EXPIRATION:300000} # 5 phút (ms)
+  length: ${OTP_LENGTH:6}
+  sender-name: ${OTP_SENDER_NAME:"PTIT English App"}
+
+# Google OAuth2 — Web client (verify id_token aud); Android client khi token cấp cho app native
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+  android-client-id: ${GOOGLE_ANDROID_CLIENT_ID:}
+
+groq:
+  api-key: ${GROQ_API_KEY:}
+  model: ${GROQ_MODEL:llama-3.1-8b-instant}
+  base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-1.5-flash}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/models}
+
+ai:
+  provider: ${AI_PROVIDER:groq}

@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 public class UserStreak {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "user_id", unique = true)

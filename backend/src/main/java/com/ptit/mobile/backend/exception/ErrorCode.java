@@ -28,7 +28,68 @@ public enum ErrorCode {
     INVALID_IMAGE_FORMAT(3003, "Invalid image format. Allowed: jpg, png, jpeg"),
 
     // ── Statistics Service (4xxx) ────────────────────────
-    STAT_NOT_FOUND(4001, "Statistics data not found");
+    STAT_NOT_FOUND(4001, "Statistics data not found"),
+
+    // ── Authentication (5xxx) ────────────────────────────
+    EMAIL_ALREADY_EXISTS(5001, "Email already exists"),
+    USERNAME_ALREADY_EXISTS(5002, "Username already exists"),
+    INVALID_CREDENTIALS(5003, "Invalid email or password"),
+    TOKEN_EXPIRED(5004, "Token has expired"),
+    TOKEN_INVALID(5005, "Token is invalid"),
+    TOKEN_NOT_FOUND(5006, "Refresh token not found or revoked"),
+    USER_NOT_FOUND(5007, "User not found"),
+    USER_INACTIVE(5008, "User account is inactive"),
+    USER_EMAIL_NOT_VERIFIED(5009, "Email has not been verified"),
+    OLD_PASSWORD_INCORRECT(5010, "Old password is incorrect"),
+
+    // ── OTP (6xxx) ───────────────────────────────────────
+    OTP_INVALID(6001, "Invalid OTP code"),
+    OTP_EXPIRED(6002, "OTP has expired, please request a new one"),
+    OTP_RESEND_TOO_SOON(6003, "Please wait before requesting a new OTP"),
+    USER_ALREADY_VERIFIED(6004, "Email is already verified"),
+    REGISTRATION_PENDING(6005, "Account is pending email verification"),
+
+    // ── Google OAuth2 (7xxx) ─────────────────────────────
+    GOOGLE_TOKEN_INVALID(7001, "Invalid or expired Google ID token"),
+    GOOGLE_TOKEN_AUDIENCE_MISMATCH(7002, "Google ID token audience does not match"),
+    GOOGLE_EMAIL_NOT_VERIFIED(7003, "Google account email is not verified"),
+
+    // ── Gemini AI (8xxx) ─────────────────────────────────
+    GEMINI_API_KEY_MISSING(8001, "Gemini API key is missing"),
+    GEMINI_REQUEST_FAILED(8002, "Gemini request failed"),
+    GEMINI_INVALID_RESPONSE(8003, "Gemini response is invalid"),
+    // Vocabulary
+    VOCABULARY_ALREADY_EXISTS_BY_LESSON(9001, "Vocabulary already exists"),
+    CREATE_REQUEST_VOCAB_INVALID(9002, "Create request vocabulary invalid"),
+    VOCABULARY_INVALID(9003, "Vocabulary invalid"),
+    // Level
+    LEVEL_NOT_FOUND(9101, "Level not found"),
+    LEVEL_NAME_ALREADY_EXISTS(9102, "Level name already exists"),
+    TOPIC_NOT_FOUND(9103, "Topic not found"),
+
+    // Lesson Vocab
+    LESSON_VOCAB_NOT_FOUND(9201, "Lesson vocab not found"),
+    LESSON_VOCAB_ALREADY_EXISTS(9202, "Lesson vocab already exists"),
+
+    // Quiz (9300)
+    QUIZ_NOT_ENOUGH_VOCAB(9301, "Need at least 4 vocabularies to start a quiz"),
+    QUIZ_VOCAB_NOT_FOUND(9302, "Vocabulary not found"),
+    QUIZ_INVALID_MODE(9303, "Invalid quiz mode. Allowed: EN_TO_VI, VI_TO_EN, MIXED"),
+
+    // Dictation (9400)
+    DICTATION_NOT_FOUND(9401, "Dictation not found"),
+    DICTATION_SEGMENT_NOT_FOUND(9402, "Dictation segment not found"),
+    DICTATION_PROGRESS_NOT_FOUND(9403, "Dictation progress not found"),
+
+    // Flashcard / SM-2 (9500)
+    FLASHCARD_CARD_REVIEW_NOT_FOUND(9501, "Card review not found"),
+    FLASHCARD_VOCAB_NOT_FOUND(9502, "Vocabulary not found for flashcard"),
+    FLASHCARD_INVALID_QUALITY(9503, "Quality must be between 0 and 5"),
+    FLASHCARD_LESSON_VOCAB_NOT_FOUND(9504, "Lesson vocab not found for flashcard session"),
+
+    // Podcast (10xxx)
+    PODCAST_NOT_FOUND(10001, "Podcast not found"),
+    PODCAST_GENERATE_FAILED(10002, "Failed to generate podcast from AI");
 
     private final int code;
     private final String message;
