@@ -23,6 +23,8 @@ public interface LessonService {
 
     UserLessonProgressResponse getLessonProgress(Long userId, Integer lessonId);
 
+    List<UserLessonProgressResponse> getLessonsProgress(Long userId, List<Integer> lessonIds);
+
     void updateLessonProgress(UpdateProgressRequest request, Long userId);
 
     Page<UserLessonProgressResponse> getMyLessonsProgress(Long userId, int page, int size);

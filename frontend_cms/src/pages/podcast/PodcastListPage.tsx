@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Table, Button, Space, Card, Breadcrumb, message, Modal, Form,
-  Select, Tag, Tabs, Descriptions, Input, Tooltip, Badge, Empty, Spin, Typography, Row, Col, Statistic
+  Select, Tag, Tabs, Descriptions, Tooltip, Badge, Empty, Spin, Typography, Row, Col, Statistic
 } from 'antd';
 import {
-  PlusOutlined, EyeOutlined, DeleteOutlined, SoundOutlined,
+  EyeOutlined, SoundOutlined,
   PlayCircleOutlined, ReloadOutlined, ClockCircleOutlined,
-  FilterOutlined, RobotOutlined, BookOutlined, MessageOutlined, StopOutlined
+  RobotOutlined, BookOutlined, MessageOutlined, StopOutlined
 } from '@ant-design/icons';
 import api from '../../api/axios';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 // --- Types ---
 interface PodcastItem {
@@ -114,7 +114,7 @@ const PodcastListPage: React.FC = () => {
 
   // Filters
   const [filterLevel, setFilterLevel] = useState<number | null>(null);
-  const [filterTopic, setFilterTopic] = useState<number | null>(null);
+
 
   // Topics from DB
   const [topics, setTopics] = useState<TopicItem[]>([]);
@@ -203,7 +203,6 @@ const PodcastListPage: React.FC = () => {
   // --- Filter handlers ---
   const handleFilterLevel = (value: number | null) => {
     setFilterLevel(value);
-    setFilterTopic(null);
     if (value) {
       fetchByLevel(value);
     } else {
@@ -211,19 +210,10 @@ const PodcastListPage: React.FC = () => {
     }
   };
 
-  const handleFilterTopic = (value: number | null) => {
-    setFilterTopic(value);
-    setFilterLevel(null);
-    if (value) {
-      fetchByTopic(value);
-    } else {
-      fetchPodcasts();
-    }
-  };
+
 
   const handleClearFilters = () => {
     setFilterLevel(null);
-    setFilterTopic(null);
     fetchPodcasts();
   };
 

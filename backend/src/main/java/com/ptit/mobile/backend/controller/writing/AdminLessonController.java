@@ -1,14 +1,13 @@
 package com.ptit.mobile.backend.controller.writing;
 
 
-import com.ptit.mobile.backend.dto.request.writing.AdminCreateLessonRequest;
-import com.ptit.mobile.backend.dto.request.writing.AdminUpdateLessonRequest;
+import com.ptit.mobile.backend.dto.request.writing.*;
 import com.ptit.mobile.backend.dto.response.BaseResponse;
 import com.ptit.mobile.backend.dto.response.PageResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonDetailResponse;
 import com.ptit.mobile.backend.dto.response.writing.AdminLessonSummaryResponse;
+import com.ptit.mobile.backend.dto.response.writing.LessonSentenceResponse;
 import com.ptit.mobile.backend.service.writing.impl.AdminLessonServiceImpl;
-import com.ptit.mobile.backend.dto.request.writing.AdminUpdateSuggestVocabularyRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,9 +25,8 @@ public class AdminLessonController {
 
     private final AdminLessonServiceImpl adminLessonService;
 
+    // ==================== Lesson CRUD ====================
 
-
-    // create lesson with AI
     @PostMapping("/generate-with-ai")
     public BaseResponse createLessonWithAi(
             @Valid @RequestBody AdminCreateLessonRequest request,
@@ -42,7 +40,17 @@ public class AdminLessonController {
                 .build();
     }
 
-
+    @PostMapping("/create-manual")
+    public BaseResponse createManualLesson(
+            @Valid @RequestBody ManualCreateLessonRequest request
+    ) {
+        AdminLessonDetailResponse response = adminLessonService.createManualLesson(request);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Manual lesson created successfully")
+                .data(response)
+                .build();
+    }
 
     @GetMapping
     public BaseResponse getAllLessons(
@@ -118,6 +126,51 @@ public class AdminLessonController {
         return BaseResponse.builder()
                 .code(200L)
                 .message("Lesson restored successfully")
+                .data(null)
+                .build();
+    }
+
+    // ==================== Sentence Management ====================
+
+    @GetMapping("/{lessonId}/sentences")
+    public BaseResponse getSentences(@PathVariable Integer lessonId) {
+        List<LessonSentenceResponse> sentences = adminLessonService.getSentencesByLesson(lessonId);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(sentences)
+                .build();
+    }
+
+    @PostMapping("/sentences")
+    public BaseResponse createSentence(@Valid @RequestBody AdminCreateSentenceRequest request) {
+        LessonSentenceResponse sentence = adminLessonService.createSentence(request);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Sentence created successfully")
+                .data(sentence)
+                .build();
+    }
+
+    @PutMapping("/sentences/{sentenceId}")
+    public BaseResponse updateSentence(
+            @PathVariable Integer sentenceId,
+            @RequestBody AdminUpdateSentenceRequest request
+    ) {
+        LessonSentenceResponse sentence = adminLessonService.updateSentence(sentenceId, request);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Sentence updated successfully")
+                .data(sentence)
+                .build();
+    }
+
+    @DeleteMapping("/sentences/{sentenceId}")
+    public BaseResponse deleteSentence(@PathVariable Integer sentenceId) {
+        adminLessonService.deleteSentence(sentenceId);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Sentence deleted successfully")
                 .data(null)
                 .build();
     }

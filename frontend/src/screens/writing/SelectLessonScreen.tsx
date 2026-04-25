@@ -16,7 +16,7 @@ import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { Colors } from "../../constants/colors";
 import { Routes } from "../../constants/routes";
 import { writingApi } from "../../api/writing/writingApi";
-import { LessonSummaryResponse } from "../../api/writing/types";
+import { LessonSummaryResponse, UserLessonProgressResponse } from "../../api/writing/types";
 import { useAuthStore } from "../../store/authStore";
 
 type RouteParams = {
@@ -38,6 +38,7 @@ export default function SelectLessonScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [progressMap, setProgressMap] = useState<Record<number, UserLessonProgressResponse>>({});
 
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -46,6 +47,20 @@ export default function SelectLessonScreen() {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  const fetchProgress = async (lessonIds: number[]) => {
+    if (lessonIds.length === 0) return;
+    try {
+      const progresses = await writingApi.getBulkLessonProgress(lessonIds);
+      const newMap = { ...progressMap };
+      progresses.forEach((p) => {
+        newMap[p.lessonWritingId] = p;
+      });
+      setProgressMap(newMap);
+    } catch (error) {
+      console.error("Failed to fetch bulk progress:", error);
+    }
+  };
 
   const fetchLessons = async (
     pageNumber: number,
@@ -71,6 +86,11 @@ export default function SelectLessonScreen() {
       }
 
       setHasMore(!data.last);
+
+      // Fetch progress for these lessons
+      if (data.content.length > 0) {
+        fetchProgress(data.content.map((l) => l.id));
+      }
     } catch (error) {
       console.error("Failed to fetch lessons:", error);
     } finally {
@@ -100,33 +120,59 @@ export default function SelectLessonScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: LessonSummaryResponse }) => (
-    <TouchableOpacity
-      style={styles.lessonCard}
-      activeOpacity={0.8}
-      onPress={() => {
-        navigation.navigate(Routes.LESSON_PRACTICE, {
-          lessonId: item.id,
-          lessonName: item.name,
-        });
-      }}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="create" size={24} color="#0066FF" />
+  const renderItem = ({ item }: { item: LessonSummaryResponse }) => {
+    const progress = progressMap[item.id];
+    const progressValue =
+      progress && progress.totalSentences > 0
+        ? (progress.currentOrderIndex - 1) / progress.totalSentences
+        : 0;
+    const currentCount = progress ? progress.currentOrderIndex - 1 : 0;
+    const totalCount = progress ? progress.totalSentences : 0;
+
+    return (
+      <TouchableOpacity
+        style={styles.lessonCard}
+        activeOpacity={0.8}
+        onPress={() => {
+          navigation.navigate(Routes.LESSON_PRACTICE, {
+            lessonId: item.id,
+            lessonName: item.name,
+          });
+        }}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="create" size={24} color="#0066FF" />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.lessonName} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.lessonDesc} numberOfLines={2}>
+              {item.description || "No description available for this lesson."}
+            </Text>
+
+            {progress && (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${Math.min(progressValue * 100, 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {currentCount}/{totalCount}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
         </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.lessonName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.lessonDesc} numberOfLines={2}>
-            {item.description || "No description available for this lesson."}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#5A5A7A" />
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -308,6 +354,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#A0A0BC",
     lineHeight: 20,
+    marginBottom: 8,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  progressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#F0F0F7',
+    borderRadius: 2,
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#0066FF',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 11,
+    color: '#5A5A7A',
+    fontWeight: '600',
+    minWidth: 30,
   },
   emptyContainer: {
     alignItems: "center",
