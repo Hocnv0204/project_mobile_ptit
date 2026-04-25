@@ -38,7 +38,27 @@ LinguaBoost hướng tới ba nhóm mục tiêu:
 ### 🏠 Home & điều hướng
 
 - **Home** tổng quan, thống kê từ vựng (`home-stats`).
+- **Streak (chuỗi học tập)**: hiển thị số ngày học liên tiếp, xem màn chi tiết dạng lịch và nhắc học qua push notification.
 - Điều hướng theo module: từ vựng, dictation, podcast, writing, hồ sơ.
+
+### 🔥 Streak (Chuỗi học tập)
+
+- **Mục tiêu**: ghi nhận số ngày người dùng có hoạt động học liên tiếp.
+- **Dữ liệu streak** (API trả về):
+  - `currentStreak`: chuỗi hiện tại (ngày)
+  - `longestStreak`: chuỗi dài nhất (ngày)
+  - `lastActivityDate`: ngày hoạt động gần nhất
+  - `alreadyCheckedInToday`: đã “điểm danh” hôm nay hay chưa
+- **Cơ chế cập nhật**:
+  - Nếu **hôm nay đã có hoạt động** → không tăng (idempotent trong ngày).
+  - Nếu **hôm qua có hoạt động** → `currentStreak + 1`.
+  - Nếu **bỏ lỡ ≥ 1 ngày** (hoặc lần đầu) → reset `currentStreak = 1`.
+- **Khi nào streak được cập nhật?**
+  - Có endpoint “điểm danh” riêng: `POST /api/streaks/check-in`.
+  - Ngoài ra backend cũng **tự gọi cập nhật streak** khi người dùng hoàn thành/ghi nhận hoạt động học ở một số module (ví dụ: quiz, flashcard, dictation, podcast, writing).
+- **Nhắc học (push notification)**:
+  - Job scheduler chạy mặc định **20:00 mỗi ngày** (Asia/Ho_Chi_Minh). Nếu user **chưa học hôm nay** thì gửi nhắc nhở.
+  - Mobile nhận notification có `data.screen = "StreakDetailsScreen"` để điều hướng vào màn chi tiết streak.
 
 ### 📖 Vocabulary Module
 
@@ -327,6 +347,7 @@ Base: **`http://localhost:8080`**. Nhiều route cần **`Authorization: Bearer 
 | Auth | `/api/auth` | register, verify-otp, login, google, refresh, logout, forgot/reset password, me, … |
 | User | `/api/users` | `/me/level` |
 | Vocab / Lesson | `/api/vocab`, `/api/lesson-vocab` | CRUD bài học, từ, admin/system |
+| Streak | `/api/streaks` | `GET /api/streaks` lấy streak; `POST /api/streaks/check-in` điểm danh |
 | Flashcard | `/api/flashcard` | session, review |
 | Quiz | `/api/quiz` | session, check, fill-blank |
 | Dictation | `/api/dictations`, `/api/user/progress`, … | + `/api/admin/dictations` |
@@ -340,6 +361,18 @@ Base: **`http://localhost:8080`**. Nhiều route cần **`Authorization: Bearer 
 ```bash
 curl -s -H "Authorization: Bearer <ACCESS_TOKEN>" \
   http://localhost:8080/api/auth/me
+```
+
+**Streak (thử nhanh):**
+
+```bash
+# Lấy streak hiện tại
+curl -s -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  http://localhost:8080/api/streaks
+
+# Điểm danh (idempotent trong ngày)
+curl -s -X POST -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  http://localhost:8080/api/streaks/check-in
 ```
 
 ---
