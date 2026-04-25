@@ -166,6 +166,23 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    public List<UserLessonProgressResponse> getLessonsProgress(Long userId, List<Integer> lessonIds) {
+        List<UserLessonProgress> progresses = userLessonProgressRepository
+                .findAllByUserIdAndLessonWritingIdIn(userId, lessonIds);
+
+        return progresses.stream().map(progress -> UserLessonProgressResponse.builder()
+                .id(progress.getId())
+                .userId(progress.getUserId())
+                .lessonWritingId(progress.getLessonWritingId())
+                .currentOrderIndex(progress.getCurrentOrderIndex())
+                .totalSentences(progress.getTotalSentences())
+                .status(progress.getStatus())
+                .createdAt(progress.getCreatedAt())
+                .updatedAt(progress.getUpdatedAt())
+                .build()).toList();
+    }
+
+    @Override
     public void updateLessonProgress(UpdateProgressRequest request, Long userId) {
         Optional<UserLessonProgress> existingProgress = userLessonProgressRepository
                 .findByUserIdAndLessonWritingId(userId, request.getLessonWritingId());

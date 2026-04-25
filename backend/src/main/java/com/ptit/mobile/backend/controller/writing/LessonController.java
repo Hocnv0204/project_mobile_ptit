@@ -119,6 +119,20 @@ public class LessonController {
                 .build();
     }
 
+    @GetMapping("/progress/bulk")
+    public BaseResponse getBulkLessonProgress(
+            @RequestParam List<Integer> lessonIds,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getDetails();
+        List<UserLessonProgressResponse> progresses = lessonService.getLessonsProgress(userId, lessonIds);
+        return BaseResponse.builder()
+                .code(200L)
+                .message("Success")
+                .data(progresses)
+                .build();
+    }
+
     @PutMapping("/progress")
     public BaseResponse updateLessonProgress(
             @Valid @RequestBody UpdateProgressRequest request,
